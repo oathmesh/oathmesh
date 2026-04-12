@@ -163,6 +163,22 @@ func ParsePrivateKeyPEM(pemString string) (ed25519.PrivateKey, error) {
 	return ParsePrivateKey(block.Bytes)
 }
 
+func MarshalPrivateKeyToPEM(key ed25519.PrivateKey) ([]byte, error) {
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("marshal private key: %w", err)
+	}
+
+	block := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: pkcs8Bytes,
+	}
+
+	return pem.EncodeToMemory(block), nil
+}
+
+type PublicKey = ed25519.PublicKey
+
 func PublicKeyFromPrivate(privateKey ed25519.PrivateKey) []byte {
 	return privateKey.Public().(ed25519.PublicKey)
 }

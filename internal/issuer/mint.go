@@ -35,6 +35,12 @@ func (s *Server) mintHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ip := r.RemoteAddr
+	if s.rateLimiter != nil && !s.rateLimiter.Allow(ip) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
+	}
+
 	if r.Header.Get("Content-Type") != "application/json" {
 		s.writeError(w, "invalid_content_type", "Content-Type must be application/json", "")
 		return

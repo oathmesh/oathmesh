@@ -22,8 +22,9 @@ type Server struct {
 		JWKS() (*sign.JWKS, error)
 		SignToken(sign.MintRequest) (string, error)
 	}
-	logger *slog.Logger
-	port   string
+	logger      *slog.Logger
+	port        string
+	rateLimiter *RateLimiter
 }
 
 func NewServer(keySet interface {
@@ -40,10 +41,13 @@ func NewServer(keySet interface {
 		Level: slog.LevelInfo,
 	}))
 
+	rateLimiter := NewRateLimiter(100, 20)
+
 	return &Server{
-		keySet: keySet,
-		logger: logger,
-		port:   port,
+		keySet:      keySet,
+		logger:      logger,
+		port:        port,
+		rateLimiter: rateLimiter,
 	}
 }
 

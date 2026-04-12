@@ -1,8 +1,13 @@
 package issuer
 
 import (
+	"context"
+	"crypto"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +17,7 @@ import (
 
 const (
 	GitHubJWKSURL = "https://token.actions.githubusercontent.com/.well-known/jwks"
+	GitHubIssuer  = "https://token.actions.githubusercontent.com"
 )
 
 type GitHubExchangeRequest struct {
@@ -44,19 +50,148 @@ type GitHubIDToken struct {
 	Ref      string `json:"ref,omitempty"`
 }
 
-type JWK struct {
+type GitHubJWK struct {
 	Kty string `json:"kty"`
 	Alg string `json:"alg"`
 	Kid string `json:"kid"`
 	Use string `json:"use"`
-	N   string `json:"n,omitempty"`
-	E   string `json:"e,omitempty"`
-	X   string `json:"x,omitempty"`
-	Crv string `json:"crv,omitempty"`
+	N   string `json:"n"`
+	E   string `json:"e"`
 }
 
-type JWKS struct {
-	Keys []JWK `json:"keys"`
+type GitHubJWKS struct {
+	Keys []GitHubJWK `json:"keys"`
+}
+
+var (
+	githubJWKS      *GitHubJWKS
+	githubJWKSCache *cacheEntry
+)
+
+type cacheEntry struct {
+	jwks  *GitHubJWKS
+	until time.Time
+}
+
+func fetchGitHubJWKS(ctx context.Context) (*GitHubJWKS, error) {
+	if githubJWKS != nil && time.Now().Before(githubJWKSCache.until) {
+		return githubJWKS, nil
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", GitHubJWKSURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch JWKS: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("JWKS endpoint returned %d", resp.StatusCode)
+	}
+
+	var jwks GitHubJWKS
+	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		return nil, fmt.Errorf("decode JWKS: %w", err)
+	}
+
+	githubJWKS = &jwks
+	githubJWKSCache = &cacheEntry{
+		jwks:  &jwks,
+		until: time.Now().Add(5 * time.Minute),
+	}
+
+	return &jwks, nil
+}
+
+func verifyGitHubToken(ctx context.Context, token string) (*GitHubIDToken, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token format: expected 3 parts, got %d", len(parts))
+	}
+
+	headerJSON, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("decode header: %w", err)
+	}
+
+	var header struct {
+		Kid string `json:"kid"`
+		Alg string `json:"alg"`
+	}
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
+		return nil, fmt.Errorf("parse header: %w", err)
+	}
+
+	if header.Alg != "RS256" {
+		return nil, fmt.Errorf("unsupported algorithm: %s", header.Alg)
+	}
+
+	jwks, err := fetchGitHubJWKS(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetch JWKS: %w", err)
+	}
+
+	var jwk *GitHubJWK
+	for _, k := range jwks.Keys {
+		if k.Kid == header.Kid {
+			jwk = &k
+			break
+		}
+	}
+	if jwk == nil {
+		return nil, fmt.Errorf("key not found: %s", header.Kid)
+	}
+
+	payloadJSON, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("decode payload: %w", err)
+	}
+
+	var claims GitHubIDToken
+	if err := json.Unmarshal(payloadJSON, &claims); err != nil {
+		return nil, fmt.Errorf("parse claims: %w", err)
+	}
+
+	if claims.Issuer != GitHubIssuer {
+		return nil, fmt.Errorf("invalid issuer: %s", claims.Issuer)
+	}
+
+	if time.Now().Unix() > claims.ExpiresAt {
+		return nil, fmt.Errorf("token expired")
+	}
+
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("decode signature: %w", err)
+	}
+
+	n := new(big.Int)
+	n.SetString(jwk.N, 10)
+	e := 0
+	for _, c := range jwk.E {
+		e = e*10 + int(c-'0')
+	}
+
+	rsaKey := &rsa.PublicKey{
+		N: n,
+		E: e,
+	}
+
+	signingInput := parts[0] + "." + parts[1]
+	h := crypto.SHA256.New()
+	h.Write([]byte(signingInput))
+	digest := h.Sum(nil)
+
+	if err := rsa.VerifyPKCS1v15(rsaKey, crypto.SHA256, digest, signature); err != nil {
+		return nil, fmt.Errorf("signature verification failed: %w", err)
+	}
+
+	return &claims, nil
 }
 
 func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,15 +216,9 @@ func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parts := strings.Split(req.GitHubToken, ".")
-	if len(parts) != 3 {
-		s.writeError(w, "invalid_token", "Invalid GitHub OIDC token format", "Token must have 3 parts")
-		return
-	}
-
-	githubClaims, err := parseGitHubToken(req.GitHubToken)
+	githubClaims, err := verifyGitHubToken(r.Context(), req.GitHubToken)
 	if err != nil {
-		s.writeError(w, "invalid_token", "Failed to parse GitHub OIDC token", err.Error())
+		s.writeError(w, "invalid_token", "Failed to verify GitHub OIDC token", err.Error())
 		return
 	}
 
@@ -122,66 +251,4 @@ func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(GitHubExchangeResponse{Token: token})
-}
-
-func parseGitHubToken(token string) (*GitHubIDToken, error) {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("invalid token format")
-	}
-
-	payload, err := decodeBase64URL(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("decode payload: %w", err)
-	}
-
-	var claims GitHubIDToken
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return nil, fmt.Errorf("unmarshal claims: %w", err)
-	}
-
-	if claims.Issuer != "https://token.actions.githubusercontent.com" {
-		return nil, fmt.Errorf("invalid issuer: %s", claims.Issuer)
-	}
-
-	return &claims, nil
-}
-
-func decodeBase64URL(s string) ([]byte, error) {
-	switch len(s) % 4 {
-	case 2:
-		s += "=="
-	case 3:
-		s += "="
-	}
-	result := make([]byte, len(s))
-	n, err := base64URLDecode(result, []byte(s))
-	if err != nil {
-		return nil, err
-	}
-	return result[:n], nil
-}
-
-func base64URLDecode(dst, src []byte) (int, error) {
-	for i := 0; i < len(src); i++ {
-		switch {
-		case src[i] >= 'A' && src[i] <= 'Z':
-			dst[i] = src[i] - 'A'
-		case src[i] >= 'a' && src[i] <= 'z':
-			dst[i] = src[i] - 'a' + 26
-		case src[i] >= '0' && src[i] <= '9':
-			dst[i] = src[i] - '0' + 52
-		case src[i] == '-':
-			dst[i] = 62
-		case src[i] == '_':
-			dst[i] = 63
-		default:
-			return 0, fmt.Errorf("invalid base64url character: %c", src[i])
-		}
-	}
-	return len(src), nil
-}
-
-func init() {
-	_ = time.Time{}
 }
