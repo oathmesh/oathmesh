@@ -61,38 +61,50 @@ echo "<token>" | ./bin/oathmesh verify --audience "https://inventory.internal" \
 ./demo.sh
 ```
 
----
-
-## Architecture
+## Architecture & Gateway Pattern
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     OathMesh System                         │
 │                                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────────────────┐ │
-│  │  Caller   │───▶│  Issuer  │    │     Receiver         │ │
-│  │ (agent,   │◀───│ Service  │    │  ┌────────────────┐  │ │
-│  │  CI job,  │    │          │    │  │   Verifier     │  │ │
-│  │  bot)     │    │ Mint API │    │  │   Middleware    │  │ │
+│  │  Caller  │───▶│  Issuer  │    │     Receiver         │ │
+│  │ (agent,  │    │ Service  │    │  ┌────────────────┐  │ │
+│  │  CI job, │    │          │    │  │   Verifier     │  │ │
+│  │  bot)    │◀───│ Mint API │    │  │   Middleware   │  │ │
 │  └──────────┘    │ JWKS     │    │  └───────┬────────┘  │ │
-│       │          │ Metadata │    │  ┌───────▼────────┐  │ │
-│       │          └──────────┘    │  │  Policy Engine │  │ │
-│       │               │          │  └───────┬────────┘  │ │
-│       │          ┌────▼─────┐    │  ┌───────▼────────┐  │ │
-│       └─────────▶│ Gateway  │───▶│  │  Audit Logger  │  │ │
-│                  │ (opt.)   │    │  └────────────────┘  │ │
-│                  └──────────┘    └──────────────────────┘ │
+│       │          └──────────┘    │  ┌───────▼────────┐  │ │
+│       │               │          │  │  Policy Engine │  │ │
+│       │          ┌────▼─────┐    │  └───────┬────────┘  │ │
+│       └─────────▶│ Gateway  │───▶│  ┌───────▼────────┐  │ │
+│                  │ Proxy    │    │  │  Audit Logger  │  │ │
+│                  └──────────┘    │  └────────────────┘  │ │
+│                                  └──────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+OathMesh natively supports **Gateway Mode** (`oathmesh serve --gateway`), transforming the root issuer server into an intelligent HTTP reverse proxy. This seamlessly intercepts upstream requests, dynamically pulling and verifying distributed tokens from incoming `Authorization` headers, blocking anomalies, injecting HTTP Context Headers (`X-OathMesh-Subject`, `X-OathMesh-Action`), and formally logging audit trails natively.
+
+---
+
+## Polyglot SDK Integrations
+
+OathMesh provides native middleware enforcing verifications for all popular endpoints organically without requiring the Gateway Proxy:
+
+- **Go (chi)**: `sdk/go/middleware`
+- **Node.js (TypeScript/Express)**: `@oathmesh/sdk` inside `sdk/node`
+- **Python (FastAPI)**: `oathmesh` SDK inside `sdk/python`
+
+All SDKs natively support fetching distributed JWKS, matching audience specifications, verifying explicit timeouts against configurable clock bounds (max 10s variance default), and injecting contextual definitions intuitively back into route logic.
 
 ---
 
 ## Documentation
-
-- [Protocol Reference](docs/protocol/) — Token format, claims, verification rules
 - [CLI Reference](docs/cli-reference.md) — mint, verify, inspect, serve, keys rotate
-- [Security](docs/security/) — Threat model, key management, replay defense
-- [Quickstarts](docs/quickstarts/) — Protect an Express API, Protect a FastAPI service, GitHub Actions
+- **Phase 8 (Upcoming Follow-up):**
+  - Protocol Reference — Token format, claims, verification rules
+  - Security — Threat model, key management, replay defense
+  - Integration Quickstarts
 
 ---
 

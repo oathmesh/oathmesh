@@ -1,0 +1,19 @@
+{
+  "name": "@oathmesh/sdk",
+  "version": "1.0.0",
+  "description": "OathMesh SDK and Express Middleware",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jose": "^5.2.0"
+  },
+  "devDependencies": {
+    "express": "^4.19.0",
+    "supertest": "^6.3.3",
+    "vitest": "^1.4.0"
+  }
+}
