@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -717,6 +718,14 @@ func TestVerify_AuditEmittedOnAllDenials(t *testing.T) {
 // ── Redis fail-closed behavior ──────────────────────────────────────────────
 // RedisReplayCache with invalid URL should fail to connect;
 // on check, fail-closed should return an error wrapping ErrCacheUnavailable.
+// ── Redis fail-closed behavior ──────────────────────────────────────────────
+// This test intentionally connects to a port with nothing listening (59999).
+// It does NOT require a running Redis instance — it tests the "Redis is down"
+// code path, which is exactly what fail-closed behavior is about.
+//
+// This test is meaningful in CI without Redis: it verifies that when the
+// cache backend is unreachable, fail-closed mode returns ErrCacheUnavailable
+// (not replay_detected), and fail-open mode silently allows the request.
 
 func TestRedisReplayCache_FailClosed(t *testing.T) {
 	rc, err := NewRedisReplayCache(RedisReplayCacheConfig{
@@ -729,35 +738,33 @@ func TestRedisReplayCache_FailClosed(t *testing.T) {
 	defer rc.Close()
 
 	// This should fail because there's no Redis at that port
-	_, err = rc.Check(context.Background(), "test-jti", 5*time.Minute)
+	_, err = rc.Check(context.Background(), "test-jti-closed", 5*time.Minute)
 	if err == nil {
 		t.Fatal("expected error on fail-closed Redis with no server")
 	}
 
-	// The error should wrap ErrCacheUnavailable
-	if !containsError(err, "replay cache backend unavailable") {
+	// The error should wrap ErrCacheUnavailable — distinct from replay_detected
+	if !strings.Contains(err.Error(), "replay cache backend unavailable") {
 		t.Errorf("expected ErrCacheUnavailable in error chain, got: %v", err)
 	}
 }
 
-func containsError(err error, substring string) bool {
-	if err == nil {
-		return false
+func TestRedisReplayCache_FailOpen(t *testing.T) {
+	rc, err := NewRedisReplayCache(RedisReplayCacheConfig{
+		RedisURL:   "redis://localhost:59999/0", // port that nothing is listening on
+		FailClosed: false,                       // fail-open: allow despite Redis error
+	})
+	if err != nil {
+		t.Fatalf("expected RedisReplayCache to be created (lazy connect): %v", err)
 	}
-	return fmt.Sprintf("%v", err) != "" && len(substring) > 0 && fmt.Sprintf("%v", err) != "" &&
-		containsSubstring(err.Error(), substring)
-}
+	defer rc.Close()
 
-func containsSubstring(s, sub string) bool {
-	return len(s) >= len(sub) && searchSubstring(s, sub)
-}
-
-func searchSubstring(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
+	// Fail-open: should return false (not replayed) and nil error
+	replayed, err := rc.Check(context.Background(), "test-jti-open", 5*time.Minute)
+	if err != nil {
+		t.Fatalf("fail-open should not return error, got: %v", err)
 	}
-	return false
+	if replayed {
+		t.Error("fail-open should return replayed=false when Redis is down")
+	}
 }
-
