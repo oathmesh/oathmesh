@@ -281,9 +281,30 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 
 	// ── Step 14: Evaluate policy ────────────────────────────────────────
 	// First matching rule wins; if no rule matches → deny.
-	// TODO(phase3): Wire up Pkl policy engine. For now, all tokens with valid
-	// signatures and claims are allowed through. Policy enforcement is deferred
-	// to Phase 3 when the Pkl policy engine is implemented.
+	if cfg.PolicyEvaluator != nil {
+		policyInput := &PolicyInput{
+			Iss:   claims.Iss,
+			Sub:   claims.Sub,
+			Aud:   claims.Aud,
+			Act:   claims.Act,
+			Scope: claims.Scope,
+			Env:   claims.Env,
+		}
+		if claims.Src != nil {
+			policyInput.SrcType = claims.Src.Type
+			policyInput.SrcRepo = claims.Src.Repo
+			policyInput.SrcWflow = claims.Src.Workflow
+		}
+
+		decision := cfg.PolicyEvaluator.Evaluate(policyInput)
+		if decision.Outcome == "deny" {
+			return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+				core.ErrPolicyDenied,
+				fmt.Sprintf("policy denied by rule %q", decision.RuleName),
+				"check policy rules or request different permissions",
+			))
+		}
+	}
 
 	// Build VerifiedCallerContext
 	var src *core.Source

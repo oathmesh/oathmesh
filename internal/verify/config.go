@@ -38,6 +38,11 @@ type VerifierConfig struct {
 	// If nil, no audit events are emitted.
 	AuditSink core.AuditSink
 
+	// PolicyEvaluator evaluates policy rules against verified token claims.
+	// If nil, all authenticated tokens are allowed (no policy enforcement).
+	// Wire this to a policy.PolicyEngine for production use.
+	PolicyEvaluator PolicyEvaluator
+
 	// ClockSkew is the maximum allowed clock difference between issuer and receiver.
 	// Default: 10 seconds.
 	ClockSkew time.Duration
@@ -58,4 +63,31 @@ type JWKSProvider interface {
 	// If the key is not in cache, the provider should fetch fresh JWKS
 	// from the issuer's /.well-known/jwks.json endpoint.
 	GetKey(issuerURL string, kid string) (ed25519.PublicKey, string, error)
+}
+
+// PolicyEvaluator evaluates OathMesh policy rules against token claims.
+// Implementations should be thread-safe for concurrent use.
+type PolicyEvaluator interface {
+	Evaluate(input *PolicyInput) *PolicyDecision
+}
+
+// PolicyInput holds the claims needed for policy evaluation.
+type PolicyInput struct {
+	Iss      string
+	Sub      string
+	Aud      string
+	Act      string
+	Scope    []string
+	Env      string
+	SrcType  string
+	SrcRepo  string
+	SrcWflow string
+}
+
+// PolicyDecision represents the result of a policy evaluation.
+type PolicyDecision struct {
+	// Outcome is "allow" or "deny".
+	Outcome string
+	// RuleName is the name of the matched rule.
+	RuleName string
 }

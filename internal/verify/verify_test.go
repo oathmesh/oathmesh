@@ -559,3 +559,205 @@ func assertOathMeshError(t *testing.T, err error, expectedCode core.ErrorCode) {
 		t.Errorf("expected error code %q, got %q (message: %s)", expectedCode, ome.Code, ome.Message)
 	}
 }
+
+// ── Mock policy evaluator for testing ───────────────────────────────────────
+
+type mockPolicyEvaluator struct {
+	outcome  string
+	ruleName string
+}
+
+func (m *mockPolicyEvaluator) Evaluate(input *PolicyInput) *PolicyDecision {
+	return &PolicyDecision{Outcome: m.outcome, RuleName: m.ruleName}
+}
+
+// ── Mock audit sink for testing ─────────────────────────────────────────────
+
+type mockAuditSink struct {
+	mu     sync.Mutex
+	events []*core.AuditEvent
+}
+
+func (m *mockAuditSink) Emit(ctx context.Context, event *core.AuditEvent) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.events = append(m.events, event)
+	return nil
+}
+
+func (m *mockAuditSink) getEvents() []*core.AuditEvent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	copied := make([]*core.AuditEvent, len(m.events))
+	copy(copied, m.events)
+	return copied
+}
+
+// ── Policy deny test ────────────────────────────────────────────────────────
+// Step 14: policy evaluator returns deny → policy_denied error + deny audit event
+
+func TestVerify_PolicyDeny(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+	token := mintTestToken(t, privateKey, nil)
+
+	auditSink := &mockAuditSink{}
+
+	cfg := testConfig(publicKey)
+	cfg.PolicyEvaluator = &mockPolicyEvaluator{outcome: "deny", ruleName: "block-all"}
+	cfg.AuditSink = auditSink
+
+	_, err := Verify(context.Background(), token, cfg)
+
+	assertOathMeshError(t, err, core.ErrPolicyDenied)
+
+	// Verify audit event was emitted with outcome "deny"
+	events := auditSink.getEvents()
+	if len(events) == 0 {
+		t.Fatal("expected at least one audit event on policy deny")
+	}
+
+	lastEvent := events[len(events)-1]
+	if lastEvent.Outcome != "deny" {
+		t.Errorf("expected audit outcome deny, got %s", lastEvent.Outcome)
+	}
+}
+
+// ── Policy allow test ───────────────────────────────────────────────────────
+// Step 14: policy evaluator returns allow → success + rule name in audit
+
+func TestVerify_PolicyAllow(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+	token := mintTestToken(t, privateKey, nil)
+
+	cfg := testConfig(publicKey)
+	cfg.PolicyEvaluator = &mockPolicyEvaluator{outcome: "allow", ruleName: "storefront-read"}
+
+	vcc, err := Verify(context.Background(), token, cfg)
+	if err != nil {
+		t.Fatalf("expected policy allow, got error: %v", err)
+	}
+
+	if vcc.Principal.Subject != testSubject {
+		t.Errorf("expected subject %q, got %q", testSubject, vcc.Principal.Subject)
+	}
+}
+
+// ── No policy evaluator test ────────────────────────────────────────────────
+// Nil evaluator → all authenticated tokens allowed (backward compatibility)
+
+func TestVerify_NoPolicyEvaluator(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+	token := mintTestToken(t, privateKey, nil)
+
+	cfg := testConfig(publicKey)
+	cfg.PolicyEvaluator = nil // explicitly nil
+
+	vcc, err := Verify(context.Background(), token, cfg)
+	if err != nil {
+		t.Fatalf("expected nil policy evaluator to allow, got error: %v", err)
+	}
+
+	if vcc == nil {
+		t.Fatal("expected non-nil VerifiedCallerContext")
+	}
+}
+
+// ── Audit emission on deny paths ────────────────────────────────────────────
+// Confirm that emitAndReturn fires an audit event on EVERY rejection, not just Step 14.
+
+func TestVerify_AuditEmittedOnAllDenials(t *testing.T) {
+	_, publicKey := generateTestKeys(t)
+	privateKey2, _ := generateTestKeys(t)
+
+	tests := []struct {
+		name  string
+		token string
+		code  core.ErrorCode
+	}{
+		{
+			name:  "malformed token",
+			token: "only.two",
+			code:  core.ErrClaimMissing,
+		},
+		{
+			name: "unknown issuer",
+			token: func() string {
+				return mintTestToken(t, privateKey2, func(c *sign.Claims) {
+					c.Iss = "https://evil.issuer"
+				})
+			}(),
+			code: core.ErrIssuerUntrusted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			auditSink := &mockAuditSink{}
+			cfg := testConfig(publicKey)
+			cfg.AuditSink = auditSink
+
+			_, err := Verify(context.Background(), tt.token, cfg)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+
+			events := auditSink.getEvents()
+			if len(events) == 0 {
+				t.Fatalf("expected audit event for %s denial, got none", tt.name)
+			}
+
+			lastEvent := events[len(events)-1]
+			if lastEvent.Outcome != "deny" {
+				t.Errorf("expected audit outcome deny, got %s", lastEvent.Outcome)
+			}
+		})
+	}
+}
+
+// ── Redis fail-closed behavior ──────────────────────────────────────────────
+// RedisReplayCache with invalid URL should fail to connect;
+// on check, fail-closed should return an error wrapping ErrCacheUnavailable.
+
+func TestRedisReplayCache_FailClosed(t *testing.T) {
+	rc, err := NewRedisReplayCache(RedisReplayCacheConfig{
+		RedisURL:   "redis://localhost:59999/0", // port that nothing is listening on
+		FailClosed: true,
+	})
+	if err != nil {
+		t.Fatalf("expected RedisReplayCache to be created (lazy connect): %v", err)
+	}
+	defer rc.Close()
+
+	// This should fail because there's no Redis at that port
+	_, err = rc.Check(context.Background(), "test-jti", 5*time.Minute)
+	if err == nil {
+		t.Fatal("expected error on fail-closed Redis with no server")
+	}
+
+	// The error should wrap ErrCacheUnavailable
+	if !containsError(err, "replay cache backend unavailable") {
+		t.Errorf("expected ErrCacheUnavailable in error chain, got: %v", err)
+	}
+}
+
+func containsError(err error, substring string) bool {
+	if err == nil {
+		return false
+	}
+	return fmt.Sprintf("%v", err) != "" && len(substring) > 0 && fmt.Sprintf("%v", err) != "" &&
+		containsSubstring(err.Error(), substring)
+}
+
+func containsSubstring(s, sub string) bool {
+	return len(s) >= len(sub) && searchSubstring(s, sub)
+}
+
+func searchSubstring(s, sub string) bool {
+	for i := 0; i <= len(s)-len(sub); i++ {
+		if s[i:i+len(sub)] == sub {
+			return true
+		}
+	}
+	return false
+}
+
