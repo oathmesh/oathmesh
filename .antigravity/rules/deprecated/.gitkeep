@@ -1,6 +1,0 @@
-# Deprecated rules are placed here when superseded.
-# They are never deleted — they serve as historical record.
-# Each deprecated file must include:
-#   deprecated: "YYYY-MM-DD"
-#   superseded_by: "path/to/new/rule.md"
-#   reason: "Brief explanation"

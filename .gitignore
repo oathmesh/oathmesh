@@ -1,47 +1,77 @@
-# Binaries
+# =============================================================================
+# OathMesh .gitignore — Production MVP V1
+# =============================================================================
+
+# ── Binaries & Build Output ──────────────────────────────────────────────────
 bin/
+dist/
+build/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Build output
-/dist/
-/build/
-
-# Go workspace
+# ── Go ───────────────────────────────────────────────────────────────────────
 go.work
+go.work.sum
 
-# Environment files
+# ── Secrets & Credentials (NEVER commit) ─────────────────────────────────────
 .env
-.env.local
+.env.*
+!.env.example
 *.pem
 *.key
 *.crt
+*.p12
+*.pfx
 
-# IDE
+# ── IDE & Editor ─────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
 
-# OS
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+Desktop.ini
+ehthumbs.db
 
-# Test coverage
+# ── Test & Coverage ──────────────────────────────────────────────────────────
 *.out
 coverage.txt
+coverage.html
+*.cover
+*.prof
 
-# Temporary files
-*.tmp
-*.log
+# ── Node.js ──────────────────────────────────────────────────────────────────
 node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
 .pytest_cache/
 .venv/
-*.egg-info/
-package-lock.json
+venv/
+*.egg
+dist/
 
-.antigravity/*
+# ── Temporary & Generated ───────────────────────────────────────────────────
+*.tmp
+*.log
+*.bak
+*.orig
+
+# ── Tool-specific (not project code) ────────────────────────────────────────
+.antigravity/
