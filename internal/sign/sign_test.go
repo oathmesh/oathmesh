@@ -140,3 +140,8 @@ func TestBuildJWKS(t *testing.T) {
 		t.Errorf("expected KTY OKP, got %s", jwks.Keys[0].Kty)
 	}
 }
+
+// TODO: TestBuildJWS_RejectsAlgNone was removed from this file because
+// rejection of alg:"none" is a VERIFIER responsibility (Step 02), not a signer
+// responsibility. The signer only constructs tokens with EdDSA. The corresponding
+// test lives in internal/verify/verify_test.go as TestVerify_AlgNone.

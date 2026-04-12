@@ -170,12 +170,17 @@ func verifyGitHubToken(ctx context.Context, token string) (*GitHubIDToken, error
 		return nil, fmt.Errorf("decode signature: %w", err)
 	}
 
-	n := new(big.Int)
-	n.SetString(jwk.N, 10)
-	e := 0
-	for _, c := range jwk.E {
-		e = e*10 + int(c-'0')
+	nBytes, err := base64.RawURLEncoding.DecodeString(jwk.N)
+	if err != nil {
+		return nil, fmt.Errorf("decode JWK N: %w", err)
 	}
+	n := new(big.Int).SetBytes(nBytes)
+
+	eBytes, err := base64.RawURLEncoding.DecodeString(jwk.E)
+	if err != nil {
+		return nil, fmt.Errorf("decode JWK E: %w", err)
+	}
+	e := int(new(big.Int).SetBytes(eBytes).Int64())
 
 	rsaKey := &rsa.PublicKey{
 		N: n,

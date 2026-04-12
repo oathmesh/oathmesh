@@ -10,6 +10,7 @@ import (
 
 	"github.com/oathmesh/oathmesh/internal/issuer"
 	"github.com/oathmesh/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
 var (
@@ -54,6 +55,7 @@ func main() {
 	verifyCmd.Flags().String("token", "", "Token string (or read from stdin)")
 	verifyCmd.Flags().String("audience", "", "Expected audience (required)")
 	verifyCmd.Flags().StringSlice("issuer", []string{}, "Trusted issuers")
+	verifyCmd.Flags().Bool("local-keys", false, "Use local keyset instead of fetching JWKS from issuer URL (dev only)")
 	verifyCmd.MarkFlagRequired("audience")
 
 	rootCmd.AddCommand(verifyCmd)
@@ -141,6 +143,7 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 	tokenFlag, _ := cmd.Flags().GetString("token")
 	audience, _ := cmd.Flags().GetString("audience")
 	issuers, _ := cmd.Flags().GetStringSlice("issuer")
+	localKeys, _ := cmd.Flags().GetBool("local-keys")
 
 	var token string
 	if tokenFlag != "" {
@@ -152,26 +155,70 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if token == "" {
-		return fmt.Errorf("token required")
+		fmt.Fprintln(os.Stderr, "error: token required")
+		os.Exit(2)
 	}
 
-	header, err := sign.ParseHeader(token)
+	// Build JWKS provider: default fetches from issuer URL,
+	// --local-keys uses the local keyset (dev/testing only).
+	var jwksProvider verify.JWKSProvider
+	if localKeys {
+		ks, err := sign.LoadKeySet()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: load local keyset: %v\n", err)
+			os.Exit(2)
+		}
+		jwksProvider = verify.NewStaticJWKSProvider(ks.GetAllPublicKeys())
+		// If no issuers specified, trust the local issuer
+		if len(issuers) == 0 {
+			issuers = []string{ks.GetIssuer()}
+		}
+	} else {
+		// Default: fetch JWKS from the iss claim URL
+		jwksProvider = verify.NewJWKSCache(verify.DefaultJWKSCacheTTL)
+		// If no issuers specified, extract from token (unverified) for JWKS fetch,
+		// but the verify pipeline will still check against trusted issuers.
+		if len(issuers) == 0 {
+			claims, err := sign.UnverifiedClaims(token)
+			if err == nil && claims.Iss != "" {
+				issuers = []string{claims.Iss}
+			}
+		}
+	}
+
+	cfg := &verify.VerifierConfig{
+		Audience:       audience,
+		TrustedIssuers: issuers,
+		JWKSProvider:   jwksProvider,
+		ReplayCache:    verify.NewMemoryReplayCache(),
+	}
+
+	ctx := cmd.Context()
+	vcc, err := verify.Verify(ctx, token, cfg)
 	if err != nil {
-		return fmt.Errorf("parse header: %w", err)
+		if jsonOutput {
+			b, _ := json.Marshal(err)
+			fmt.Fprintln(os.Stderr, string(b))
+		} else {
+			fmt.Fprintf(os.Stderr, "verification failed: %v\n", err)
+		}
+		os.Exit(1)
 	}
 
 	if jsonOutput {
-		output := map[string]interface{}{
-			"header": header,
-		}
-		b, _ := json.Marshal(output)
+		b, _ := json.MarshalIndent(vcc, "", "  ")
 		fmt.Println(string(b))
 	} else {
-		fmt.Printf("Type: %s, Algorithm: %s, Key ID: %s\n", header.Typ, header.Alg, header.Kid)
+		fmt.Println("✓ Token verified successfully")
+		fmt.Printf("  Issuer:  %s\n", vcc.Principal.Issuer)
+		fmt.Printf("  Subject: %s\n", vcc.Principal.Subject)
+		fmt.Printf("  Action:  %s\n", vcc.Action)
+		fmt.Printf("  TokenID: %s\n", vcc.TokenID)
+		fmt.Printf("  Expires: %s\n", vcc.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"))
+		if vcc.Source != nil {
+			fmt.Printf("  Source:  %s/%s/%s\n", vcc.Source.Type, vcc.Source.Repo, vcc.Source.Workflow)
+		}
 	}
-
-	_ = audience
-	_ = issuers
 
 	return nil
 }
