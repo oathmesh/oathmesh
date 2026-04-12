@@ -52,12 +52,36 @@ services:
       timeout: 5s
       retries: 3
 
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.issuer
+    command: ["./bin/oathmesh", "serve", "--gateway"]
+    ports:
+      - "4001:4000"
+    environment:
+      OATHMESH_GATEWAY_UPSTREAM: http://upstream-demo:80
+      OATHMESH_GATEWAY_AUDIENCE: https://inventory.internal
+      OATHMESH_GATEWAY_ISSUERS: https://issuer.oathmesh.dev
+      # We just point at a dummy policy for the demo right now
+      OATHMESH_GATEWAY_POLICY: /policy/production.json
+    volumes:
+      - ./policy/production.json:/policy/production.json:ro
+    depends_on:
+      issuer:
+        condition: service_healthy
+
+  upstream-demo:
+    image: traefik/whoami
+    ports:
+      - "8080:80"
+
   chi-api:
     build:
       context: ./examples/chi-api
-      dockerfile: Dockerfile
+    # (Leaving this here, built in Phase 6)
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       OATHMESH_AUDIENCE: https://inventory.internal
       OATHMESH_TRUSTED_ISSUERS: https://issuer.oathmesh.dev

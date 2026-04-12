@@ -13,6 +13,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/oathmesh/oathmesh/internal/audit"
+	"github.com/oathmesh/oathmesh/internal/gateway"
 	"github.com/oathmesh/oathmesh/internal/issuer"
 	"github.com/oathmesh/oathmesh/internal/policy"
 	"github.com/oathmesh/oathmesh/internal/sign"
@@ -246,6 +248,9 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 			fmt.Fprintln(os.Stderr, string(b))
 		} else if !quiet {
 			fmt.Fprintf(os.Stderr, "verification failed: %v\n", err)
+			if !localKeys && (strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "no such host")) {
+				fmt.Fprintln(os.Stderr, "Hint: if you are testing locally without a running issuer, use the --local-keys flag.")
+			}
 		}
 		os.Exit(1)
 	}
@@ -368,7 +373,7 @@ Exit codes:
 
 func serveRunE(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetString("port")
-	_ = port
+	gatewayEnabled, _ := cmd.Flags().GetBool("gateway")
 
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
@@ -381,12 +386,61 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 
 	srv := issuer.NewServer(ks)
 
+	if gatewayEnabled {
+		upstream := os.Getenv("OATHMESH_GATEWAY_UPSTREAM")
+		audience := os.Getenv("OATHMESH_GATEWAY_AUDIENCE")
+		issuersStr := os.Getenv("OATHMESH_GATEWAY_ISSUERS")
+		policyFile := os.Getenv("OATHMESH_GATEWAY_POLICY")
+
+		if upstream == "" || audience == "" || issuersStr == "" {
+			return fmt.Errorf("gateway mode requires OATHMESH_GATEWAY_UPSTREAM, OATHMESH_GATEWAY_AUDIENCE, OATHMESH_GATEWAY_ISSUERS env vars")
+		}
+
+		issuers := strings.Split(issuersStr, ",")
+		for i, v := range issuers {
+			issuers[i] = strings.TrimSpace(v)
+		}
+
+		var evaluator verify.PolicyEvaluator
+		if policyFile != "" {
+			pe, err := policy.NewWatchedPolicyEngine(policyFile, slog.Default())
+			if err != nil {
+				return fmt.Errorf("failed to init policy engine: %w", err)
+			}
+			evaluator = pe
+		}
+
+		vCfg := &verify.VerifierConfig{
+			Audience:        audience,
+			TrustedIssuers:  issuers,
+			JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL),
+			ReplayCache:     verify.NewMemoryReplayCache(),
+			PolicyEvaluator: evaluator,
+			AuditSink:       audit.NewStdoutAuditSink(),
+		}
+
+		gwCfg := gateway.Config{
+			UpstreamURL:  upstream,
+			VerifyConfig: vCfg,
+		}
+
+		gwHandler, err := gateway.NewProxy(gwCfg)
+		if err != nil {
+			return fmt.Errorf("failed to initialize gateway proxy: %w", err)
+		}
+		
+		srv.SetGateway(gwHandler)
+	}
+
 	if !quiet {
 		log.Printf("OathMesh issuer starting on port %s\n", port)
 		log.Printf("  JWKS:      http://localhost:%s/.well-known/jwks.json\n", port)
 		log.Printf("  Discovery: http://localhost:%s/.well-known/oathmesh-issuer\n", port)
 		log.Printf("  Mint:      http://localhost:%s/v1/token\n", port)
 		log.Printf("  Health:    http://localhost:%s/healthz\n", port)
+		if gatewayEnabled {
+			log.Printf("  Gateway:   active (catch-all route /*)\n")
+		}
 	}
 
 	return srv.Run()

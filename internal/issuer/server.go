@@ -22,9 +22,10 @@ type Server struct {
 		JWKS() (*sign.JWKS, error)
 		SignToken(sign.MintRequest) (string, error)
 	}
-	logger      *slog.Logger
-	port        string
-	rateLimiter *RateLimiter
+	logger         *slog.Logger
+	port           string
+	rateLimiter    *RateLimiter
+	gatewayHandler http.Handler
 }
 
 func NewServer(keySet interface {
@@ -51,6 +52,12 @@ func NewServer(keySet interface {
 	}
 }
 
+// SetGateway enables reverse proxy mode by setting a handler for all
+// paths not explicitly registered by the issuer.
+func (s *Server) SetGateway(h http.Handler) {
+	s.gatewayHandler = h
+}
+
 func (s *Server) Run() error {
 	r := s.router()
 
@@ -63,6 +70,9 @@ func (s *Server) Run() error {
 	}
 
 	s.logger.Info("starting issuer server", "port", s.port)
+	if s.gatewayHandler != nil {
+		s.logger.Info("gateway mode enabled")
+	}
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -104,6 +114,10 @@ func (s *Server) router() *chi.Mux {
 		r.Post("/v1/token", s.mintHandler)
 		r.Post("/v1/exchange/github", s.exchangeGitHubHandler)
 	})
+
+	if s.gatewayHandler != nil {
+		r.NotFound(s.gatewayHandler.ServeHTTP)
+	}
 
 	return r
 }
