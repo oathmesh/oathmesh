@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            name: oathmesh-linux-amd64
+          - goos: darwin
+            goarch: arm64
+            name: oathmesh-darwin-arm64
+          - goos: darwin
+            goarch: amd64
+            name: oathmesh-darwin-amd64
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: go build -o ${{ matrix.name }} ./cmd/oathmesh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            oathmesh-linux-amd64/oathmesh-linux-amd64
+            oathmesh-darwin-arm64/oathmesh-darwin-arm64
+            oathmesh-darwin-amd64/oathmesh-darwin-amd64
+          generate_release_notes: true
