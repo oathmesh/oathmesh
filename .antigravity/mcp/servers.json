@@ -1,0 +1,124 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "created": "2026-04-05",
+    "last_modified": "2026-04-05",
+    "owner": "Founder",
+    "purpose": "MCP server definitions — endpoints, auth, scope, timeouts, initialization order"
+  },
+  "servers": {
+    "filesystem": {
+      "description": "Read and write project files in the OathMesh workspace",
+      "priority": 1,
+      "initialization_order": 1,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "c:/FM/oathmesh"],
+      "scope": {
+        "allowed_paths": ["c:/FM/oathmesh"],
+        "denied_paths": ["c:/FM/oathmesh/.env", "c:/FM/oathmesh/.env.*", "c:/FM/oathmesh/**/node_modules"],
+        "operations": ["read", "write", "list", "search"]
+      },
+      "timeout_ms": 5000,
+      "health_check": "list root directory",
+      "fallback": "Use terminal server to run file commands (cat, ls, find)",
+      "required": true
+    },
+    "git": {
+      "description": "Git operations — commit history, diffs, branch management for OathMesh repo",
+      "priority": 2,
+      "initialization_order": 2,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "c:/FM/oathmesh"],
+      "scope": {
+        "repository": "c:/FM/oathmesh",
+        "operations": ["log", "diff", "status", "blame", "show"]
+      },
+      "timeout_ms": 10000,
+      "health_check": "git status",
+      "fallback": "Use terminal server to run git commands directly",
+      "required": true
+    },
+    "terminal": {
+      "description": "Execute shell commands in the OathMesh project context",
+      "priority": 3,
+      "initialization_order": 3,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-terminal"],
+      "scope": {
+        "working_directory": "c:/FM/oathmesh",
+        "allowed_commands": ["go", "npm", "npx", "node", "python", "pip", "docker", "make", "git", "curl", "cat", "ls", "find", "grep"],
+        "denied_commands": ["rm -rf /", "format", "shutdown"],
+        "max_execution_time_ms": 60000
+      },
+      "timeout_ms": 60000,
+      "health_check": "echo 'oathmesh-mcp-ok'",
+      "fallback": "No fallback — terminal is a foundational server. If unavailable, operate in read-only advisory mode.",
+      "required": true
+    },
+    "browser": {
+      "description": "Web browsing for documentation research, API testing, and dependency checking",
+      "priority": 4,
+      "initialization_order": 5,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "scope": {
+        "allowed_domains": ["docs.oathmesh.dev", "github.com", "pkg.go.dev", "npmjs.com", "pypi.org", "jwt.io", "datatracker.ietf.org", "docs.github.com"],
+        "operations": ["navigate", "screenshot", "extract_text"]
+      },
+      "timeout_ms": 15000,
+      "health_check": "navigate to about:blank",
+      "fallback": "Use search server for information retrieval, or ask human to provide content",
+      "required": false
+    },
+    "search": {
+      "description": "Web search for technical documentation, RFC references, and competitive research",
+      "priority": 5,
+      "initialization_order": 4,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${OATHMESH_BRAVE_SEARCH_KEY}"
+      },
+      "scope": {
+        "operations": ["search"],
+        "max_results": 10
+      },
+      "timeout_ms": 10000,
+      "health_check": "search for 'oathmesh'",
+      "fallback": "Use browser server to navigate directly to known documentation URLs",
+      "required": false
+    },
+    "memory": {
+      "description": "Persistent key-value memory for cross-session context about OathMesh",
+      "priority": 6,
+      "initialization_order": 6,
+      "endpoint": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "scope": {
+        "namespace": "oathmesh",
+        "operations": ["read", "write", "list", "delete"]
+      },
+      "timeout_ms": 3000,
+      "health_check": "list all keys in namespace",
+      "fallback": "Use filesystem server to read/write .antigravity/memory/ files directly",
+      "required": false
+    }
+  },
+  "initialization": {
+    "order": ["filesystem", "git", "terminal", "search", "browser", "memory"],
+    "strategy": "sequential",
+    "fail_behavior": "If a required server fails to initialize, halt and report. If an optional server fails, log a warning and continue with degraded capabilities."
+  },
+  "global_settings": {
+    "max_concurrent_requests": 5,
+    "retry_count": 2,
+    "retry_delay_ms": 1000,
+    "log_level": "info"
+  }
+}

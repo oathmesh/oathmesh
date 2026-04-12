@@ -1,0 +1,12 @@
+# AI-drafted rule, skill, and memory change proposals awaiting human approval.
+#
+# Format: proposal-YYYY-MM-DD-NN-brief-title.md
+#
+# Each proposal must include:
+#   - What should change (specific file and section)
+#   - Why it should change (evidence from sessions)
+#   - Proposed new content
+#   - Priority: High/Medium/Low
+#   - Status: Proposed | Approved | Rejected
+#
+# No rule, skill, or memory changes are applied without explicit human sign-off.

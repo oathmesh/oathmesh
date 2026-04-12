@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: oathmesh
+      POSTGRES_PASSWORD: oathmesh_dev
+      POSTGRES_DB: oathmesh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oathmesh"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
+  issuer:
+    build:
+      context: .
+      dockerfile: Dockerfile.issuer
+    ports:
+      - "4000:4000"
+    environment:
+      OATHMESH_ISSUER: https://issuer.oathmesh.dev
+      OATHMESH_PRIVATE_KEY: ${OATHMESH_PRIVATE_KEY}
+      OATHMESH_AUDIT_SINK: stdout
+      OATHMESH_REPLAY_CACHE_BACKEND: redis
+      OATHMESH_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  chi-api:
+    build:
+      context: ./examples/chi-api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      OATHMESH_AUDIENCE: https://inventory.internal
+      OATHMESH_TRUSTED_ISSUERS: https://issuer.oathmesh.dev
+      OATHMESH_POLICY_PATH: /policy/production.pkl
+    depends_on:
+      issuer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./policy/production.pkl:/policy/production.pkl:ro
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,9 @@
+# Stale memory entries are placed here when they pass their review_by date
+# or when their content contradicts current source code or ADRs.
+#
+# Files are renamed: original-name.stale-YYYY-MM-DD.md
+# Each file must include a staleness header with:
+#   stale_since, reason, recovery_action
+#
+# Review during weekly review (see feedback/weekly-review-prompt.md)
+# Delete only after human approval and only if truly obsolete.

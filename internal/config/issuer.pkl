@@ -1,0 +1,58 @@
+// internal/config/issuer.pkl
+// OathMesh Issuer Configuration Schema
+module oathmesh.config
+
+class KeyRotationConfig {
+  /// How many hours to serve the previous key alongside the new key during rotation
+  overlapHours: Int(isPositive) = 24
+}
+
+class TTLConfig {
+  /// Default token lifetime in seconds if caller omits ttl_hint
+  defaultSeconds: Int(isBetween(1, 300)) = 120
+  /// Hard ceiling — server always clamps to this regardless of ttl_hint
+  maxSeconds: Int(isBetween(1, 300)) = 300
+  /// Recommended TTL for write/mutate actions
+  writeSeconds: Int(isBetween(1, 300)) = 60
+}
+
+class RateLimitConfig {
+  /// Requests per minute per source IP on the mint endpoint (token bucket)
+  requestsPerMinute: Int = 100
+  /// Burst size above the steady-state rate
+  burstSize: Int = 20
+}
+
+class AuditConfig {
+  /// Output sink: "stdout" (default, cloud-native) | "file" | "noop" (tests ONLY)
+  sink: String("stdout"|"file"|"noop") = "stdout"
+  /// Absolute file path when sink = "file"
+  filePath: String?
+}
+
+class ReplayCacheConfig {
+  /// Cache backend: "memory" (dev/single-instance) | "redis" (production)
+  backend: String("memory"|"redis") = "memory"
+  /// Redis connection URL (required when backend = "redis")
+  /// e.g., "redis://localhost:6379/0"
+  redisURL: String?
+}
+
+class IssuerConfig {
+  /// Canonical issuer URL — must be HTTPS in production
+  issuer: String
+  /// HTTP listen port
+  port: Int(isBetween(1, 65535)) = 4000
+  /// Private key source: "env" (reads OATHMESH_PRIVATE_KEY) | "file" (reads privateKeyFile)
+  /// Always prefer "env" in production
+  privateKeySource: String("env"|"file") = "env"
+  /// Path to PEM PKCS8 Ed25519 private key file (only when privateKeySource = "file")
+  privateKeyFile: String?
+  /// JWKS in-memory cache TTL in seconds (refresh on kid miss regardless)
+  jwksCacheTTLSeconds: Int = 300
+  keyRotation: KeyRotationConfig = new {}
+  ttl: TTLConfig = new {}
+  rateLimit: RateLimitConfig = new {}
+  audit: AuditConfig = new {}
+  replayCache: ReplayCacheConfig = new {}
+}

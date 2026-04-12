@@ -1,0 +1,56 @@
+// policy/schema.pkl
+// OathMesh Policy Schema v1 — canonical definition
+// Changes require a new ADR and pkl-gen-go re-run
+module oathmesh.policy
+
+/// Provenance (source) match criteria
+class SourceCriteria {
+  /// Source type glob (e.g., "github_actions")
+  type: String?
+  /// Repository glob pattern (e.g., "acme/storefront")
+  repo: String?
+  /// Workflow filename or glob (e.g., "deploy.yml")
+  workflow: String?
+}
+
+/// Match criteria for a policy rule — all specified fields must match (AND logic)
+/// Unspecified fields are wildcards
+class MatchCriteria {
+  /// Subject URI glob (e.g., "agent://repo/acme/*")
+  sub: String?
+  /// Action string exact match (e.g., "inventory.write")
+  act: String?
+  /// Scope values required — all listed must be present in token
+  scope: Listing<String>?
+  /// Environment label exact match (e.g., "prod")
+  env: String?
+  /// Source (provenance) criteria
+  src: SourceCriteria?
+}
+
+/// A single allow/deny rule
+class Rule {
+  /// Human-readable rule name — appears in audit events and deny messages
+  name: String(length > 0)
+  /// Match criteria — empty match = matches all requests
+  match: MatchCriteria = new {}
+  /// true = allow on match; false = deny on match
+  allow: Boolean
+}
+
+/// Root policy document
+class Policy {
+  /// Schema version — v1 only
+  version: Int(this == 1) = 1
+  /// Trusted issuer URLs (exact match, no wildcards)
+  issuers: Listing<String>(length > 0)
+  /// Audience URL(s) this policy applies to
+  audiences: Listing<String>(length > 0)
+  /// Rules evaluated in order; first match wins
+  /// MUST end with a default-deny rule: { name = "default", allow = false }
+  rules: Listing<Rule>(
+    length > 0,
+    last.name == "default",
+    last.allow == false
+  )
+}

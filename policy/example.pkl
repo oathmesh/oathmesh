@@ -1,0 +1,42 @@
+// policy/example.pkl
+// Annotated example policy for OathMesh
+// Validates against policy/schema.pkl
+amends "schema.pkl"
+
+version = 1
+
+issuers {
+  "https://issuer.oathmesh.dev"
+}
+
+audiences {
+  "https://inventory.internal"
+}
+
+rules {
+  new {
+    name = "storefront-read"
+    match {
+      sub = "agent://repo/acme/*"
+      act = "inventory.read"
+    }
+    allow = true
+  }
+  new {
+    name = "deploy-write"
+    match {
+      sub = "agent://repo/acme/deploy-bot"
+      act = "inventory.write"
+      src {
+        type = "github_actions"
+        repo = "acme/storefront"
+        workflow = "deploy.yml"
+      }
+    }
+    allow = true
+  }
+  new {
+    name = "default"
+    allow = false
+  }
+}
