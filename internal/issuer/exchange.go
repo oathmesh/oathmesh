@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/oathmesh/oathmesh/internal/sign"
@@ -64,6 +65,7 @@ type GitHubJWKS struct {
 }
 
 var (
+	githubJWKSMu    sync.RWMutex
 	githubJWKS      *GitHubJWKS
 	githubJWKSCache *cacheEntry
 )
@@ -74,7 +76,21 @@ type cacheEntry struct {
 }
 
 func fetchGitHubJWKS(ctx context.Context) (*GitHubJWKS, error) {
-	if githubJWKS != nil && time.Now().Before(githubJWKSCache.until) {
+	// Fast path: read-only cache check under RLock
+	githubJWKSMu.RLock()
+	if githubJWKS != nil && githubJWKSCache != nil && time.Now().Before(githubJWKSCache.until) {
+		result := githubJWKS
+		githubJWKSMu.RUnlock()
+		return result, nil
+	}
+	githubJWKSMu.RUnlock()
+
+	// Slow path: fetch under write lock
+	githubJWKSMu.Lock()
+	defer githubJWKSMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if githubJWKS != nil && githubJWKSCache != nil && time.Now().Before(githubJWKSCache.until) {
 		return githubJWKS, nil
 	}
 
