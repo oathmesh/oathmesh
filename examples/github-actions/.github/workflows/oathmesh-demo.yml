@@ -1,0 +1,50 @@
+name: OathMesh Demo Integration
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  oathmesh-workflow:
+    runs-on: ubuntu-latest
+    # Set to true to avoid breaking CI since public issuer URL may be offline or non-existent
+    continue-on-error: true
+
+    permissions:
+      id-token: write  # Critical: required for GitHub OIDC
+      contents: read
+
+    steps:
+      - name: Fetch GitHub Action OIDC Token
+        id: oidc
+        # In a real pipeline you use a custom action or native script, but here we capture it using curl viaACTIONS_ID_TOKEN_REQUEST_URL
+        run: |
+          TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                       "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://issuer.oathmesh.dev" | jq -r '.value')
+          echo "GH_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Exchange OIDC for OathMesh Token
+        id: exchange
+        run: |
+          # Exchange for OathMesh Token
+          # NOTE: https://issuer.oathmesh.dev must be live and reachable!
+          RESPONSE=$(curl -s -X POST "https://issuer.oathmesh.dev/v1/exchange/github" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "github_token": "'"$GH_TOKEN"'",
+                "audience": "https://inventory.internal",
+                "action": "deploy"
+              }')
+          
+          OATH_TOKEN=$(echo $RESPONSE | jq -r '.token')
+          if [ -z "$OATH_TOKEN" ] || [ "$OATH_TOKEN" == "null" ]; then
+             echo "Exchange failed. Verify the issuer is hosted."
+             exit 1
+          fi
+          echo "OATH_TOKEN=$OATH_TOKEN" >> $GITHUB_ENV
+
+      - name: Invoke Target API Protected by OathMesh
+        run: |
+          # The target API enforces validation 
+          curl -H "Authorization: OathMesh $OATH_TOKEN" \
+               https://target-inventory.internal.company.com/deploy
