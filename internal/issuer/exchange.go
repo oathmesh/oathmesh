@@ -65,7 +65,12 @@ type GitHubJWKS struct {
 }
 
 var (
+	// githubJWKSMu synchronizes concurrent reads and writes to the cache payload.
+	// We mandate explicit RLock usage for standard token resolutions preventing
+	// data races under load, and escalate to full Lock access linearly during HTTP fetch.
 	githubJWKSMu    sync.RWMutex
+	
+	// githubJWKS and githubJWKSCache strictly require githubJWKSMu locking before access.
 	githubJWKS      *GitHubJWKS
 	githubJWKSCache *cacheEntry
 )
