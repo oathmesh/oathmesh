@@ -24,10 +24,11 @@ const (
 // JWKSCache fetches and caches JWKS from issuer endpoints.
 // Thread-safe via sync.RWMutex. Refreshes on kid miss.
 type JWKSCache struct {
-	mu      sync.RWMutex
-	entries map[string]*jwksCacheEntry // keyed by issuer URL
-	client  *http.Client
-	ttl     time.Duration
+	mu             sync.RWMutex
+	entries        map[string]*jwksCacheEntry // keyed by issuer URL
+	client         *http.Client
+	ttl            time.Duration
+	trustedIssuers []string // allowlist of permitted issuer URLs (SSRF protection)
 }
 
 type jwksCacheEntry struct {
@@ -38,15 +39,30 @@ type jwksCacheEntry struct {
 
 // NewJWKSCache creates a new JWKS cache with the given TTL.
 // Uses a dedicated http.Client with 5-second timeout — never http.DefaultClient.
-func NewJWKSCache(ttl time.Duration) *JWKSCache {
+// Optional trustedIssuers allowlist prevents SSRF attacks.
+func NewJWKSCache(ttl time.Duration, trustedIssuers ...string) *JWKSCache {
 	if ttl <= 0 {
 		ttl = DefaultJWKSCacheTTL
 	}
 	return &JWKSCache{
-		entries: make(map[string]*jwksCacheEntry),
-		client:  &http.Client{Timeout: JWKSFetchTimeout},
-		ttl:     ttl,
+		entries:        make(map[string]*jwksCacheEntry),
+		client:         &http.Client{Timeout: JWKSFetchTimeout},
+		ttl:            ttl,
+		trustedIssuers: trustedIssuers,
 	}
+}
+
+// isTrusted checks if the issuer URL is in the allowlist.
+func (c *JWKSCache) isTrusted(issuerURL string) bool {
+	if len(c.trustedIssuers) == 0 {
+		return true // No allowlist = trust all (backward compatibility)
+	}
+	for _, trusted := range c.trustedIssuers {
+		if trusted == issuerURL {
+			return true
+		}
+	}
+	return false
 }
 
 // GetKey returns the public key for the given issuer URL and kid.
@@ -96,6 +112,11 @@ func (c *JWKSCache) fetchAndCache(issuerURL string, kid string) (ed25519.PublicK
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return nil, "", fmt.Errorf("issuer URL must use http or https: %s", issuerURL)
+	}
+
+	// Check trusted issuers allowlist (CodeQL go/request-forgery fix)
+	if !c.isTrusted(issuerURL) {
+		return nil, "", fmt.Errorf("issuer not in allowlist: %s", issuerURL)
 	}
 
 	jwksURL := issuerURL + "/.well-known/jwks.json"

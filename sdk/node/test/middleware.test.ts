@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import express, { type Request, type Response } from 'express';
 import request from 'supertest';
+import rateLimit from 'express-rate-limit';
 import { verifyToken, verifyOathToken, extractToken, OathMeshError } from '../src/index';
 import type { VerifierConfig, VerifiedCallerContext } from '../src/types';
 
@@ -62,6 +63,12 @@ describe('Express verifyToken middleware', () => {
 
   function createApp(cfg?: VerifierConfig) {
     const app = express();
+    // Rate limiter for DoS protection (CodeQL js/missing-rate-limiting fix)
+    const limiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+    });
+    app.use(limiter);
     app.use(verifyToken(cfg ?? config));
     app.get('/', (_req: Request, res: Response) => {
       res.json({ ok: true, caller: _req.oathmeshContext });
