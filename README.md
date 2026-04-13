@@ -64,7 +64,7 @@
 |----------|---------|------------|
 | **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
 | **Node.js** | [`@oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh/tree/main/sdk/node) | Express, **Next.js** (App, Pages, Edge) |
-| **Python** | [`oathmesh`](https://github.com/oathmesh/oathmesh/releases) | FastAPI, Flask, Django |
+| **Python** | [`oathmesh-sdk`](https://github.com/oathmesh/oathmesh/releases) | FastAPI, Flask, Django |
 
 ### SDK Feature Comparison
 
@@ -149,7 +149,7 @@ pnpm add @oathmesh/oathmesh
 ### Python
 
 ```bash
-pip install oathmesh
+pip install oathmesh-sdk
 # or
 poetry add oathmesh
 ```
