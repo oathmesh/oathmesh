@@ -38,11 +38,11 @@ lint: ## Run golangci-lint
 
 # ── Docker ───────────────────────────────────────────────────────────────────
 
-docker-up: ## Start all services via docker-compose
-	docker-compose up -d --build
+docker-up: ## Start all services via docker compose
+	docker compose up -d --build
 
 docker-down: ## Stop all services
-	docker-compose down
+	docker compose down
 
 # ── Demo ─────────────────────────────────────────────────────────────────────
 
@@ -54,7 +54,7 @@ demo: ## Run the golden-path end-to-end demo
 conformance: ## Run cross-SDK conformance tests (requires services running)
 	@echo "Running cross-SDK conformance suite..."
 	@echo "Ensure issuer, chi-api, express-api, and fastapi-api are running"
-	@echo "via: docker-compose up -d issuer chi-api express-api fastapi-api"
+	@echo "via: docker compose up -d issuer chi-api express-api fastapi-api"
 	@bash conformance/run_all.sh
 
 # ── Benchmarks ─────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ audit-prep: ## Run pre-audit checks (tests, lint, vulnerability scan)
 	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || echo "Warning: golangci-lint not installed"
 	@echo ""
 	@echo "3. Checking for vulnerabilities..."
-	@command -v govulncheck >/dev/null 2>&1 && govulncheck ./... || echo "Warning: govulncheck not installed - install with: go install golang.org/vuln/cmd/govulncheck@latest"
+	@command -v govulncheck >/dev/null 2>&1 && govulncheck ./... || echo "Warning: govulncheck not installed - install with: go install golang.org/x/vuln/cmd/govulncheck@latest"
 	@echo ""
 	@echo "Pre-audit checks complete."
 

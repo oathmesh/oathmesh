@@ -49,7 +49,7 @@ jobs:
           go-version: '1.23'
 
       - name: Install govulncheck
-        run: go install golang.org/vuln/cmd/govulncheck@latest
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Run govulncheck
         run: govulncheck ./...
@@ -115,10 +115,10 @@ jobs:
         run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
 
       - name: Generate test key
-        run: openssl genpkey -algorithm Ed25519 -o conformance/test-key.pem
+        run: openssl genpkey -algorithm Ed25519 -out conformance/test-key.pem
 
       - name: Start Docker services
-        run: docker-compose up -d --build issuer chi-api express-api fastapi-api redis
+        run: docker compose up -d --build issuer chi-api express-api fastapi-api redis
 
       - name: Wait for services
         run: |
@@ -149,4 +149,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker-compose down
+        run: docker compose down
