@@ -107,3 +107,4 @@ def check_oathmesh():
 | [Python SDK](../sdk/python/README.md) | Full SDK reference |
 | [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
 | [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
+| [Threat Model](../docs/security/threat-model.md) | Security model |

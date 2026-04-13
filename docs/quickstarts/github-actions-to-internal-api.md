@@ -117,6 +117,8 @@ new {
 | Document | Description |
 |----------|-------------|
 | [Protocol: Token Exchange](link-to-be-added) | OIDC exchange flow details |
+| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes and meanings |
 | [Security: Threat Model](../docs/security/threat-model.md) | Security model |
 | [Config: Pkl Policy Guide](../config/pkl-policy-guide.md) | Policy DSL reference |
 | [Protocol: Source Provenance](../docs/protocol/claim-reference.md) | `src` claim details |

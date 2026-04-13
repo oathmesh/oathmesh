@@ -146,3 +146,8 @@ Now that you have a running demo, protect your own APIs:
 | [CLI Reference](../docs/cli-reference.md) | Full CLI documentation |
 | [Protocol: Token Format](../docs/protocol/token-format.md) | Token structure |
 | [Protocol: Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline |
+| [Protocol: Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
+| [Security: Threat Model](../docs/security/threat-model.md) | Security model |
+| [Go SDK](../sdk/go/middleware/README.md) | Full middleware reference |
+| [Node SDK](../sdk/node/README.md) | Full SDK reference |
+| [Python SDK](../sdk/python/README.md) | Full SDK reference |

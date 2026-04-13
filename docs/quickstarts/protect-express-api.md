@@ -76,3 +76,4 @@ curl -H "Authorization: OathMesh $TOKEN" http://localhost:3000/inventory
 | [Node SDK](../sdk/node/README.md) | Full SDK reference |
 | [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
 | [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
+| [Threat Model](../docs/security/threat-model.md) | Security model |

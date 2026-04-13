@@ -114,3 +114,4 @@ export const config = {
 | [Node SDK](../sdk/node/README.md) | Full SDK reference for Express/Next.js |
 | [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
 | [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
+| [Threat Model](../docs/security/threat-model.md) | Security model |
