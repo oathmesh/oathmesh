@@ -15,6 +15,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -164,6 +165,11 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		))
 	}
 
+	// ES256 deprecation warning
+	if jwksAlg == "ES256" {
+		log.Printf("WARN: ES256 key detected in JWKS. ES256 requires a secure nonce; Ed25519 is recommended. Plan migration to EdDSA. ES256 support will be removed in v2.0.")
+	}
+
 	// ── Step 06: Verify JWS signature ───────────────────────────────────
 	// alg in token header MUST match alg registered for that kid in JWKS.
 	// Algorithm confusion attack: reject if mismatch.
@@ -252,6 +258,16 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 				"ensure the request body has not been modified since the token was minted",
 			))
 		}
+	}
+
+	// ── Step 12b: Enforce rqh if RequireRequestBinding is set ───────────
+	// If config requires binding but token has no rqh claim → reject.
+	if cfg.RequireRequestBinding && claims.RQH == "" {
+		return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+			core.ErrBindingRequired,
+			"token missing rqh (request hash) claim",
+			"mint a token with rqh= sha256:<canonical-request> for write/mutate operations",
+		))
 	}
 
 	// ── Step 13: Check replay cache ─────────────────────────────────────

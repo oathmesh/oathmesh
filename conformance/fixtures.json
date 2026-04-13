@@ -63,6 +63,13 @@
       "expect_status": 401,
       "expect_error_code": "claim_invalid",
       "description": "Token with iat in future should be rejected"
+    },
+    {
+      "id": "rqh_binding_mismatch",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoidGVzdC1qdGktYiIsInJxaCI6InNoYTI1Njp3cm9uZy1oYXNoLW1pc21hdGNoIn0.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "binding_mismatch",
+      "description": "Token with rqh claim that doesn't match request hash should be rejected"
     }
   ],
   "notes": "Dynamic fixtures (valid_token, expired_token, replayed_token) are generated at test-run time in the shell runners. not_yet_valid_iat and ttl_over_300s are now static fixtures (not_yet_valid_iat is time-independent because it checks future iat, ttl is tested via payload decoding)."

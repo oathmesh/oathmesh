@@ -57,6 +57,17 @@ conformance: ## Run cross-SDK conformance tests (requires services running)
 	@echo "via: docker-compose up -d issuer chi-api express-api fastapi-api"
 	@bash conformance/run_all.sh
 
+# ── Benchmarks ─────────────────────────────────────────────────────────────────
+
+bench: ## Run Go benchmarks and output to bench.txt
+	@echo "Running Go benchmarks..."
+	@echo "# OathMesh Benchmarks - $$(date)" > bench.txt
+	@echo "" >> bench.txt
+	go test -bench=. -benchmem -run=^$$ ./internal/verify/... ./internal/sign/... 2>&1 | tee -a bench.txt
+	@echo ""
+	@echo "Results saved to bench.txt"
+	@echo "Update ARCHITECTURE.md with real measured numbers using: make update-arch"
+
 # ── Codegen ──────────────────────────────────────────────────────────────────
 
 pkl-gen: ## Regenerate Go code from Pkl policy schema

@@ -15,12 +15,12 @@ OathMesh uses **Ed25519** (via Go's `crypto/ed25519` stdlib package) as the prim
 ## Key Identifier Format
 
 ```
-issuer-key-YYYY-MM
+issuer-key-YYYY-MM-{random-hex}
 ```
 
-Example: `issuer-key-2026-04`
+Example: `issuer-key-2026-04-a3f1`
 
-The `kid` is included in every token header and every JWKS key entry. Receivers use it to locate the correct public key for signature verification.
+The format includes a 4-character random hex suffix to allow multiple keys in the same month without ambiguity during emergency rotation. The `kid` is included in every token header and every JWKS key entry. Receivers use it to locate the correct public key for signature verification.
 
 ## Key Loading
 

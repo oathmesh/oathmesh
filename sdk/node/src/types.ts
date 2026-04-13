@@ -48,6 +48,7 @@ export type ErrorCode =
   | 'replay_detected'
   | 'policy_denied'
   | 'binding_mismatch'
+  | 'binding_required'
   | 'verification_failed';
 
 /** Structured error returned on verification failure. */
@@ -78,6 +79,13 @@ export interface VerifierConfig {
   audience: string;
   /** Trusted issuer URLs (explicit allowlist — no wildcards, no auto-discovery). */
   trustedIssuers: string[];
+  /**
+   * Enforces that tokens MUST include an rqh claim.
+   * When true, tokens without rqh are rejected with error "binding_required".
+   * Recommended for all write/mutate endpoints to prevent tampering.
+   * Default: false (for backward compatibility).
+   */
+  requireRequestBinding?: boolean;
   /**
    * Called on every denied request. Use for logging, metrics, or alerting.
    * Runs after the error response is determined but before it is sent.

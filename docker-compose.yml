@@ -36,11 +36,11 @@ services:
       - private_key
 
   # ── OathMesh Gateway ───────────────────────────────────────────────────────
+  # Separate images limit attack surface per container.
   gateway:
     build:
       context: .
-      dockerfile: Dockerfile.issuer
-    command: ["./bin/oathmesh", "serve", "--gateway"]
+      dockerfile: Dockerfile.gateway
     ports:
       - "4001:4000"
     environment:
