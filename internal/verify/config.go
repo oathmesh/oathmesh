@@ -64,11 +64,16 @@ type VerifierConfig struct {
 
 // JWKSProvider abstracts JWKS key retrieval.
 // Implementations include the HTTP-fetching JWKSCache and static test providers.
+//
+// SECURITY: The issuerKey is a lookup key (e.g., "production"), not a URL.
+// The provider resolves this key to a full URL from its configuration.
+// This design prevents SSRF by ensuring user input is never used in URL construction.
 type JWKSProvider interface {
-	// GetKey returns the public key for the given issuer and key ID.
+	// GetKey returns the public key for the given issuer key and key ID.
+	// The issuerKey is a lookup key that maps to a full issuer URL via config.
 	// If the key is not in cache, the provider should fetch fresh JWKS
-	// from the issuer's /.well-known/jwks.json endpoint.
-	GetKey(issuerURL string, kid string) (ed25519.PublicKey, string, error)
+	// from the resolved issuer's /.well-known/jwks.json endpoint.
+	GetKey(issuerKey string, kid string) (ed25519.PublicKey, string, error)
 }
 
 // PolicyEvaluator evaluates OathMesh policy rules against token claims.

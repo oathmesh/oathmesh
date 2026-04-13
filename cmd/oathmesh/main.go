@@ -30,11 +30,11 @@ var (
 // ValidSubjectSchemes defines the allowed URI schemes for --sub.
 // OathMesh subjects MUST use one of these standardized schemes.
 var ValidSubjectSchemes = []string{
-	"svc://",     // services and microservices
-	"agent://",   // AI agents and bots
-	"job://",     // CI/CD jobs
-	"tool://",    // MCP-adjacent tool clients
-	"user://",    // human delegation context only
+	"svc://",   // services and microservices
+	"agent://", // AI agents and bots
+	"job://",   // CI/CD jobs
+	"tool://",  // MCP-adjacent tool clients
+	"user://",  // human delegation context only
 }
 
 func main() {
@@ -222,7 +222,7 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		// Default: fetch JWKS from the iss claim URL
-		jwksProvider = verify.NewJWKSCache(verify.DefaultJWKSCacheTTL)
+		jwksProvider = verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil)
 		// If no issuers specified, extract from token (unverified) for JWKS fetch,
 		// but the verify pipeline will still check against trusted issuers.
 		if len(issuers) == 0 {
@@ -413,7 +413,7 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 		vCfg := &verify.VerifierConfig{
 			Audience:        audience,
 			TrustedIssuers:  issuers,
-			JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL),
+			JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil),
 			ReplayCache:     verify.NewMemoryReplayCache(),
 			PolicyEvaluator: evaluator,
 			AuditSink:       audit.NewStdoutAuditSink(),
@@ -428,7 +428,7 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to initialize gateway proxy: %w", err)
 		}
-		
+
 		srv.SetGateway(gwHandler)
 	}
 

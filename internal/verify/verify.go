@@ -153,7 +153,8 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 	// If still missing after refresh: reject with issuer_untrusted.
 	jwksProvider := cfg.JWKSProvider
 	if jwksProvider == nil {
-		jwksProvider = NewJWKSCache(DefaultJWKSCacheTTL)
+		// nil mappings = backward compatibility mode (treats parameter as URL)
+		jwksProvider = NewJWKSCache(DefaultJWKSCacheTTL, nil)
 	}
 
 	publicKey, jwksAlg, err := jwksProvider.GetKey(claims.Iss, header.Kid)

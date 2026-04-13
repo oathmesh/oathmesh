@@ -11,10 +11,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/oathmesh/oathmesh/sdk/go/middleware"
-	"github.com/oathmesh/oathmesh/internal/verify"
-	"github.com/oathmesh/oathmesh/internal/policy"
 	"github.com/oathmesh/oathmesh/internal/audit"
+	"github.com/oathmesh/oathmesh/internal/policy"
+	"github.com/oathmesh/oathmesh/internal/verify"
+	"github.com/oathmesh/oathmesh/sdk/go/middleware"
 )
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 	cfg := &verify.VerifierConfig{
 		Audience:        audience,
 		TrustedIssuers:  issuers,
-		JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL),
+		JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil),
 		ReplayCache:     verify.NewMemoryReplayCache(),
 		PolicyEvaluator: evaluator,
 		AuditSink:       audit.NewStdoutAuditSink(),
