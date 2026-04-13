@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "oathmesh-sdk"
-version = "1.0.18"
+name = "oathmesh"
+version = "1.0.19"
 license = { text = "MIT" }
 description = "OathMesh verification SDK for Python — FastAPI, Flask, Django"
 readme = "README.md"
