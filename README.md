@@ -22,7 +22,7 @@
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
     <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
   </a>
-  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
+  <a href="https://github.com/oathmesh/oathmesh/pkgs/npm/@oathmesh/oathmesh">
     <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
   </a>
   <a href="https://pypi.org/project/oathmesh/">
@@ -63,7 +63,7 @@
 | Language | Package | Frameworks |
 |----------|---------|------------|
 | **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
-| **Node.js** | [`@oathmesh/oathmesh`](https://www.npmjs.com/package/@oathmesh/oathmesh) | Express, **Next.js** (App, Pages, Edge) |
+| **Node.js** | [`@oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh/pkgs/npm/@oathmesh/oathmesh) | Express, **Next.js** (App, Pages, Edge) |
 | **Python** | [`oathmesh`](https://pypi.org/project/oathmesh/) | FastAPI, Flask, Django |
 
 ### SDK Feature Comparison
