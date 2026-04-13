@@ -110,7 +110,6 @@ jobs:
   # ── Python SDK Publish to PyPI ─────────────────────────────────────────────
   publish-pypi:
     needs: build-python
-    environment: pypi
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v5
@@ -118,10 +117,9 @@ jobs:
           name: python-dist
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          pip install twine
+          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_TOKEN }} --non-interactive
 
   # ── Docker GHCR Publish ──────────────────────────────────────────────────────
   publish-docker:
