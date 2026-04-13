@@ -72,10 +72,16 @@ jobs:
           npm install
           npm run build
 
+      - name: Configure npm for GitHub Package Registry
+        run: |
+          cd sdk/node
+          echo "@oathmesh:registry=https://npm.pkg.github.com/" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
       - name: Publish to GitHub Package Registry
         run: |
           cd sdk/node
-          npm publish --access public --registry=https://npm.pkg.github.com
+          npm publish --access public
 
       - name: Publish to npmjs.org
         env:
