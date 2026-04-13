@@ -117,7 +117,7 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.oathmesh }}
         run: |
           pip install twine
           twine upload dist/* --username __token__ --password "$PYPI_TOKEN" --non-interactive
