@@ -25,7 +25,7 @@
   <a href="https://github.com/oathmesh/oathmesh/tree/main/sdk/node">
     <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
   </a>
-  <a href="https://github.com/oathmesh/oathmesh/tree/main/sdk/python">
+  <a href="https://github.com/oathmesh/oathmesh/releases">
     <img src="https://img.shields.io/pypi/v/oathmesh.svg" alt="pypi version">
   </a>
   <a href="https://github.com/oathmesh/oathmesh/releases">
@@ -64,7 +64,7 @@
 |----------|---------|------------|
 | **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
 | **Node.js** | [`@oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh/tree/main/sdk/node) | Express, **Next.js** (App, Pages, Edge) |
-| **Python** | [`oathmesh`](https://github.com/oathmesh/oathmesh/tree/main/sdk/python) | FastAPI, Flask, Django |
+| **Python** | [`oathmesh`](https://github.com/oathmesh/oathmesh/releases) | FastAPI, Flask, Django |
 
 ### SDK Feature Comparison
 
