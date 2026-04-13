@@ -51,16 +51,19 @@ jobs:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
 
-  # ── Node SDK Publish (GPR) ───────────────────────────────────────────────────
+  # ── Node SDK Publish (npm) ───────────────────────────────────────────────────
   publish-node:
     runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@oathmesh'
+          registry-url: 'https://registry.npmjs.org/'
       - name: Update version
         run: |
           VERSION=${TAG#v}
@@ -71,12 +74,13 @@ jobs:
           cd sdk/node
           npm install
           npm run build
-      - name: Publish to GitHub Packages
+      - name: Publish to npm
         run: |
           cd sdk/node
-          npm publish
+          npm publish --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GPR_TOKEN || secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Still useful for some setups, but NPM_TOKEN isn't strictly needed for OIDC if configured correctly on npm
+
 
   # ── Python SDK Build ────────────────────────────────────────────────────────
   build-python:
