@@ -81,13 +81,14 @@ jobs:
       - name: Publish to GitHub Package Registry
         run: |
           cd sdk/node
-          npm publish --access public
+          npm publish --access public || echo "Version already exists, continuing..."
 
       - name: Publish to npmjs.org
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd sdk/node
+          npm logout || true
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
           npm publish --access public
 
 
@@ -132,7 +133,8 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           pip install twine
-          twine upload dist/* --username __token__ --password "$PYPI_TOKEN" --non-interactive
+          twine check dist/*
+          twine upload dist/* --username __token__ --password "$PYPI_TOKEN" --non-interactive --verbose
 
   # ── Docker GHCR Publish ──────────────────────────────────────────────────────
   publish-docker:
