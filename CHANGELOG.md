@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.6] - 2026-04-13
+
+### Security
+- Fixed SSRF vulnerability in JWKS fetch (CodeQL go/request-forgery)
+  - Added `NewFixedJWKS()` with hardcoded URL - user input completely ignored
+  - Pre-computed JWKS URLs in config - no string concatenation
+  - Rate limiting added to test suite
+- Updated Go toolchain to 1.26
 
 ### Added
 - Cross-SDK conformance test suite with fixtures and runners
@@ -28,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - JWKS cache now properly respects TTL with emergency override capability
+
+## [Unreleased]
+
+### Added
 - Demo script health polling loop fixed
 - SDK parity across Go, Node.js, and Python implementations
 
