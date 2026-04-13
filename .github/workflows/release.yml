@@ -72,11 +72,11 @@ jobs:
           npm install
           npm run build
       - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd sdk/node
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 
   # ── Python SDK Build ────────────────────────────────────────────────────────
@@ -114,9 +114,11 @@ jobs:
           name: python-dist
           path: dist/
       - name: Publish to PyPI
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           pip install twine
-          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_TOKEN }} --non-interactive
+          twine upload dist/* --username __token__ --password "$PYPI_TOKEN" --non-interactive
 
   # ── Docker GHCR Publish ──────────────────────────────────────────────────────
   publish-docker:
