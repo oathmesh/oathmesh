@@ -93,7 +93,9 @@ jobs:
           cd sdk/python
           sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
       - name: Install build
-        run: pip install build
+        run: pip install --no-cache-dir build
+      - name: Clean Python dist
+        run: rm -rf sdk/python/dist/
       - name: Build distribution
         run: |
           cd sdk/python
