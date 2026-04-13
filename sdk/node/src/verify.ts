@@ -162,7 +162,7 @@ export async function verifyOathToken(
       scope: payload.scope as string[] | undefined,
       env: payload.env as string | undefined,
     };
-    const decision = config.policyEvaluator.evaluate(policyInput);
+    const decision = await config.policyEvaluator.evaluate(policyInput);
     if (decision.outcome === 'deny') {
       throw new OathMeshError(
         'policy_denied',
