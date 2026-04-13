@@ -14,6 +14,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/issuer
+  TAG: ${{ github.ref_name }}
 
 jobs:
   # ── Go Binary Build ──────────────────────────────────────────────────────────
@@ -60,6 +61,11 @@ jobs:
           node-version: '22'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@oathmesh'
+      - name: Update version
+        run: |
+          VERSION=${TAG#v}
+          cd sdk/node
+          npm version $VERSION --no-git-tag-version
       - name: Install & Build
         run: |
           cd sdk/node
@@ -80,6 +86,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Update version
+        run: |
+          VERSION=${TAG#v}
+          cd sdk/python
+          sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
       - name: Install build
         run: pip install build
       - name: Build distribution
@@ -91,6 +102,21 @@ jobs:
         with:
           name: python-dist
           path: sdk/python/dist/
+
+  # ── Python SDK Publish to PyPI ─────────────────────────────────────────────
+  publish-pypi:
+    needs: build-python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: python-dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release-v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
 
   # ── Docker GHCR Publish ──────────────────────────────────────────────────────
   publish-docker:
@@ -119,7 +145,7 @@ jobs:
 
   # ── Create GitHub Release ─────────────────────────────────────────────────────
   release:
-    needs: [build-binaries, publish-node, build-python, publish-docker]
+    needs: [build-binaries, publish-node, build-python, publish-docker, publish-pypi]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
