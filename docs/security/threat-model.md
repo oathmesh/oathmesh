@@ -1,5 +1,13 @@
 # Threat Model
 
+<p align="center">
+  <b>Security model, threats, and mitigations.</b>
+</p>
+
+---
+
+> 🔒 **Report vulnerabilities** per our [Security Policy](../../SECURITY.md). Do NOT open public issues for security issues.
+
 ## Scope
 
 This document covers threats to OathMesh as a machine-call identity system. It does not cover user authentication, browser security, or infrastructure-level attacks (those belong to your cloud provider's threat model).
@@ -94,3 +102,14 @@ These properties must hold at all times:
 6. Audit events fire on every verification — allow and deny
 7. TTL never exceeds 300 seconds
 8. `jti` is always cryptographically random (UUID)
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Replay Defense](replay-defense.md) | Detailed replay attack mitigation |
+| [Key Management](key-management.md) | Private key handling best practices |
+| [Logging Guidance](logging-guidance.md) | Secure logging practices |
+| [Security Policy](../../SECURITY.md) | Reporting vulnerabilities |

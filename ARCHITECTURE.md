@@ -1,5 +1,7 @@
 # Architecture
 
+> 📐 Technical design, system components, and data flows for OathMesh.
+
 ## System Diagram
 
 ```
@@ -139,3 +141,33 @@ Caller          Gateway              Upstream
 | Config DSL | Apple Pkl | Schema validation at load time, type safety |
 | Audit | NDJSON to stdout/file | Cloud-native, parseable, appendable |
 | Replay cache | In-memory / Redis | Memory for dev, Redis for production multi-instance |
+
+## Performance Characteristics
+
+> ⚡ Benchmarks coming soon. These are preliminary estimates.
+
+| Operation | Latency (p99) | Notes |
+|-----------|---------------|-------|
+| Token mint | < 5ms | Ed25519 sign, in-memory key |
+| Token verify | < 2ms | 14-step pipeline, cached JWKS |
+| JWKS cache hit | < 0.1ms | In-memory LRU cache |
+| Policy eval | < 1ms | Pkl hot-reload, compiled rules |
+
+### Scaling Considerations
+
+- **Issuer:** Stateless, horizontally scalable (read JWKS from shared location)
+- **Verifier:** Stateless, scales with request volume
+- **Replay cache:** 
+  - Dev: In-memory (single instance)
+  - Prod: Redis (multi-instance, shared)
+- **Policy:** Hot-reload from filesystem, no external dependency
+
+## Decision Matrix
+
+| Decision | Choice | Alternative Considered |
+|----------|--------|----------------------|
+| Signing algorithm | Ed25519 | RSA, ECDH |
+| Token format | JWS (compact) | JWT, custom binary |
+| TTL max | 300s | 1h, 24h |
+| Policy DSL | Pkl | Rego (OPA), CEL |
+| Audit format | NDJSON | JSON Lines, syslog |

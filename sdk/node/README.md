@@ -1,10 +1,71 @@
 # @oathmesh/sdk
 
-OathMesh token verification for **Express.js** and **Next.js** — TypeScript-first.
+<p align="center">
+  <b>OathMesh token verification for Node.js</b> — TypeScript-first, Express & Next.js.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
+    <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
+  </a>
+  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
+    <img src="https://img.shields.io/npm/dm/@oathmesh/oathmesh" alt="npm downloads">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
+    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
+  </a>
+</p>
+
+---
+
+## Installation
 
 ```bash
-npm install @oathmesh/sdk
+npm install @oathmesh/oathmesh
+# or
+yarn add @oathmesh/oathmesh
+# or
+pnpm add @oathmesh/oathmesh
 ```
+
+### Requirements
+
+- Node.js 18+
+- Express 4+ (optional, middleware works with any framework)
+- Next.js 13+ (optional, for Next.js integrations)
+
+---
+
+## Quick Start
+
+```typescript
+import { verifyToken } from '@oathmesh/oathmesh';
+
+app.use(verifyToken({
+  audience: 'https://inventory.internal',
+  trustedIssuers: ['https://issuer.oathmesh.dev'],
+}));
+
+app.get('/inventory', (req, res) => {
+  const caller = req.oathmeshContext!;
+  res.json({ subject: caller.principal.subject });
+});
+```
+
+---
+
+## Framework Support
+
+| Framework | Integration | Export |
+|-----------|-------------|--------|
+| **Express** | Middleware | `@oathmesh/oathmesh` |
+| **Next.js App** | Route handler | `@oathmesh/oathmesh/next` |
+| **Next.js Pages** | API wrapper | `@oathmesh/oathmesh/next` |
+| **Next.js Edge** | Edge middleware | `@oathmesh/oathmesh/next` |
+| **Any** | Core verifier | `@oathmesh/oathmesh` |
 
 ---
 
@@ -12,7 +73,7 @@ npm install @oathmesh/sdk
 
 ```typescript
 import express from 'express';
-import { verifyToken } from '@oathmesh/sdk';
+import { verifyToken } from '@oathmesh/oathmesh';
 
 const app = express();
 
@@ -34,7 +95,7 @@ app.get('/inventory', (req, res) => {
 ```typescript
 // app/api/inventory/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { withOathMesh } from '@oathmesh/sdk/next';
+import { withOathMesh } from '@oathmesh/oathmesh/next';
 
 const oathmesh = withOathMesh({
   audience: 'https://inventory.internal',
@@ -56,7 +117,7 @@ export async function GET(request: NextRequest) {
 
 ```typescript
 // pages/api/inventory.ts
-import { withOathMeshApi } from '@oathmesh/sdk/next';
+import { withOathMeshApi } from '@oathmesh/oathmesh/next';
 
 export default withOathMeshApi(
   {
@@ -75,7 +136,7 @@ export default withOathMeshApi(
 ```typescript
 // middleware.ts (project root)
 import { NextRequest, NextResponse } from 'next/server';
-import { createEdgeVerifier } from '@oathmesh/sdk/next';
+import { createEdgeVerifier } from '@oathmesh/oathmesh/next';
 
 const verify = createEdgeVerifier({
   audience: 'https://inventory.internal',
@@ -101,7 +162,7 @@ export const config = {
 Use `verifyOathToken` directly in any runtime — Hono, Fastify, or raw Node:
 
 ```typescript
-import { verifyOathToken, extractToken, OathMeshError } from '@oathmesh/sdk';
+import { verifyOathToken, extractToken, OathMeshError } from '@oathmesh/oathmesh';
 
 const token = extractToken(headers.authorization);
 

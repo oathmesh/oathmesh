@@ -1,6 +1,16 @@
 # Quickstart: Local Demo with Docker Compose
 
-**Time:** ~10 minutes
+<p align="center">
+  <b>Get from zero to a fully working OathMesh demo in ~10 minutes.</b>
+</p>
+
+<p align="center">
+  <b>⏱️ Time:</b> ~10 minutes
+</p>
+
+---
+
+> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
 
 This guide gets you from zero to a fully working OathMesh demo using Docker Compose.
 
@@ -113,3 +123,26 @@ This runs all of the above steps automatically and validates each outcome.
 ```bash
 docker-compose down -v
 ```
+
+---
+
+## Next Steps
+
+Now that you have a running demo, protect your own APIs:
+
+- [Protect a Go chi API](protect-chi-api.md)
+- [Protect an Express API](protect-express-api.md)
+- [Protect a Next.js API](protect-nextjs-api.md)
+- [Protect a FastAPI service](protect-fastapi.md)
+- [GitHub Actions to internal API](github-actions-to-internal-api.md)
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](../ARCHITECTURE.md) | System design and package structure |
+| [CLI Reference](../docs/cli-reference.md) | Full CLI documentation |
+| [Protocol: Token Format](../docs/protocol/token-format.md) | Token structure |
+| [Protocol: Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline |

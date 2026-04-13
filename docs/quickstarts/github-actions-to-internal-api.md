@@ -1,6 +1,16 @@
 # Quickstart: GitHub Actions to Internal API
 
-**Time:** ~15 minutes
+<p align="center">
+  <b>Authenticate GitHub Actions workflows against internal APIs — zero long-lived secrets.</b>
+</p>
+
+<p align="center">
+  <b>⏱️ Time:</b> ~15 minutes
+</p>
+
+---
+
+> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
 
 This guide shows how a GitHub Actions workflow can authenticate against an internal API protected by OathMesh — zero long-lived secrets.
 
@@ -95,3 +105,18 @@ new {
 
 - [Run the full demo locally](local-demo-docker-compose.md)
 - [Policy configuration guide](../config/pkl-policy-guide.md)
+- [Protect a Go chi API](protect-chi-api.md)
+- [Protect an Express API](protect-express-api.md)
+- [Protect a Next.js API](protect-nextjs-api.md)
+- [Protect a FastAPI service](protect-fastapi.md)
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Protocol: Token Exchange](link-to-be-added) | OIDC exchange flow details |
+| [Security: Threat Model](../docs/security/threat-model.md) | Security model |
+| [Config: Pkl Policy Guide](../config/pkl-policy-guide.md) | Policy DSL reference |
+| [Protocol: Source Provenance](../docs/protocol/claim-reference.md) | `src` claim details |

@@ -1,12 +1,47 @@
 # OathMesh Go SDK
 
-Middleware for [chi](https://github.com/go-chi/chi), stdlib `net/http`, and any Go HTTP framework.
+<p align="center">
+  <b>Middleware for chi, stdlib net/http, and any Go HTTP framework.</b>
+</p>
+
+<p align="center">
+  <a href="https://pkg.go.dev/github.com/oathmesh/oathmesh/sdk/go/middleware">
+    <img src="https://img.shields.io/badge/Go-reference-blue" alt="Go Reference">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
+    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
+  </a>
+</p>
+
+---
 
 ## Installation
 
 ```bash
 go get github.com/oathmesh/oathmesh/sdk/go/middleware
 ```
+
+**Requirements:** Go 1.22+
+
+---
+
+## Quick Start
+
+```go
+cfg := &verify.VerifierConfig{
+    Audience:       "https://inventory.internal",
+    TrustedIssuers: []string{"https://issuer.oathmesh.dev"},
+}
+
+r := chi.NewRouter()
+r.Use(middleware.OathMeshMiddleware(cfg))
+r.Get("/inventory", handler)
+```
+
+---
 
 ## chi Middleware
 

@@ -1,6 +1,18 @@
 # OathMesh CLI Reference
 
-> OathMesh authenticates the caller. The receiver authorizes the request.
+<p align="center">
+  <b>Command-line interface for minting, serving, and verifying tokens.</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/oathmesh/oathmesh/releases">
+    <img src="https://img.shields.io/github/v/release/oathmesh/oathmesh" alt="CLI Version">
+  </a>
+</p>
+
+---
+
+> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
 
 ## Global Flags
 

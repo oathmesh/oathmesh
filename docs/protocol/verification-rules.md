@@ -1,5 +1,13 @@
 # Verification Rules — The 14 Steps
 
+<p align="center">
+  <b>The mandatory verification pipeline every receiver must execute.</b>
+</p>
+
+---
+
+> 📖 **New to OathMesh?** Start with [Concepts](../docs/concepts.md) and [Token Format](token-format.md).
+
 All receivers **must** perform all 14 verification steps in this exact order. No step may be skipped.
 
 ## Step 01 — Parse Structure

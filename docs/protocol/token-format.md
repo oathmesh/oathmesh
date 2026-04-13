@@ -1,5 +1,13 @@
 # Token Format
 
+<p align="center">
+  <b>Oath Token structure, headers, and claims reference.</b>
+</p>
+
+---
+
+> 📖 **New to OathMesh?** Start with [Concepts](../docs/concepts.md).
+
 ## Overview
 
 An Oath Token is a signed compact JWS consisting of three base64url-encoded segments separated by `.`:
@@ -74,3 +82,14 @@ Authorization: OathMesh <token>
 ```
 
 A compatibility mode using `Authorization: Bearer <token>` exists for upstreams that force it, but `OathMesh` is always preferred.
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Verification Rules](verification-rules.md) | 14-step verification pipeline |
+| [Claim Reference](claim-reference.md) | All claims detailed |
+| [Error Taxonomy](error-taxonomy.md) | Error codes |
+| [Audit Events](audit-events.md) | Audit logging |

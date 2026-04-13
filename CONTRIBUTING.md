@@ -1,5 +1,27 @@
 # Contributing to OathMesh
 
+> 💡 Welcome! Here's how to contribute to OathMesh.
+
+## Quick Reference Card
+
+```bash
+# Clone and setup
+git clone https://github.com/oathmesh/oathmesh.git
+cd oathmesh
+go mod download
+openssl genpkey -algorithm Ed25519 -out private.pem
+
+# Build & test
+make build           # Build CLI
+make test            # Run all tests
+make race            # Tests + race detector
+make lint            # Run linter
+
+# Run locally
+make docker-up       # Start services
+make demo            # Full demo
+```
+
 ## Development Setup
 
 ### Prerequisites
@@ -111,3 +133,40 @@ Architectural decisions are documented in `docs/decisions/`. Any change to:
 - Policy schema
 
 ...requires a new ADR before implementation.
+
+## PR Checklist
+
+Before submitting a pull request, verify:
+
+- [ ] All tests pass: `make test`
+- [ ] No race conditions: `make race`
+- [ ] No lint errors: `make lint`
+- [ ] Build succeeds: `make build`
+- [ ] Demo runs: `./demo.sh`
+- [ ] Docs updated if needed
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+## Quick Start Checklist
+
+```bash
+# 1. Fork & clone
+git clone https://github.com/YOUR_USERNAME/oathmesh.git
+cd oathmesh
+
+# 2. Create feature branch
+git checkout -b feature/your-feature
+
+# 3. Make changes, then test
+make race && make lint
+
+# 4. Commit with conventional message
+git commit -m "feat: add new verification step"
+
+# 5. Push and open PR
+git push -u origin feature/your-feature
+```
+
+## Issue Templates
+
+- 🐛 **[Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)** — Use for bugs
+- 💡 **[Feature Request](.github/ISSUE_TEMPLATE/feature_request.md)** — Use for new features

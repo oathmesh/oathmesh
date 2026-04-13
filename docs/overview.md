@@ -1,5 +1,25 @@
 # OathMesh Overview
 
+<p align="center">
+  <b>🔐 Short-lived, signed identity tokens for machine-to-machine calls.</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
+    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/releases">
+    <img src="https://img.shields.io/github/v/release/oathmesh/oathmesh" alt="Release">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
+  </a>
+</p>
+
+---
+
+> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+
 ## What Is OathMesh
 
 OathMesh is a micro-protocol and developer platform that gives every machine-to-machine call a short-lived, cryptographically signed identity. It replaces shared secrets—API keys, static tokens, long-lived credentials—with scoped, verifiable, auditable call assertions.

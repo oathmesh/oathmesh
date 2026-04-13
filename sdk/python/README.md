@@ -1,10 +1,69 @@
 # oathmesh
 
-OathMesh token verification SDK for Python — **fully typed, framework-agnostic**.
+<p align="center">
+  <b>OathMesh token verification SDK for Python</b> — fully typed, framework-agnostic.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/oathmesh/">
+    <img src="https://img.shields.io/pypi/v/oathmesh.svg" alt="PyPI version">
+  </a>
+  <a href="https://pypi.org/project/oathmesh/">
+    <img src="https://img.shields.io/pypi/dm/oathmesh" alt="PyPI downloads">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
+    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
+  </a>
+</p>
+
+---
+
+## Installation
 
 ```bash
 pip install oathmesh
+# or
+poetry add oathmesh
+# or
+pip install -e .[test]  # Development
 ```
+
+### Requirements
+
+- Python 3.9+
+- PyJWT >= 2.8.0
+- cryptography >= 41.0.0
+
+---
+
+## Quick Start
+
+```python
+from oathmesh import verify_token, VerifierConfig, OathMeshError
+
+config = VerifierConfig(
+    audience="https://inventory.internal",
+    trusted_issuers=["https://issuer.oathmesh.dev"],
+)
+
+# In your FastAPI/Flask route
+caller = verify_token(request.headers.get("authorization", ""), config)
+print(caller.principal.subject)  # "agent://repo/acme/deploy-bot"
+```
+
+---
+
+## Framework Support
+
+| Framework | Integration Method | Example |
+|-----------|-------------------|---------|
+| **FastAPI** | Dependency | `Depends(require_oathmesh)` |
+| **Flask** | Before request | `@app.before_request` |
+| **Django** | Decorator | `@require_oathmesh` |
+| **Any** | Core verifier | `verify_raw_token()` |
 
 ---
 

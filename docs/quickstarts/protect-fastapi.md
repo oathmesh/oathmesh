@@ -1,6 +1,16 @@
 # Quickstart: Protect a FastAPI Service
 
-**Time:** ~5 minutes
+<p align="center">
+  <b>Add OathMesh token verification to a FastAPI service.</b>
+</p>
+
+<p align="center">
+  <b>⏱️ Time:</b> ~5 minutes
+</p>
+
+---
+
+> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
 
 ## Prerequisites
 
@@ -84,3 +94,16 @@ def check_oathmesh():
 
 - [GitHub Actions to internal API](github-actions-to-internal-api.md)
 - [Run the full demo](local-demo-docker-compose.md)
+- [Protect an Express API](protect-express-api.md)
+- [Protect a Next.js API](protect-nextjs-api.md)
+- [Protect a Go chi API](protect-chi-api.md)
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Python SDK](../sdk/python/README.md) | Full SDK reference |
+| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |

@@ -1,5 +1,13 @@
 # OathMesh Concepts
 
+<p align="center">
+  <b>Core concepts, terminology, and architecture building blocks.</b>
+</p>
+
+---
+
+> 📖 **Start here** if you're new to OathMesh. See [Overview](overview.md) for the big picture.
+
 ## Oath Token
 
 An Oath Token is a compact, signed JWS (JSON Web Signature) that represents a single call assertion. It contains:
@@ -126,3 +134,14 @@ Every verification attempt—whether allowed or denied—emits a structured NDJS
 - `timestamp` and `request_id`
 
 **Rule:** Never log the full token string. Log `jti` + claim summary only. Never log private key material.
+
+---
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Token Format](../docs/protocol/token-format.md) | Detailed token structure, headers, claims |
+| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step verification pipeline |
+| [Threat Model](../docs/security/threat-model.md) | Security model and attack mitigation |
+| [Architecture](../ARCHITECTURE.md) | System diagrams and package structure |
