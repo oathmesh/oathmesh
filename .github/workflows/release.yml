@@ -63,7 +63,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org/'
+
       - name: Update version
         run: |
           VERSION=${TAG#v}
@@ -110,6 +110,7 @@ jobs:
   # ── Python SDK Publish to PyPI ─────────────────────────────────────────────
   publish-pypi:
     needs: build-python
+    environment: pypi
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v5
