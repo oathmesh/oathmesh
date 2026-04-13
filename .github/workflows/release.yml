@@ -123,6 +123,8 @@ jobs:
   publish-pypi:
     needs: build-python
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
     steps:
       - uses: actions/download-artifact@v5
         with:
