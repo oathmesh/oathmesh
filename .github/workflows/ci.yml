@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -34,7 +34,7 @@ jobs:
         run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
 
       - name: Upload binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: oathmesh-linux-amd64
           path: bin/oathmesh
@@ -42,7 +42,7 @@ jobs:
   vulnscan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -61,10 +61,10 @@ jobs:
       run:
         working-directory: sdk/node
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -83,7 +83,7 @@ jobs:
       run:
         working-directory: sdk/python
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -100,7 +100,7 @@ jobs:
     needs: [build, node-sdk, python-sdk]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -142,7 +142,7 @@ jobs:
           OATHMESH_ISSUER: http://localhost:4000
 
       - name: Upload results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: conformance-results

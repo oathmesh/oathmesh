@@ -34,7 +34,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
@@ -46,7 +46,7 @@ jobs:
           CGO_ENABLED: '0'
         run: go build -o ${{ matrix.name }} ./cmd/oathmesh
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
@@ -55,8 +55,8 @@ jobs:
   publish-node:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           registry-url: https://registry.npmjs.org/
@@ -96,7 +96,7 @@ jobs:
   build-python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -114,7 +114,7 @@ jobs:
           cd sdk/python
           python -m build
       - name: Upload Python Artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: python-dist
           path: sdk/python/dist/
@@ -126,7 +126,7 @@ jobs:
     environment:
       name: pypi
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: python-dist
           path: dist/
@@ -142,7 +142,7 @@ jobs:
   publish-docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -169,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
