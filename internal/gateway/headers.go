@@ -3,7 +3,7 @@ package gateway
 import (
 	"net/http"
 
-	"github.com/oathmesh/oathmesh/internal/core"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
 )
 
 const (

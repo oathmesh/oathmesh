@@ -7,12 +7,17 @@ on:
 
 permissions:
   contents: write
+  packages: write
+  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/issuer
 
 jobs:
-  build:
+  # ── Go Binary Build ──────────────────────────────────────────────────────────
+  build-binaries:
     strategy:
       matrix:
         include:
@@ -29,27 +34,92 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.23'
-
       - name: Build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: '0'
         run: go build -o ${{ matrix.name }} ./cmd/oathmesh
-
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
 
+  # ── Node SDK Publish (GPR) ───────────────────────────────────────────────────
+  publish-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@MustafaMahmoudAtta111'
+      - name: Install & Build
+        run: |
+          cd sdk/node
+          npm install
+          npm run build
+      - name: Publish to GitHub Packages
+        run: |
+          cd sdk/node
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GPR_TOKEN || secrets.GITHUB_TOKEN }}
+
+  # ── Python SDK Build ────────────────────────────────────────────────────────
+  build-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install build
+        run: pip install build
+      - name: Build distribution
+        run: |
+          cd sdk/python
+          python -m build
+      - name: Upload Python Artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: python-dist
+          path: sdk/python/dist/
+
+  # ── Docker GHCR Publish ──────────────────────────────────────────────────────
+  publish-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.issuer
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ── Create GitHub Release ─────────────────────────────────────────────────────
   release:
-    needs: build
+    needs: [build-binaries, publish-node, build-python, publish-docker]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -62,4 +132,6 @@ jobs:
             oathmesh-linux-amd64/oathmesh-linux-amd64
             oathmesh-darwin-arm64/oathmesh-darwin-arm64
             oathmesh-darwin-amd64/oathmesh-darwin-amd64
+            python-dist/*.whl
+            python-dist/*.tar.gz
           generate_release_notes: true

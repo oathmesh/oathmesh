@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oathmesh/oathmesh/internal/core"
-	"github.com/oathmesh/oathmesh/internal/sign"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
 )
 
 // Verify performs all 14 OathMesh verification steps and returns a

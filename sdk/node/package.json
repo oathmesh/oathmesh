@@ -1,6 +1,14 @@
 {
   "name": "@oathmesh/sdk",
   "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MustafaMahmoudAtta111/oathmesh.git",
+    "directory": "sdk/node"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "OathMesh verification SDK for Express.js and Next.js — TypeScript-first",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

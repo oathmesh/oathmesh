@@ -11,10 +11,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/oathmesh/oathmesh/sdk/go/middleware"
-	"github.com/oathmesh/oathmesh/internal/verify"
-	"github.com/oathmesh/oathmesh/internal/policy"
-	"github.com/oathmesh/oathmesh/internal/audit"
+	"github.com/MustafaMahmoudAtta111/oathmesh/sdk/go/middleware"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/verify"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/policy"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/audit"
 )
 
 func main() {

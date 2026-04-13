@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oathmesh/oathmesh/internal/core"
-	"github.com/oathmesh/oathmesh/internal/sign"
-	"github.com/oathmesh/oathmesh/internal/verify"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/verify"
 )
 
 // A stub keyset so we can mint real tokens for the mock

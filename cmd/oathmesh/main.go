@@ -13,12 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/oathmesh/oathmesh/internal/audit"
-	"github.com/oathmesh/oathmesh/internal/gateway"
-	"github.com/oathmesh/oathmesh/internal/issuer"
-	"github.com/oathmesh/oathmesh/internal/policy"
-	"github.com/oathmesh/oathmesh/internal/sign"
-	"github.com/oathmesh/oathmesh/internal/verify"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/audit"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/gateway"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/issuer"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/policy"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/verify"
 )
 
 var (

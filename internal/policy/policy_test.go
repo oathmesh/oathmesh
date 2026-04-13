@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oathmesh/oathmesh/internal/verify"
+	"github.com/MustafaMahmoudAtta111/oathmesh/internal/verify"
 )
 
 // ── Glob matching tests ─────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-module github.com/oathmesh/oathmesh
+module github.com/MustafaMahmoudAtta111/oathmesh
 
 go 1.23.0
 
