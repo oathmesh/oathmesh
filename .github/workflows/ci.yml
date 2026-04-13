@@ -116,7 +116,7 @@ jobs:
         run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
 
       - name: Generate test key
-        run: openssl genpkey -algorithm Ed25519 -out conformance/test-key.pem
+        run: openssl genpkey -algorithm Ed25519 -out private.pem
 
       - name: Start Docker services
         run: docker compose up -d --build issuer chi-api express-api fastapi-api redis
