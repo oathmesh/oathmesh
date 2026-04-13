@@ -38,6 +38,22 @@ jobs:
           name: oathmesh-linux-amd64
           path: bin/oathmesh
 
+  vulnscan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - name: Install govulncheck
+        run: go install golang.org/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+
   node-sdk:
     runs-on: ubuntu-latest
     defaults:

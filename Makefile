@@ -1,4 +1,4 @@
-.PHONY: help dev test test-all race lint build demo clean docker-up docker-down pkl-gen test-node test-python
+.PHONY: help dev test test-all race lint build demo clean docker-up docker-down pkl-gen test-node test-python audit-prep
 
 help: ## Show this help
 	@echo "OathMesh Makefile"
@@ -72,6 +72,22 @@ bench: ## Run Go benchmarks and output to bench.txt
 
 pkl-gen: ## Regenerate Go code from Pkl policy schema
 	pkl-gen-go --schema policy/schema.pkl --output internal/policy/generated.go
+
+# ── Audit ───────────────────────────────────────────────────────────────────────
+
+audit-prep: ## Run pre-audit checks (tests, lint, vulnerability scan)
+	@echo "Running pre-audit checks for OathMesh..."
+	@echo ""
+	@echo "1. Running Go tests..."
+	@go test ./... || { echo "TESTS FAILED"; exit 1; }
+	@echo ""
+	@echo "2. Running linter..."
+	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || echo "Warning: golangci-lint not installed"
+	@echo ""
+	@echo "3. Checking for vulnerabilities..."
+	@command -v govulncheck >/dev/null 2>&1 && govulncheck ./... || echo "Warning: govulncheck not installed - install with: go install golang.org/vuln/cmd/govulncheck@latest"
+	@echo ""
+	@echo "Pre-audit checks complete."
 
 # ── Cleanup ──────────────────────────────────────────────────────────────────
 
