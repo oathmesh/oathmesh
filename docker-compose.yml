@@ -74,6 +74,34 @@ services:
       issuer:
         condition: service_healthy
 
+  # ── Express API Example ───────────────────────────────────────────────────
+  express-api:
+    build:
+      context: .
+      dockerfile: examples/express-api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      OATHMESH_AUDIENCE: https://inventory.internal
+      OATHMESH_TRUSTED_ISSUERS: http://issuer:4000
+    depends_on:
+      issuer:
+        condition: service_healthy
+
+  # ── FastAPI API Example ───────────────────────────────────────────────────
+  fastapi-api:
+    build:
+      context: .
+      dockerfile: examples/fastapi-api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      OATHMESH_AUDIENCE: https://inventory.internal
+      OATHMESH_TRUSTED_ISSUERS: http://issuer:4000
+    depends_on:
+      issuer:
+        condition: service_healthy
+
 secrets:
   private_key:
     file: ./private.pem
