@@ -1,9 +1,9 @@
 {
-  "name": "@MustafaMahmoudAtta111/sdk",
+  "name": "@oathmesh/sdk",
   "version": "1.0.2",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MustafaMahmoudAtta111/oathmesh.git",
+    "url": "git+https://github.com/oathmesh/oathmesh.git",
     "directory": "sdk/node"
   },
   "publishConfig": {

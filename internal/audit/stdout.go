@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 // StdoutAuditSink writes NDJSON audit events to stdout.

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/verify"
+	"github.com/oathmesh/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
 type callerContextKey struct{}

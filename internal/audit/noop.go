@@ -3,7 +3,7 @@ package audit
 import (
 	"context"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 // NoopAuditSink discards all audit events.

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
 // ── Test helpers ────────────────────────────────────────────────────────────

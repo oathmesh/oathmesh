@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 // MemoryReplayCache implements core.ReplayCache for dev and single-instance deployments.

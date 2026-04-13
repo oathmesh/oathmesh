@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
 type mockKeySet struct{}

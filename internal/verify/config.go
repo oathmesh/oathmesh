@@ -4,7 +4,7 @@ import (
 	"crypto/ed25519"
 	"time"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 // AllowedAlgorithms is the set of JWS algorithms accepted by OathMesh.

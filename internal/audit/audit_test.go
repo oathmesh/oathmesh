@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 func testEvent() *core.AuditEvent {

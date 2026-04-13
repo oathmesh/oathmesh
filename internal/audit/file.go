@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/core"
 )
 
 // FileAuditSink writes NDJSON audit events to a file.

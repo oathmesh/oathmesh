@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
 const (

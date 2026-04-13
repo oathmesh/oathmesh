@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/MustafaMahmoudAtta111/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
 type MintRequest struct {

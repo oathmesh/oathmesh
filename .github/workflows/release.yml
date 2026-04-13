@@ -59,7 +59,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@MustafaMahmoudAtta111'
+          scope: '@oathmesh'
       - name: Install & Build
         run: |
           cd sdk/node
