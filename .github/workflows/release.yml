@@ -71,7 +71,13 @@ jobs:
           cd sdk/node
           npm install
           npm run build
-      - name: Publish to npm
+
+      - name: Publish to GitHub Package Registry
+        run: |
+          cd sdk/node
+          npm publish --access public --registry=https://npm.pkg.github.com
+
+      - name: Publish to npmjs.org
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
