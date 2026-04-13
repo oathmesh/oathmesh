@@ -1,6 +1,10 @@
 # Quickstart: Protect a Next.js API
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Add OathMesh token verification to Next.js APIs (App Router, Pages Router, or Edge).</b>
 </p>
 

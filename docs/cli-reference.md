@@ -1,6 +1,10 @@
 # OathMesh CLI Reference
 
 <p align="center">
+  <img src="../assets/logo.png" width="100" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Command-line interface for minting, serving, and verifying tokens.</b>
 </p>
 

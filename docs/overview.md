@@ -1,6 +1,10 @@
 # OathMesh Overview
 
 <p align="center">
+  <img src="../assets/logo.png" width="120" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>🔐 Short-lived, signed identity tokens for machine-to-machine calls.</b>
 </p>
 

@@ -1,6 +1,10 @@
 # OathMesh Concepts
 
 <p align="center">
+  <img src="../assets/logo.png" width="100" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Core concepts, terminology, and architecture building blocks.</b>
 </p>
 

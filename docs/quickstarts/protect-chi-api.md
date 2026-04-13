@@ -1,6 +1,10 @@
 # Quickstart: Protect a Go chi API
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Add OathMesh token verification to an existing Go chi API.</b>
 </p>
 

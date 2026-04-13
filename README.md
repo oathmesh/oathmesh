@@ -1,11 +1,15 @@
 <p align="center">
-  <img src="assets/logo.png" width="120" alt="OathMesh Logo">
+  <img src="assets/logo.png" width="200" alt="OathMesh Logo">
 </p>
 
-# OathMesh
+<h1 align="center">OathMesh</h1>
 
 <p align="center">
   <b>🔐 Every machine call gets a short-lived, signed identity.</b>
+</p>
+
+<p align="center">
+  <img src="assets/social-preview.png" alt="OathMesh in action" width="600">
 </p>
 
 <p align="center">

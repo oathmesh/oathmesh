@@ -1,6 +1,10 @@
 # Quickstart: Local Demo with Docker Compose
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Get from zero to a fully working OathMesh demo in ~10 minutes.</b>
 </p>
 

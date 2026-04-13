@@ -1,6 +1,10 @@
 # Express API Example
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   OathMesh-protected Express.js API using @oathmesh/oathmesh.
 </p>
 

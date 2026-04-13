@@ -1,6 +1,14 @@
 # Support
 
-Thanks for using OathMesh! We're here to help you build secure systems.
+<p align="center">
+  <img src="assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
+  Thanks for using OathMesh! We're here to help you build secure systems.
+</p>
+
+---
 
 ## Getting Help
 

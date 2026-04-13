@@ -82,3 +82,4 @@ docs/session-logs/
 *.txt
 ANTIGRAVITY.md
 oathmesh-prompt.md
+.kilo/

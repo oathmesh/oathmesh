@@ -1,6 +1,10 @@
 # OathMesh Go SDK
 
 <p align="center">
+  <img src="../../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Middleware for chi, stdlib net/http, and any Go HTTP framework.</b>
 </p>
 

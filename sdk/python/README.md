@@ -1,6 +1,10 @@
 # oathmesh
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>OathMesh token verification SDK for Python</b> — fully typed, framework-agnostic.
 </p>
 

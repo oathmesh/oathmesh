@@ -1,6 +1,10 @@
 # chi-api Example
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   OathMesh-protected Go chi API using the SDK middleware.
 </p>
 

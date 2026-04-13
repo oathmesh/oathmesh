@@ -1,6 +1,10 @@
 # Threat Model
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Security model, threats, and mitigations.</b>
 </p>
 

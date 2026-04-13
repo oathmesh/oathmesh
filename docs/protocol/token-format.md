@@ -1,6 +1,10 @@
 # Token Format
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Oath Token structure, headers, and claims reference.</b>
 </p>
 

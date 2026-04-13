@@ -1,6 +1,10 @@
 # Quickstart: GitHub Actions to Internal API
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   <b>Authenticate GitHub Actions workflows against internal APIs — zero long-lived secrets.</b>
 </p>
 

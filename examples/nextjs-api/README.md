@@ -1,6 +1,10 @@
 # Next.js API Example
 
 <p align="center">
+  <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
+</p>
+
+<p align="center">
   OathMesh-protected Next.js API showing all integration patterns.
 </p>
 
