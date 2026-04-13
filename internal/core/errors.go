@@ -12,6 +12,7 @@ const (
 	ErrReplayDetected      ErrorCode = "replay_detected"
 	ErrPolicyDenied        ErrorCode = "policy_denied"
 	ErrBindingMismatch     ErrorCode = "binding_mismatch"
+	ErrBindingRequired     ErrorCode = "binding_required"
 )
 
 type OathMeshError struct {

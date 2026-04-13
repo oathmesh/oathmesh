@@ -1,4 +1,4 @@
-.PHONY: help dev test test-all race lint build demo clean docker-up docker-down pkl-gen test-node test-python
+.PHONY: help dev test test-all race lint build demo clean docker-up docker-down pkl-gen test-node test-python audit-prep
 
 help: ## Show this help
 	@echo "OathMesh Makefile"
@@ -49,10 +49,45 @@ docker-down: ## Stop all services
 demo: ## Run the golden-path end-to-end demo
 	bash demo.sh
 
+# ── Conformance ───────────────────────────────────────────────────────────────
+
+conformance: ## Run cross-SDK conformance tests (requires services running)
+	@echo "Running cross-SDK conformance suite..."
+	@echo "Ensure issuer, chi-api, express-api, and fastapi-api are running"
+	@echo "via: docker-compose up -d issuer chi-api express-api fastapi-api"
+	@bash conformance/run_all.sh
+
+# ── Benchmarks ─────────────────────────────────────────────────────────────────
+
+bench: ## Run Go benchmarks and output to bench.txt
+	@echo "Running Go benchmarks..."
+	@echo "# OathMesh Benchmarks - $$(date)" > bench.txt
+	@echo "" >> bench.txt
+	go test -bench=. -benchmem -run=^$$ ./internal/verify/... ./internal/sign/... 2>&1 | tee -a bench.txt
+	@echo ""
+	@echo "Results saved to bench.txt"
+	@echo "Update ARCHITECTURE.md with real measured numbers using: make update-arch"
+
 # ── Codegen ──────────────────────────────────────────────────────────────────
 
 pkl-gen: ## Regenerate Go code from Pkl policy schema
 	pkl-gen-go --schema policy/schema.pkl --output internal/policy/generated.go
+
+# ── Audit ───────────────────────────────────────────────────────────────────────
+
+audit-prep: ## Run pre-audit checks (tests, lint, vulnerability scan)
+	@echo "Running pre-audit checks for OathMesh..."
+	@echo ""
+	@echo "1. Running Go tests..."
+	@go test ./... || { echo "TESTS FAILED"; exit 1; }
+	@echo ""
+	@echo "2. Running linter..."
+	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || echo "Warning: golangci-lint not installed"
+	@echo ""
+	@echo "3. Checking for vulnerabilities..."
+	@command -v govulncheck >/dev/null 2>&1 && govulncheck ./... || echo "Warning: govulncheck not installed - install with: go install golang.org/vuln/cmd/govulncheck@latest"
+	@echo ""
+	@echo "Pre-audit checks complete."
 
 # ── Cleanup ──────────────────────────────────────────────────────────────────
 

@@ -11,9 +11,21 @@ echo "============================================="
 echo "[1/6] Starting services from cold state..."
 docker-compose down -v
 docker-compose up -d --build
+
 # Wait for healthchecks to complete
 echo "Waiting for issuer and chi-api to become healthy..."
-sleep 15
+
+# Poll issuer health (port 4000)
+until curl -sf http://localhost:4000/healthz > /dev/null 2>&1; do
+    echo "  Waiting for issuer..." && sleep 2
+done
+echo "Issuer is healthy."
+
+# Poll chi-api health (port 8080 - the upstream demo service)
+until curl -sf http://localhost:8080 > /dev/null 2>&1; do
+    echo "  Waiting for chi-api..." && sleep 2
+done
+echo "chi-api is healthy."
 
 # Export paths mapping so we can use local CLI binary which is compiled
 go build -o ./bin/oathmesh ./cmd/oathmesh
@@ -33,7 +45,7 @@ TOKEN=$($CLI mint \
   --sub "agent://repo/acme/deploy-bot" \
   --aud "https://inventory.internal" \
   --act "deploy" \
-  --ttl 3600 --quiet)
+  --ttl 300 --quiet)  # Max TTL is 300s. Values above this are clamped silently.
 
 echo "✅ Token Minted successfully."
 
@@ -69,7 +81,7 @@ BAD_AUD_TOKEN=$($CLI mint \
   --sub "agent://repo/acme/deploy-bot" \
   --aud "https://other.internal" \
   --act "deploy" \
-  --ttl 3600 --quiet)
+  --ttl 300 --quiet)  # Max TTL is 300s. Values above this are clamped silently.
 
 AUD_RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -H "Authorization: OathMesh $BAD_AUD_TOKEN" "http://localhost:8080/inventory")
 AUD_STATUS=$(echo "$AUD_RESP" | grep HTTP_STATUS | awk -F: '{print $2}')

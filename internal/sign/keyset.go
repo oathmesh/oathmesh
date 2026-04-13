@@ -2,6 +2,7 @@ package sign
 
 import (
 	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/x509"
 	"fmt"
 	"os"
@@ -77,7 +78,10 @@ func loadPrivateKey() (ed25519.PrivateKey, string, error) {
 
 func generateKid() string {
 	now := time.Now()
-	return fmt.Sprintf("issuer-key-%04d-%02d", now.Year(), now.Month())
+	randBytes := make([]byte, 2)
+	rand.Read(randBytes)
+	randHex := fmt.Sprintf("%02x%02x", randBytes[0], randBytes[1])
+	return fmt.Sprintf("issuer-key-%04d-%02d-%s", now.Year(), now.Month(), randHex)
 }
 
 func (ks *KeySet) GetKid() string {

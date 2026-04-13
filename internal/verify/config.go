@@ -51,6 +51,12 @@ type VerifierConfig struct {
 	// If empty, rqh binding check is skipped even if the token has an rqh claim.
 	RequestHash string
 
+	// RequireRequestBinding enforces that tokens MUST include an rqh claim.
+	// When true, tokens without rqh are rejected with error "binding_required".
+	// Recommended for all write/mutate endpoints to prevent tampering.
+	// Default: false (for backward compatibility).
+	RequireRequestBinding bool
+
 	// Now is a function that returns the current time.
 	// Defaults to time.Now if nil. Exposed for testing.
 	Now func() time.Time

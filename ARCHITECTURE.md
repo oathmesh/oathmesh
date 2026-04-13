@@ -145,6 +145,7 @@ Caller          Gateway              Upstream
 ## Performance Characteristics
 
 > ⚡ Benchmarks coming soon. These are preliminary estimates.
+> Run `make bench` to generate real numbers for your hardware.
 
 | Operation | Latency (p99) | Notes |
 |-----------|---------------|-------|

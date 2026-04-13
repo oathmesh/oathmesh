@@ -16,6 +16,8 @@
   Stop leaking API keys. Replace static secrets with cryptographically verified tokens that expire in 5 minutes or less.
 </p>
 
+> ⚠️ **Pre-production:** OathMesh has not yet received an independent security audit. Do not use in production until v1.1.0 or later, which will include a third-party audit report.
+
 <p align="center">
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
     <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
@@ -63,6 +65,19 @@
 | **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
 | **Node.js** | [`@oathmesh/oathmesh`](https://www.npmjs.com/package/@oathmesh/oathmesh) | Express, **Next.js** (App, Pages, Edge) |
 | **Python** | [`oathmesh`](https://pypi.org/project/oathmesh/) | FastAPI, Flask, Django |
+
+### SDK Feature Comparison
+
+| Feature | Go SDK | Node.js SDK | Python SDK |
+|---------|--------|-------------|------------|
+| **Token verification** | ✅ Full 14-step | ✅ Full 14-step | ✅ Full 14-step |
+| **alg:none rejection** | ✅ | ✅ | ✅ |
+| **Exact audience match** | ✅ | ✅ | ✅ |
+| **rqh binding** | ✅ | ✅ | ✅ |
+| **Replay cache** | ✅ Built-in | ✅ Built-in (InMemoryReplayCache) | ✅ Built-in (InMemoryReplayCache) |
+| **Policy evaluation** | ✅ Built-in (Pkl) | ✅ Built-in (JSON) | ✅ Built-in (JSON) |
+
+> **Note:** All three SDKs now implement the full 14-step verification pipeline including replay protection and policy evaluation. The Go SDK uses Pkl for policy, while Node.js and Python SDKs use simple JSON-based policies. Use `requireRequestBinding: true` (Node) or `require_request_binding=True` (Python) for write/mutate endpoints.
 
 ---
 

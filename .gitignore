@@ -25,6 +25,8 @@ go.work.sum
 *.crt
 *.p12
 *.pfx
+conformance/test-key.pem
+conformance/results_*.json
 
 # ── IDE & Editor ─────────────────────────────────────────────────────────────
 .idea/

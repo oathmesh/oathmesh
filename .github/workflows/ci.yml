@@ -38,6 +38,22 @@ jobs:
           name: oathmesh-linux-amd64
           path: bin/oathmesh
 
+  vulnscan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - name: Install govulncheck
+        run: go install golang.org/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+
   node-sdk:
     runs-on: ubuntu-latest
     defaults:
@@ -78,3 +94,59 @@ jobs:
 
       - name: Test
         run: pytest tests/
+
+  conformance:
+    needs: [build, node-sdk, python-sdk]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build Go CLI
+        run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
+
+      - name: Generate test key
+        run: openssl genpkey -algorithm Ed25519 -o conformance/test-key.pem
+
+      - name: Start Docker services
+        run: docker-compose up -d --build issuer chi-api express-api fastapi-api redis
+
+      - name: Wait for services
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4000/healthz && break || sleep 2
+          done
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8081/healthz && break || sleep 2
+          done
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/healthz && break || sleep 2
+          done
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/healthz && break || sleep 2
+          done
+
+      - name: Run conformance tests
+        run: make conformance
+        env:
+          OATHMESH_ISSUER: http://localhost:4000
+
+      - name: Upload results
+        uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: conformance-results
+          path: conformance/results_*.json
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down

@@ -15,12 +15,12 @@ OathMesh uses **Ed25519** (via Go's `crypto/ed25519` stdlib package) as the prim
 ## Key Identifier Format
 
 ```
-issuer-key-YYYY-MM
+issuer-key-YYYY-MM-{random-hex}
 ```
 
-Example: `issuer-key-2026-04`
+Example: `issuer-key-2026-04-a3f1`
 
-The `kid` is included in every token header and every JWKS key entry. Receivers use it to locate the correct public key for signature verification.
+The format includes a 4-character random hex suffix to allow multiple keys in the same month without ambiguity during emergency rotation. The `kid` is included in every token header and every JWKS key entry. Receivers use it to locate the correct public key for signature verification.
 
 ## Key Loading
 
@@ -76,6 +76,18 @@ JWKS contains:
 - JWKS is cached in memory with a default TTL of 5 minutes
 - If a `kid` is not in cache, the verifier fetches JWKS once and retries
 - If still missing after refresh: reject with `issuer_untrusted`
+
+### Key Compromise Residual Window
+
+After revoking a key, receivers that cached JWKS will accept tokens signed with the old key for up to `OATHMESH_JWKS_CACHE_TTL` seconds (default 300s, i.e., 5 minutes). This is a residual risk during emergency key compromise.
+
+**For emergency revocation:**
+1. Set `OATHMESH_JWKS_CACHE_TTL=0` on all receivers before rotating the key
+2. Rotate the key (issuer publishes new key in JWKS)
+3. Wait up to 300s for all in-flight tokens to expire
+4. Restore `OATHMESH_JWKS_CACHE_TTL` to its normal value (300s)
+
+Alternatively, restart all receiver processes to clear their JWKS cache immediately.
 
 ### KMS Guidance
 
