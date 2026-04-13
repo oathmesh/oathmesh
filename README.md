@@ -66,6 +66,19 @@
 | **Node.js** | [`@oathmesh/oathmesh`](https://www.npmjs.com/package/@oathmesh/oathmesh) | Express, **Next.js** (App, Pages, Edge) |
 | **Python** | [`oathmesh`](https://pypi.org/project/oathmesh/) | FastAPI, Flask, Django |
 
+### SDK Feature Comparison
+
+| Feature | Go SDK | Node.js SDK | Python SDK |
+|---------|--------|-------------|------------|
+| **Token verification** | ✅ Full 14-step | ✅ Full 14-step | ✅ Full 14-step |
+| **alg:none rejection** | ✅ | ✅ | ✅ |
+| **Exact audience match** | ✅ | ✅ | ✅ |
+| **rqh binding** | ✅ | ✅ | ✅ |
+| **Replay cache** | ✅ Built-in | ⚠️ Requires gateway | ⚠️ Requires gateway |
+| **Policy evaluation** | ✅ Built-in | ⚠️ Requires gateway | ⚠️ Requires gateway |
+
+> **Note:** Node.js and Python SDKs verify tokens but do not enforce replay protection or policy — these require the Go gateway mode or a Go-based receiver. Set `requireRequestBinding: true` (Node) or `require_request_binding=True` (Python) for write/mutate endpoints.
+
 ---
 
 ## 🚀 Quick Start
