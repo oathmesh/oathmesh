@@ -1,8 +1,37 @@
+<p align="center">
+  <img src="assets/logo.png" width="120" alt="OathMesh Logo">
+</p>
+
 # OathMesh
 
-**Every machine call gets a short-lived, signed identity.**
+<p align="center">
+  <b>Every machine call gets a short-lived, signed identity.</b>
+</p>
 
-OathMesh replaces shared secrets — API keys, static tokens, long-lived credentials — with scoped, verifiable, auditable call assertions for services, agents, CI/CD jobs, and tools.
+<p align="center">
+  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
+    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
+    <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
+  </a>
+  <a href="https://pypi.org/project/oathmesh/">
+    <img src="https://img.shields.io/pypi/v/oathmesh.svg" alt="pypi version">
+  </a>
+  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oathmesh/oathmesh.svg" alt="License">
+  </a>
+</p>
+
+---
+
+### **Why OathMesh?**
+API keys are leaked every day. Static secrets are a security nightmare. **OathMesh** replaces vulnerable long-lived credentials with short-lived (≤300s), scoped, and verifiable **Oath Tokens**.
+
+- **Zero-Trust Identity:** No more "trusted networks". Every service must prove who it is.
+- **Fail-Closed Security:** A 14-step verification pipeline rejects malformed, expired, or replayed tokens.
+- **Polyglot Ready:** First-class SDKs for **Go**, **Node.js**, and **Python**.
+- **Audit Everything:** Every call (allowed or denied) generates a structured audit event.
 
 ---
 
@@ -39,9 +68,9 @@ Run `./demo.sh` for the full automated golden-path demo.
 
 | Language | Package | Frameworks |
 |---|---|---|
-| **Go** | `sdk/go/middleware` | chi, stdlib `net/http` |
-| **Node.js / TypeScript** | `@oathmesh/sdk` | Express, **Next.js** (App Router, Pages Router, Edge Middleware) |
-| **Python** | `oathmesh` | FastAPI, Flask, Django |
+| **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
+| **Node.js** | [`@oathmesh/oathmesh`](https://www.npmjs.com/package/@oathmesh/oathmesh) | Express, **Next.js** (App, Pages, Edge) |
+| **Python** | [`oathmesh`](https://pypi.org/project/oathmesh/) | FastAPI, Flask, Django |
 
 ### Go
 
@@ -50,10 +79,10 @@ r.Use(middleware.OathMeshMiddleware(cfg))
 caller := middleware.CallerFrom(r.Context())
 ```
 
-### Express
+### Express (TypeScript)
 
 ```typescript
-import { verifyToken } from '@oathmesh/sdk';
+import { verifyToken } from '@oathmesh/oathmesh';
 app.use(verifyToken({ audience, trustedIssuers }));
 // req.oathmeshContext is fully typed
 ```
@@ -61,7 +90,7 @@ app.use(verifyToken({ audience, trustedIssuers }));
 ### Next.js (App Router)
 
 ```typescript
-import { withOathMesh } from '@oathmesh/sdk/next';
+import { withOathMesh } from '@oathmesh/oathmesh/next';
 const oathmesh = withOathMesh({ audience, trustedIssuers });
 
 export async function GET(request: NextRequest) {
@@ -71,26 +100,13 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### FastAPI
+### FastAPI (Python)
 
 ```python
-from oathmesh import verify_token, VerifierConfig, OathMeshError
+from oathmesh import verify_token, VerifierConfig
 caller = verify_token(request.headers["authorization"], config)
 # caller.principal.subject, caller.action, caller.token_id
 ```
-
----
-
-## Examples
-
-| Example | Language | Path |
-|---|---|---|
-| chi API | Go | [`examples/chi-api/`](examples/chi-api/) |
-| Express API | TypeScript | [`examples/express-api/`](examples/express-api/) |
-| Next.js API | TypeScript | [`examples/nextjs-api/`](examples/nextjs-api/) |
-| FastAPI | Python | [`examples/fastapi-api/`](examples/fastapi-api/) |
-| GitHub Actions | YAML | [`examples/github-actions/`](examples/github-actions/) |
-| curl demo | bash | [`examples/curl/`](examples/curl/) |
 
 ---
 
@@ -106,7 +122,7 @@ Caller ──▶ Issuer ──▶ signs Oath Token (Ed25519, ≤300s TTL)
          └── VerifiedCallerContext → your handler
 ```
 
-**Gateway Mode** (`oathmesh serve --gateway`): reverse proxy that verifies tokens, strips the `Authorization` header, and injects `X-OathMesh-*` context headers before forwarding to upstream services.
+**Gateway Mode** (`oathmesh serve --gateway`): A reverse proxy that verifies tokens and injects security context headers into your existing upstream services.
 
 ---
 
@@ -118,43 +134,13 @@ Caller ──▶ Issuer ──▶ signs Oath Token (Ed25519, ≤300s TTL)
 - [Protect a Next.js API](docs/quickstarts/protect-nextjs-api.md)
 - [Protect a FastAPI service](docs/quickstarts/protect-fastapi.md)
 - [GitHub Actions to internal API](docs/quickstarts/github-actions-to-internal-api.md)
-- [Local demo with Docker Compose](docs/quickstarts/local-demo-docker-compose.md)
 
-### Protocol
-- [Overview](docs/overview.md) · [Concepts](docs/concepts.md)
+### Protocol & Security
 - [Token Format](docs/protocol/token-format.md) · [Claim Reference](docs/protocol/claim-reference.md)
-- [Verification Rules (14 steps)](docs/protocol/verification-rules.md)
-- [Error Taxonomy](docs/protocol/error-taxonomy.md) · [Audit Events](docs/protocol/audit-events.md)
-
-### Configuration
-- [Issuer Config](docs/config/issuer-config.md) · [Pkl Policy Guide](docs/config/pkl-policy-guide.md)
-- [CLI Reference](docs/cli-reference.md)
-
-### Security
-- [Threat Model](docs/security/threat-model.md) · [Key Management](docs/security/key-management.md)
-- [Replay Defense](docs/security/replay-defense.md) · [Logging Guidance](docs/security/logging-guidance.md)
-
-### Migration
-- [Replace an API Key in one afternoon](docs/migration/replace-api-key.md)
-
-### Architecture
-- [ARCHITECTURE.md](ARCHITECTURE.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
-
----
-
-## Technology Stack
-
-| Concern | Choice |
-|---|---|
-| Language | Go 1.22+ |
-| HTTP framework | chi/v5 |
-| Signing | crypto/ed25519 (stdlib) |
-| Config DSL | Apple Pkl |
-| Audit | NDJSON (stdout / file) |
-| Replay cache | In-memory / Redis |
+- [Verification Rules](docs/protocol/verification-rules.md) · [Threat Model](docs/security/threat-model.md)
+- [Replay Defense](docs/security/replay-defense.md) · [Key Management](docs/security/key-management.md)
 
 ---
 
 ## License
-
 [MIT](LICENSE)
