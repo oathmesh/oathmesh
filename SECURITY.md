@@ -79,11 +79,11 @@ When using OathMesh:
 
 ## Third-Party Security
 
-- ✅ Go stdlib `crypto/ed25519`
-- ✅ Node.js `jose` library
-- ✅ Python `PyJWT` with cryptography
+- ✅ Go core: `crypto/ed25519` from stdlib only — no third-party on the critical security path
+- ✅ Node.js SDK: `jose` library (well-maintained, widely used)
+- ✅ Python SDK: `PyJWT` and `cryptography` (well-maintained, widely used)
 
-No external dependencies on critical security paths.
+The "no external dependencies" claim applies to the Go core only. SDKs use established, well-audited libraries for JWT handling.
 
 ---
 

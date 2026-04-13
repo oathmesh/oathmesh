@@ -16,6 +16,8 @@
   Stop leaking API keys. Replace static secrets with cryptographically verified tokens that expire in 5 minutes or less.
 </p>
 
+> ⚠️ **Pre-production:** OathMesh has not yet received an independent security audit. Do not use in production until v1.1.0 or later, which will include a third-party audit report.
+
 <p align="center">
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
     <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">

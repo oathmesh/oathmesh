@@ -77,6 +77,18 @@ JWKS contains:
 - If a `kid` is not in cache, the verifier fetches JWKS once and retries
 - If still missing after refresh: reject with `issuer_untrusted`
 
+### Key Compromise Residual Window
+
+After revoking a key, receivers that cached JWKS will accept tokens signed with the old key for up to `OATHMESH_JWKS_CACHE_TTL` seconds (default 300s, i.e., 5 minutes). This is a residual risk during emergency key compromise.
+
+**For emergency revocation:**
+1. Set `OATHMESH_JWKS_CACHE_TTL=0` on all receivers before rotating the key
+2. Rotate the key (issuer publishes new key in JWKS)
+3. Wait up to 300s for all in-flight tokens to expire
+4. Restore `OATHMESH_JWKS_CACHE_TTL` to its normal value (300s)
+
+Alternatively, restart all receiver processes to clear their JWKS cache immediately.
+
 ### KMS Guidance
 
 For production deployments, store private keys in a Hardware Security Module (HSM) or Key Management Service (KMS):
