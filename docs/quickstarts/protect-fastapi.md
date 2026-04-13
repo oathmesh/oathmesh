@@ -2,14 +2,12 @@
 
 **Time:** ~5 minutes
 
-This guide adds OathMesh token verification to a FastAPI service using the `oathmesh` Python SDK.
-
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - A running OathMesh issuer
 
-## Step 1: Install the SDK
+## Step 1: Install
 
 ```bash
 pip install oathmesh
@@ -26,14 +24,14 @@ app = FastAPI()
 config = VerifierConfig(
     audience="https://inventory.internal",
     trusted_issuers=["https://issuer.oathmesh.dev"],
+    on_denied=lambda err: print(f"denied: {err.code}"),
 )
 
 async def require_oathmesh(request: Request):
-    auth = request.headers.get("authorization", "")
     try:
-        return verify_token(auth, config)
+        return verify_token(request.headers.get("authorization", ""), config)
     except OathMeshError as e:
-        raise HTTPException(status_code=401, detail={"error": e.code, "message": e.message})
+        raise HTTPException(status_code=401, detail=e.to_dict())
 ```
 
 ## Step 3: Protect Your Endpoints
@@ -42,8 +40,9 @@ async def require_oathmesh(request: Request):
 @app.get("/inventory")
 async def get_inventory(caller=Depends(require_oathmesh)):
     return {
-        "caller": caller["principal"]["subject"],
-        "action": caller["action"],
+        "subject": caller.principal.subject,
+        "action": caller.action,
+        "token_id": caller.token_id,
     }
 ```
 
@@ -59,9 +58,26 @@ TOKEN=$(oathmesh mint \
 curl -H "Authorization: OathMesh $TOKEN" http://localhost:8000/inventory
 ```
 
-Expected output:
-```json
-{"caller":"job://ci/nightly-sync","action":"inventory.read"}
+## Flask
+
+```python
+from flask import Flask, request, jsonify
+from oathmesh import verify_token, VerifierConfig, OathMeshError
+
+app = Flask(__name__)
+config = VerifierConfig(
+    audience="https://inventory.internal",
+    trusted_issuers=["https://issuer.oathmesh.dev"],
+)
+
+@app.before_request
+def check_oathmesh():
+    try:
+        request.oathmesh = verify_token(
+            request.headers.get("Authorization", ""), config
+        )
+    except OathMeshError as e:
+        return jsonify(e.to_dict()), 401
 ```
 
 ## Next Steps

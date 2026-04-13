@@ -1,131 +1,160 @@
 # OathMesh
 
-**OathMesh gives every machine call a short-lived signed identity.**
+**Every machine call gets a short-lived, signed identity.**
 
-OathMesh is a micro-protocol and developer platform that replaces shared machine secrets (API keys, static tokens) with short-lived, signed JWT-based call identity for agents, CI/CD jobs, internal tools, automation bots, and service-to-service calls.
-
----
-
-## What Is OathMesh
-
-OathMesh is:
-- **A protocol** — a narrow, implementable standard for signed short-lived machine-call assertions
-- **A product** — an issuer service, verifier middleware, gateway, SDK set, CLI, and audit pipeline built on that protocol
-
-OathMesh is NOT:
-- A user authentication system
-- A browser login or OAuth platform for humans
-- A service mesh or data plane
-- A replacement for cloud IAM
-- A replacement for SPIFFE (can run beside it)
+OathMesh replaces shared secrets — API keys, static tokens, long-lived credentials — with scoped, verifiable, auditable call assertions for services, agents, CI/CD jobs, and tools.
 
 ---
 
-## Core Doctrine
-
-> **"OathMesh authenticates the caller. The receiver authorizes the request."**
-
----
-
-## Getting Started
-
-### Quick Start (Local Development)
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/oathmesh/oathmesh.git
 cd oathmesh
 
-# Generate a private key for local development
+# Generate a development key
 openssl genpkey -algorithm Ed25519 -out private.pem
 
-# Export the private key
-export OATHMESH_PRIVATE_KEY="$(cat private.pem)"
+# Build the CLI
+make build
 
-# Start services with Docker Compose
-docker-compose up
+# Start services
+docker-compose up -d
 
-# In another terminal, mint a token
-./bin/oathmesh mint --sub "agent://repo/acme/deploy-bot" \
+# Mint a token
+TOKEN=$(./bin/oathmesh mint \
+  --sub "agent://repo/acme/deploy-bot" \
   --aud "https://inventory.internal" \
-  --act "inventory.write"
+  --act "deploy" --quiet)
 
-# Verify the token
-echo "<token>" | ./bin/oathmesh verify --audience "https://inventory.internal" \
-  --issuer "https://issuer.oathmesh.dev"
+# Call a protected API
+curl -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
 ```
 
-### Run the Demo
-
-```bash
-./demo.sh
-```
-
-## Architecture & Gateway Pattern
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     OathMesh System                         │
-│                                                             │
-│  ┌──────────┐    ┌──────────┐    ┌──────────────────────┐ │
-│  │  Caller  │───▶│  Issuer  │    │     Receiver         │ │
-│  │ (agent,  │    │ Service  │    │  ┌────────────────┐  │ │
-│  │  CI job, │    │          │    │  │   Verifier     │  │ │
-│  │  bot)    │◀───│ Mint API │    │  │   Middleware   │  │ │
-│  └──────────┘    │ JWKS     │    │  └───────┬────────┘  │ │
-│       │          └──────────┘    │  ┌───────▼────────┐  │ │
-│       │               │          │  │  Policy Engine │  │ │
-│       │          ┌────▼─────┐    │  └───────┬────────┘  │ │
-│       └─────────▶│ Gateway  │───▶│  ┌───────▼────────┐  │ │
-│                  │ Proxy    │    │  │  Audit Logger  │  │ │
-│                  └──────────┘    │  └────────────────┘  │ │
-│                                  └──────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
-
-OathMesh natively supports **Gateway Mode** (`oathmesh serve --gateway`), transforming the root issuer server into an intelligent HTTP reverse proxy. This seamlessly intercepts upstream requests, dynamically pulling and verifying distributed tokens from incoming `Authorization` headers, blocking anomalies, injecting HTTP Context Headers (`X-OathMesh-Subject`, `X-OathMesh-Action`), and formally logging audit trails natively.
+Run `./demo.sh` for the full automated golden-path demo.
 
 ---
 
-## Polyglot SDK Integrations
+## SDKs
 
-OathMesh provides native middleware enforcing verifications for all popular endpoints organically without requiring the Gateway Proxy:
+| Language | Package | Frameworks |
+|---|---|---|
+| **Go** | `sdk/go/middleware` | chi, stdlib `net/http` |
+| **Node.js / TypeScript** | `@oathmesh/sdk` | Express, **Next.js** (App Router, Pages Router, Edge Middleware) |
+| **Python** | `oathmesh` | FastAPI, Flask, Django |
 
-- **Go (chi)**: `sdk/go/middleware`
-- **Node.js (TypeScript/Express)**: `@oathmesh/sdk` inside `sdk/node`
-- **Python (FastAPI)**: `oathmesh` SDK inside `sdk/python`
+### Go
 
-All SDKs natively support fetching distributed JWKS, matching audience specifications, verifying explicit timeouts against configurable clock bounds (max 10s variance default), and injecting contextual definitions intuitively back into route logic.
+```go
+r.Use(middleware.OathMeshMiddleware(cfg))
+caller := middleware.CallerFrom(r.Context())
+```
+
+### Express
+
+```typescript
+import { verifyToken } from '@oathmesh/sdk';
+app.use(verifyToken({ audience, trustedIssuers }));
+// req.oathmeshContext is fully typed
+```
+
+### Next.js (App Router)
+
+```typescript
+import { withOathMesh } from '@oathmesh/sdk/next';
+const oathmesh = withOathMesh({ audience, trustedIssuers });
+
+export async function GET(request: NextRequest) {
+  const { caller, error } = await oathmesh(request);
+  if (error) return error;
+  return NextResponse.json({ subject: caller.principal.subject });
+}
+```
+
+### FastAPI
+
+```python
+from oathmesh import verify_token, VerifierConfig, OathMeshError
+caller = verify_token(request.headers["authorization"], config)
+# caller.principal.subject, caller.action, caller.token_id
+```
+
+---
+
+## Examples
+
+| Example | Language | Path |
+|---|---|---|
+| chi API | Go | [`examples/chi-api/`](examples/chi-api/) |
+| Express API | TypeScript | [`examples/express-api/`](examples/express-api/) |
+| Next.js API | TypeScript | [`examples/nextjs-api/`](examples/nextjs-api/) |
+| FastAPI | Python | [`examples/fastapi-api/`](examples/fastapi-api/) |
+| GitHub Actions | YAML | [`examples/github-actions/`](examples/github-actions/) |
+| curl demo | bash | [`examples/curl/`](examples/curl/) |
+
+---
+
+## Architecture
+
+```
+Caller ──▶ Issuer ──▶ signs Oath Token (Ed25519, ≤300s TTL)
+  │
+  └──▶ Receiver (or Gateway)
+         ├── 14-step verification pipeline
+         ├── Pkl policy evaluation (default deny)
+         ├── NDJSON audit event (always — allow AND deny)
+         └── VerifiedCallerContext → your handler
+```
+
+**Gateway Mode** (`oathmesh serve --gateway`): reverse proxy that verifies tokens, strips the `Authorization` header, and injects `X-OathMesh-*` context headers before forwarding to upstream services.
 
 ---
 
 ## Documentation
-- [CLI Reference](docs/cli-reference.md) — mint, verify, inspect, serve, keys rotate
-- **Phase 8 (Upcoming Follow-up):**
-  - Protocol Reference — Token format, claims, verification rules
-  - Security — Threat model, key management, replay defense
-  - Integration Quickstarts
+
+### Quickstarts
+- [Protect a Go chi API](docs/quickstarts/protect-chi-api.md)
+- [Protect an Express API](docs/quickstarts/protect-express-api.md)
+- [Protect a Next.js API](docs/quickstarts/protect-nextjs-api.md)
+- [Protect a FastAPI service](docs/quickstarts/protect-fastapi.md)
+- [GitHub Actions to internal API](docs/quickstarts/github-actions-to-internal-api.md)
+- [Local demo with Docker Compose](docs/quickstarts/local-demo-docker-compose.md)
+
+### Protocol
+- [Overview](docs/overview.md) · [Concepts](docs/concepts.md)
+- [Token Format](docs/protocol/token-format.md) · [Claim Reference](docs/protocol/claim-reference.md)
+- [Verification Rules (14 steps)](docs/protocol/verification-rules.md)
+- [Error Taxonomy](docs/protocol/error-taxonomy.md) · [Audit Events](docs/protocol/audit-events.md)
+
+### Configuration
+- [Issuer Config](docs/config/issuer-config.md) · [Pkl Policy Guide](docs/config/pkl-policy-guide.md)
+- [CLI Reference](docs/cli-reference.md)
+
+### Security
+- [Threat Model](docs/security/threat-model.md) · [Key Management](docs/security/key-management.md)
+- [Replay Defense](docs/security/replay-defense.md) · [Logging Guidance](docs/security/logging-guidance.md)
+
+### Migration
+- [Replace an API Key in one afternoon](docs/migration/replace-api-key.md)
+
+### Architecture
+- [ARCHITECTURE.md](ARCHITECTURE.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
 ## Technology Stack
 
 | Concern | Choice |
-|---------|--------|
+|---|---|
 | Language | Go 1.22+ |
-| Config DSL | Apple Pkl |
 | HTTP framework | chi/v5 |
 | Signing | crypto/ed25519 (stdlib) |
-
----
-
-## Community
-
-- GitHub: https://github.com/oathmesh/oathmesh
-- Issues: https://github.com/oathmesh/oathmesh/issues
+| Config DSL | Apple Pkl |
+| Audit | NDJSON (stdout / file) |
+| Replay cache | In-memory / Redis |
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE)

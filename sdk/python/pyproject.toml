@@ -5,17 +5,37 @@ build-backend = "hatchling.build"
 [project]
 name = "oathmesh"
 version = "1.0.0"
-description = "OathMesh verification SDK for Python"
+description = "OathMesh verification SDK for Python — FastAPI, Flask, Django"
 readme = "README.md"
-requires-python = ">=3.8"
+license = "MIT"
+requires-python = ">=3.9"
+keywords = ["oathmesh", "auth", "jwt", "machine-identity", "fastapi", "middleware"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
 dependencies = [
-    "pyjwt[crypto] >= 2.8.0",
-    "cryptography >= 41.0.0"
+    "pyjwt[crypto]>=2.8.0",
+    "cryptography>=41.0.0",
 ]
 
 [project.optional-dependencies]
 test = [
-    "pytest >= 7.0.0",
-    "fastapi >= 0.100.0",
-    "httpx >= 0.25.0"
+    "pytest>=7.0.0",
+    "fastapi>=0.100.0",
+    "httpx>=0.25.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/oathmesh/oathmesh"
+Documentation = "https://github.com/oathmesh/oathmesh/tree/main/docs"
+Repository = "https://github.com/oathmesh/oathmesh"
+Issues = "https://github.com/oathmesh/oathmesh/issues"

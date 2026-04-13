@@ -1,0 +1,10 @@
+# Python SDK local ignores
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/

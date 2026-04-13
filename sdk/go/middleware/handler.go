@@ -19,7 +19,8 @@ func OathMeshMiddleware(cfg *verify.VerifierConfig) func(http.Handler) http.Hand
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")
-			if authz == "" || !strings.HasPrefix(authz, "OathMesh ") {
+			token := extractToken(authz)
+			if token == "" {
 				sendError(w, r, core.NewOathMeshError(
 					core.ErrorCode("claim_missing:token"),
 					"missing or invalid Authorization header",
@@ -27,8 +28,6 @@ func OathMeshMiddleware(cfg *verify.VerifierConfig) func(http.Handler) http.Hand
 				))
 				return
 			}
-
-			token := strings.TrimPrefix(authz, "OathMesh ")
 
 			vcc, err := verify.Verify(r.Context(), token, cfg)
 			if err != nil {
@@ -78,3 +77,16 @@ func sendError(w http.ResponseWriter, r *http.Request, oe *core.OathMeshError) {
 
 	_ = json.NewEncoder(w).Encode(oe)
 }
+
+// extractToken pulls the raw token from an Authorization header.
+// Supports "OathMesh <token>" (canonical) and "Bearer <token>" (compat).
+func extractToken(header string) string {
+	if strings.HasPrefix(header, "OathMesh ") {
+		return strings.TrimPrefix(header, "OathMesh ")
+	}
+	if strings.HasPrefix(header, "Bearer ") {
+		return strings.TrimPrefix(header, "Bearer ")
+	}
+	return ""
+}
+

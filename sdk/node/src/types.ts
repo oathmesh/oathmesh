@@ -61,12 +61,38 @@ export class OathMeshError extends Error {
     this.code = code;
     this.fix = fix;
   }
+
+  /** Serialize to the standard OathMesh error JSON shape. */
+  toJSON() {
+    return {
+      error: this.code,
+      message: this.message,
+      fix: this.fix,
+    };
+  }
 }
 
-/** Configuration for the OathMesh verification middleware. */
+/** Configuration for the OathMesh verifier. */
 export interface VerifierConfig {
   /** The audience URL this receiver expects (exact match, no globs). */
   audience: string;
   /** Trusted issuer URLs (explicit allowlist — no wildcards, no auto-discovery). */
   trustedIssuers: string[];
+  /**
+   * Called on every denied request. Use for logging, metrics, or alerting.
+   * Runs after the error response is determined but before it is sent.
+   */
+  onDenied?: (err: OathMeshError, headers: Record<string, string | undefined>) => void | Promise<void>;
+  /**
+   * Called on every successful verification. Use for logging or metrics.
+   */
+  onVerified?: (ctx: VerifiedCallerContext, headers: Record<string, string | undefined>) => void | Promise<void>;
+}
+
+/** The JSON body shape returned on verification failure. */
+export interface OathMeshErrorBody {
+  error: ErrorCode;
+  message: string;
+  fix?: string;
+  request_id?: string;
 }

@@ -73,5 +73,12 @@ dist/
 *.bak
 *.orig
 
+# ── Next.js ──────────────────────────────────────────────────────────────────
+.next/
+
 # ── Tool-specific (not project code) ────────────────────────────────────────
 .antigravity/
+docs/session-logs/
+*.txt
+ANTIGRAVITY.md
+oathmesh-prompt.md

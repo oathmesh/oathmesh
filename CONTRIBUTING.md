@@ -44,20 +44,20 @@ make demo
 ## Running Tests
 
 ```bash
-# All tests
-make test
+# All tests (Go + Node + Python)
+make test-all
 
-# With race detector
+# Go only (with race detector)
 make race
 
-# Specific package
+# Node SDK only
+make test-node
+
+# Python SDK only
+make test-python
+
+# Specific Go package
 go test -v ./internal/verify/...
-
-# Node SDK tests
-cd sdk/node && npm install && npm test
-
-# Python SDK tests
-cd sdk/python && pip install -e .[test] && pytest tests/
 ```
 
 ## Submitting a Pull Request

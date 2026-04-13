@@ -1,25 +1,111 @@
+"""Tests for OathMesh Python SDK."""
+
 import pytest
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from oathmesh import verify_token, extract_token, VerifierConfig, OathMeshError
+from oathmesh.types import VerifiedCallerContext, Principal
 
-from oathmesh.verify import verify_token, VerifierConfig
-from oathmesh.errors import OathMeshError
 
-def test_missing_authorization():
-    config = VerifierConfig(audience="audience", trusted_issuers=["http://issuer.local"])
-    with pytest.raises(OathMeshError) as exc_info:
-        verify_token("", config)
-    assert exc_info.value.code == "claim_missing:token"
+# ─── extract_token ────────────────────────────────────────────────────────────
 
-def test_malformed_token():
-    config = VerifierConfig(audience="audience", trusted_issuers=["http://issuer.local"])
-    with pytest.raises(OathMeshError) as exc_info:
-        verify_token("OathMesh badlyformed", config)
-    assert exc_info.value.code == "verification_failed"
+class TestExtractToken:
+    def test_oathmesh_prefix(self):
+        assert extract_token("OathMesh abc.def.ghi") == "abc.def.ghi"
 
-def test_wrong_authorization_form():
-    config = VerifierConfig(audience="audience", trusted_issuers=["http://issuer.local"])
-    with pytest.raises(OathMeshError) as exc_info:
-        verify_token("Bearer something", config)
-    assert exc_info.value.code == "claim_missing:token"
+    def test_bearer_prefix_compat(self):
+        assert extract_token("Bearer abc.def.ghi") == "abc.def.ghi"
+
+    def test_none(self):
+        assert extract_token(None) is None
+
+    def test_empty(self):
+        assert extract_token("") is None
+
+    def test_unknown_scheme(self):
+        assert extract_token("Basic abc123") is None
+        assert extract_token("Token abc123") is None
+
+
+# ─── OathMeshError ────────────────────────────────────────────────────────────
+
+class TestOathMeshError:
+    def test_attributes(self):
+        err = OathMeshError("audience_mismatch", "wrong audience", "fix it")
+        assert err.code == "audience_mismatch"
+        assert err.message == "wrong audience"
+        assert err.fix == "fix it"
+        assert isinstance(err, Exception)
+
+    def test_to_dict(self):
+        err = OathMeshError("token_expired", "expired", "mint new")
+        assert err.to_dict() == {
+            "error": "token_expired",
+            "message": "expired",
+            "fix": "mint new",
+        }
+
+    def test_to_dict_no_fix(self):
+        err = OathMeshError("token_expired", "expired")
+        d = err.to_dict()
+        assert "fix" not in d
+
+    def test_str_includes_code(self):
+        err = OathMeshError("replay_detected", "already used")
+        assert "replay_detected" in str(err)
+
+
+# ─── verify_token ─────────────────────────────────────────────────────────────
+
+class TestVerifyToken:
+    CONFIG = VerifierConfig(
+        audience="https://inventory.internal",
+        trusted_issuers=["http://issuer.local"],
+    )
+
+    def test_missing_header(self):
+        with pytest.raises(OathMeshError) as exc_info:
+            verify_token("", self.CONFIG)
+        assert exc_info.value.code == "claim_missing:token"
+        assert exc_info.value.fix is not None
+
+    def test_wrong_scheme(self):
+        with pytest.raises(OathMeshError) as exc_info:
+            verify_token("Basic abc123", self.CONFIG)
+        assert exc_info.value.code == "claim_missing:token"
+
+    def test_malformed_token(self):
+        with pytest.raises(OathMeshError) as exc_info:
+            verify_token("OathMesh not-a-real-token", self.CONFIG)
+        assert exc_info.value.code in ("verification_failed", "algorithm_not_allowed")
+
+    def test_on_denied_hook_fires(self):
+        errors = []
+        config = VerifierConfig(
+            audience="https://inventory.internal",
+            trusted_issuers=["http://issuer.local"],
+            on_denied=lambda e: errors.append(e),
+        )
+        with pytest.raises(OathMeshError):
+            verify_token("", config)
+        assert len(errors) == 1
+        assert errors[0].code == "claim_missing:token"
+
+
+# ─── Types ────────────────────────────────────────────────────────────────────
+
+class TestTypes:
+    def test_principal_frozen(self):
+        p = Principal(issuer="https://iss.dev", subject="svc://a/b")
+        assert p.issuer == "https://iss.dev"
+        with pytest.raises(AttributeError):
+            p.issuer = "changed"  # type: ignore
+
+    def test_verified_context_defaults(self):
+        ctx = VerifiedCallerContext(
+            principal=Principal(issuer="i", subject="s"),
+            action="read",
+            token_id="jti-123",
+        )
+        assert ctx.environment == ""
+        assert ctx.scope == []
+        assert ctx.reason is None
+        assert ctx.source is None

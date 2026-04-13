@@ -1,22 +1,5 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: oathmesh
-      POSTGRES_PASSWORD: oathmesh_dev
-      POSTGRES_DB: oathmesh
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U oathmesh"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
+  # ── Infrastructure ─────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     ports:
@@ -29,6 +12,7 @@ services:
     volumes:
       - redis_data:/data
 
+  # ── OathMesh Issuer ────────────────────────────────────────────────────────
   issuer:
     build:
       context: .
@@ -36,14 +20,11 @@ services:
     ports:
       - "4000:4000"
     environment:
-      OATHMESH_ISSUER: https://issuer.oathmesh.dev
-      OATHMESH_PRIVATE_KEY: ${OATHMESH_PRIVATE_KEY}
+      OATHMESH_ISSUER: http://issuer:4000
+      OATHMESH_PRIVATE_KEY_FILE: /run/secrets/private_key
       OATHMESH_AUDIT_SINK: stdout
-      OATHMESH_REPLAY_CACHE_BACKEND: redis
-      OATHMESH_REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -51,7 +32,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    secrets:
+      - private_key
 
+  # ── OathMesh Gateway ───────────────────────────────────────────────────────
   gateway:
     build:
       context: .
@@ -62,8 +46,7 @@ services:
     environment:
       OATHMESH_GATEWAY_UPSTREAM: http://upstream-demo:80
       OATHMESH_GATEWAY_AUDIENCE: https://inventory.internal
-      OATHMESH_GATEWAY_ISSUERS: https://issuer.oathmesh.dev
-      # We just point at a dummy policy for the demo right now
+      OATHMESH_GATEWAY_ISSUERS: http://issuer:4000
       OATHMESH_GATEWAY_POLICY: /policy/production.json
     volumes:
       - ./policy/production.json:/policy/production.json:ro
@@ -71,29 +54,29 @@ services:
       issuer:
         condition: service_healthy
 
+  # ── Upstream Demo (receives proxied requests) ──────────────────────────────
   upstream-demo:
     image: traefik/whoami
     ports:
       - "8080:80"
 
+  # ── Go chi-api Example ─────────────────────────────────────────────────────
   chi-api:
     build:
-      context: ./examples/chi-api
-    # (Leaving this here, built in Phase 6)
+      context: .
+      dockerfile: examples/chi-api/Dockerfile
     ports:
       - "8081:8080"
     environment:
       OATHMESH_AUDIENCE: https://inventory.internal
-      OATHMESH_TRUSTED_ISSUERS: https://issuer.oathmesh.dev
-      OATHMESH_POLICY_PATH: /policy/production.pkl
+      OATHMESH_TRUSTED_ISSUERS: http://issuer:4000
     depends_on:
       issuer:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./policy/production.pkl:/policy/production.pkl:ro
+
+secrets:
+  private_key:
+    file: ./private.pem
 
 volumes:
-  postgres_data:
   redis_data:
