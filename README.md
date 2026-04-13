@@ -74,10 +74,10 @@
 | **alg:none rejection** | ✅ | ✅ | ✅ |
 | **Exact audience match** | ✅ | ✅ | ✅ |
 | **rqh binding** | ✅ | ✅ | ✅ |
-| **Replay cache** | ✅ Built-in | ⚠️ Requires gateway | ⚠️ Requires gateway |
-| **Policy evaluation** | ✅ Built-in | ⚠️ Requires gateway | ⚠️ Requires gateway |
+| **Replay cache** | ✅ Built-in | ✅ Built-in (InMemoryReplayCache) | ✅ Built-in (InMemoryReplayCache) |
+| **Policy evaluation** | ✅ Built-in (Pkl) | ✅ Built-in (JSON) | ✅ Built-in (JSON) |
 
-> **Note:** Node.js and Python SDKs verify tokens but do not enforce replay protection or policy — these require the Go gateway mode or a Go-based receiver. Set `requireRequestBinding: true` (Node) or `require_request_binding=True` (Python) for write/mutate endpoints.
+> **Note:** All three SDKs now implement the full 14-step verification pipeline including replay protection and policy evaluation. The Go SDK uses Pkl for policy, while Node.js and Python SDKs use simple JSON-based policies. Use `requireRequestBinding: true` (Node) or `require_request_binding=True` (Python) for write/mutate endpoints.
 
 ---
 

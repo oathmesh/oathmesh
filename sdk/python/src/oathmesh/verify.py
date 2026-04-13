@@ -10,7 +10,7 @@ import jwt
 from jwt import PyJWKClient
 from typing import List, Optional, Callable, Any
 from .errors import OathMeshError
-from .types import VerifiedCallerContext, Principal, Source
+from .types import VerifiedCallerContext, Principal, Source, ReplayCache, PolicyEvaluator
 
 # Module-level JWKS client cache — shared across calls within the same process.
 # In serverless (Lambda, Cloud Functions), module scope persists across warm invocations.
@@ -29,6 +29,12 @@ class VerifierConfig:
             When True, tokens without rqh are rejected with error "binding_required".
             Recommended for all write/mutate endpoints to prevent tampering.
             Default: False (for backward compatibility).
+        replay_cache: Optional replay cache for preventing token reuse.
+            Use InMemoryReplayCache for development, or implement Redis-based cache for production.
+            Default: None (no replay checking).
+        policy_evaluator: Optional policy evaluator for authorization decisions.
+            Use JsonPolicyEvaluator with a JSON policy document.
+            Default: None (no policy enforcement).
         on_verified: Optional callback on every successful verification.
         on_denied: Optional callback on every denied request.
     """
@@ -38,12 +44,16 @@ class VerifierConfig:
         audience: str,
         trusted_issuers: List[str],
         require_request_binding: bool = False,
+        replay_cache: Optional[ReplayCache] = None,
+        policy_evaluator: Optional[PolicyEvaluator] = None,
         on_verified: Optional[Callable[[VerifiedCallerContext], None]] = None,
         on_denied: Optional[Callable[[OathMeshError], None]] = None,
     ):
         self.audience = audience
         self.trusted_issuers = trusted_issuers
         self.require_request_binding = require_request_binding
+        self.replay_cache = replay_cache
+        self.policy_evaluator = policy_evaluator
         self.on_verified = on_verified
         self.on_denied = on_denied
 
@@ -170,6 +180,39 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
             "token missing rqh (request hash) claim",
             "mint a token with rqh= sha256:<canonical-request> for write/mutate operations"
         )
+
+    # Step 13: Check replay cache (if configured)
+    if config.replay_cache:
+        jti = data.get("jti")
+        if jti and config.replay_cache.check(jti):
+            _deny(
+                config,
+                "replay_detected",
+                f"token {jti} has already been used",
+                "each Oath Token can only be used once — mint a new token"
+            )
+        if jti:
+            config.replay_cache.add(jti)
+
+    # Step 14: Evaluate policy (if configured)
+    if config.policy_evaluator:
+        from .types import PolicyInput
+        policy_input = PolicyInput(
+            iss=iss,
+            sub=data["sub"],
+            aud=data["aud"],
+            act=data["act"],
+            scope=data.get("scope"),
+            env=data.get("env"),
+        )
+        decision = config.policy_evaluator.evaluate(policy_input)
+        if decision.outcome == "deny":
+            _deny(
+                config,
+                "policy_denied",
+                decision.deny_reason or "policy evaluation denied",
+                "check policy rules for this request"
+            )
 
     # Build source provenance if present
     source = None

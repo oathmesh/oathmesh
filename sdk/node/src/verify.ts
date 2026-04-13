@@ -7,7 +7,7 @@
  */
 
 import { createRemoteJWKSet, jwtVerify, decodeProtectedHeader, decodeJwt } from 'jose';
-import { OathMeshError, type VerifierConfig, type VerifiedCallerContext } from './types';
+import { OathMeshError, type VerifierConfig, type VerifiedCallerContext, type PolicyInput } from './types';
 
 /**
  * Module-level JWKS cache. Keys are issuer URLs, values are jose JWKS functions.
@@ -137,6 +137,39 @@ export async function verifyOathToken(
       'token missing rqh (request hash) claim',
       'mint a token with rqh= sha256:<canonical-request> for write/mutate operations'
     );
+  }
+
+  // Step 13: Check replay cache (if configured)
+  if (config.replayCache) {
+    const jti = payload.jti as string;
+    if (config.replayCache.check(jti)) {
+      throw new OathMeshError(
+        'replay_detected',
+        `token ${jti} has already been used`,
+        'each Oath Token can only be used once — mint a new token'
+      );
+    }
+    config.replayCache.add(jti);
+  }
+
+  // Step 14: Evaluate policy (if configured)
+  if (config.policyEvaluator) {
+    const policyInput: PolicyInput = {
+      iss,
+      sub: payload.sub as string,
+      aud: payload.aud as string,
+      act: payload.act as string,
+      scope: payload.scope as string[] | undefined,
+      env: payload.env as string | undefined,
+    };
+    const decision = config.policyEvaluator.evaluate(policyInput);
+    if (decision.outcome === 'deny') {
+      throw new OathMeshError(
+        'policy_denied',
+        decision.denyReason || 'policy evaluation denied',
+        'check policy rules for this request'
+      );
+    }
   }
 
   // Build verified context
