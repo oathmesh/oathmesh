@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "oathmesh"
-version = "1.0.7"
+version = "1.0.8"
 license = { text = "MIT" }
 description = "OathMesh verification SDK for Python — FastAPI, Flask, Django"
 readme = "README.md"
