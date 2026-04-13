@@ -50,6 +50,4 @@ app.get('/healthz', (_req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`express-api listening on :${port}`);
-  console.log(`  audience: ${audience}`);
-  console.log(`  issuers:  ${issuers.join(', ')}`);
 });

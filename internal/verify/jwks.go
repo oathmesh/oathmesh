@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -85,6 +86,18 @@ func (c *JWKSCache) fetchAndCache(issuerURL string, kid string) (ed25519.PublicK
 		}
 	}
 
+	// Validate issuer URL before making HTTP request (prevent SSRF)
+	parsed, err := url.Parse(issuerURL)
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid issuer URL: %w", err)
+	}
+	if !parsed.IsAbs() {
+		return nil, "", fmt.Errorf("issuer URL must be absolute: %s", issuerURL)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return nil, "", fmt.Errorf("issuer URL must use http or https: %s", issuerURL)
+	}
+
 	jwksURL := issuerURL + "/.well-known/jwks.json"
 	resp, err := c.client.Get(jwksURL)
 	if err != nil {
@@ -135,7 +148,7 @@ type StaticJWKSProvider struct {
 
 type staticKeyEntry struct {
 	PublicKey ed25519.PublicKey
-	Alg      string
+	Alg       string
 }
 
 // NewStaticJWKSProvider creates a provider with the given kid→key mapping.
