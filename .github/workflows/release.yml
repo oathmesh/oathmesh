@@ -68,7 +68,7 @@ jobs:
         run: |
           VERSION=${TAG#v}
           cd sdk/node
-          npm version $VERSION --no-git-tag-version
+          npm version $VERSION --no-git-tag-version --allow-same-version
       - name: Install & Build
         run: |
           cd sdk/node
@@ -117,7 +117,7 @@ jobs:
           name: python-dist
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release-v1
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
