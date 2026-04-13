@@ -49,6 +49,14 @@ docker-down: ## Stop all services
 demo: ## Run the golden-path end-to-end demo
 	bash demo.sh
 
+# ── Conformance ───────────────────────────────────────────────────────────────
+
+conformance: ## Run cross-SDK conformance tests (requires services running)
+	@echo "Running cross-SDK conformance suite..."
+	@echo "Ensure issuer, chi-api, express-api, and fastapi-api are running"
+	@echo "via: docker-compose up -d issuer chi-api express-api fastapi-api"
+	@bash conformance/run_all.sh
+
 # ── Codegen ──────────────────────────────────────────────────────────────────
 
 pkl-gen: ## Regenerate Go code from Pkl policy schema

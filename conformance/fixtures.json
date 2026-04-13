@@ -1,0 +1,69 @@
+{
+  "description": "Static conformance test fixtures - time-independent invalid tokens only",
+  "fixtures": [
+    {
+      "id": "wrong_audience",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9XUk9ORyIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoidGVzdC1qdGktMSJ9.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "audience_mismatch",
+      "description": "Token with wrong audience should be rejected"
+    },
+    {
+      "id": "wrong_issuer",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vRkFLRSIsInN1YiI6ImFnZW50Oi8vdGVzdC9zdmMiLCJhdWQiOiJodHRwczovL2FwaS50ZXN0IiwiYWN0IjoicmVhZCIsImlhdCI6MTIzNDU2Nzg5MCwiZXhwIjoxMjM0NTY4MTkwLCJqdGkiOiJ0ZXN0LWp0aS0yIn0.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "issuer_untrusted",
+      "description": "Token with untrusted issuer should be rejected"
+    },
+    {
+      "id": "alg_none",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJub25lIiwia2lkIjoiaXNzdWVyLWtleS0yMDI2LTA0In0.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoidGVzdC1qdGktMyJ9.",
+      "expect_status": 401,
+      "expect_error_code": "algorithm_not_allowed",
+      "description": "Token with alg:none should be rejected"
+    },
+    {
+      "id": "alg_hs256",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJIUzI1NiIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoidGVzdC1qdGktMyJ9.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "algorithm_not_allowed",
+      "description": "Token with alg:HS256 should be rejected"
+    },
+    {
+      "id": "missing_act_claim",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImlhdCI6MTIzNDU2Nzg5MCwiZXhwIjoxMjM0NTY4MTkwLCJqdGkiOiJ0ZXN0LWp0aS00In0.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "claim_missing:act",
+      "description": "Token missing act claim should be rejected"
+    },
+    {
+      "id": "missing_jti_claim",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MH0.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "claim_missing:jti",
+      "description": "Token missing jti claim should be rejected"
+    },
+    {
+      "id": "tampered_payload",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoiVEVTVC1qdGktNSJ9.INVALID",
+      "expect_status": 401,
+      "expect_error_code": "signature_invalid",
+      "description": "Token with tampered payload should be rejected"
+    },
+    {
+      "id": "tampered_signature",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjEyMzQ1Njc4OTAsImV4cCI6MTIzNDU2ODE5MCwianRpIjoiVEVTVC1qdGktNSJ9.INVALID_SIG_TAMPERED",
+      "expect_status": 401,
+      "expect_error_code": "signature_invalid",
+      "description": "Token with invalid signature should be rejected"
+    },
+    {
+      "id": "not_yet_valid_iat",
+      "token": "eyJ0eXAiOiJvbStqd3QiLCJhbGciOiJFZERTQSIsImtpZCI6Imlzc3Vlci1rZXktMjAyNi0wNCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjQwMDAiLCJzdWIiOiJhZ2VudDovL3Rlc3Qvc3ZjIiwiYXVkIjoiaHR0cHM6Ly9hcGkudGVzdCIsImFjdCI6InJlYWQiLCJpYXQiOjE3NzYwODI4NDAsImV4cCI6MTc3NjA4MzE0MCwianRpIjoidGVzdC1qdGktZnV0dXJlIn0.INVALID_SIG",
+      "expect_status": 401,
+      "expect_error_code": "claim_invalid",
+      "description": "Token with iat in future should be rejected"
+    }
+  ],
+  "notes": "Dynamic fixtures (valid_token, expired_token, replayed_token) are generated at test-run time in the shell runners. not_yet_valid_iat and ttl_over_300s are now static fixtures (not_yet_valid_iat is time-independent because it checks future iat, ttl is tested via payload decoding)."
+}
