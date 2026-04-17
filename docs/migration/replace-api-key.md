@@ -47,15 +47,22 @@ response = requests.get("https://service-b.internal/data",
 
 After:
 ```python
-from oathmesh import verify_token, VerifierConfig
+from oathmesh import OathMeshClient
+import requests
 
-# Mint a token for this specific call
-token = requests.post("https://issuer.internal/v1/token", json={
-    "sub": "svc://service-a/worker",
-    "aud": "https://service-b.internal",
-    "act": "data.read",
-    "ttl_hint": 60
-}).json()["token"]
+# Initialize auto-minting client
+client = OathMeshClient(
+    issuer="https://issuer.internal",
+    api_key="your_issuer_key"
+)
+
+# Mint a token for this specific call (auto-caches locally)
+token = client.mint(
+    sub="svc://service-a/worker",
+    aud="https://service-b.internal",
+    act="data.read",
+    ttl_hint=60
+)
 
 # Use the token instead of the API key
 response = requests.get("https://service-b.internal/data",

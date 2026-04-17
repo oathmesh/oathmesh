@@ -56,12 +56,14 @@ export type ErrorCode =
 export class OathMeshError extends Error {
   public readonly code: ErrorCode;
   public readonly fix?: string;
+  public readonly step?: number;
 
-  constructor(code: ErrorCode, message: string, fix?: string) {
+  constructor(code: ErrorCode, message: string, fix?: string, step?: number) {
     super(message);
     this.name = 'OathMeshError';
     this.code = code;
     this.fix = fix;
+    this.step = step;
   }
 
   /** Serialize to the standard OathMesh error JSON shape. */
@@ -70,6 +72,7 @@ export class OathMeshError extends Error {
       error: this.code,
       message: this.message,
       fix: this.fix,
+      step: this.step,
     };
   }
 }

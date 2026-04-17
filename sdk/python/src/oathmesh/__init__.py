@@ -24,6 +24,7 @@ Usage with FastAPI::
 from .errors import OathMeshError
 from .types import VerifiedCallerContext, Principal, Source
 from .verify import VerifierConfig, verify_token, verify_raw_token, extract_token
+from .client import OathMeshClient
 
 __all__ = [
     "OathMeshError",
@@ -34,6 +35,7 @@ __all__ = [
     "verify_token",
     "verify_raw_token",
     "extract_token",
+    "OathMeshClient",
 ]
 
 __version__ = "1.0.0"

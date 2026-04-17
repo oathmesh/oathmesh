@@ -15,7 +15,7 @@ import (
 
 const (
 	// DefaultJWKSCacheTTL is the default JWKS cache lifetime.
-	DefaultJWKSCacheTTL = 5 * time.Minute
+	DefaultJWKSCacheTTL = 60 * time.Second
 
 	// JWKSFetchTimeout is the HTTP timeout for fetching JWKS.
 	// Never use http.DefaultClient — always an explicit timeout per spec.

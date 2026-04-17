@@ -150,6 +150,33 @@ def require_oathmesh(view_func):
     return wrapper
 ```
 
+## OathMeshClient (Auto-Minting)
+
+If you need to construct signed tokens to make upstream requests as a service, use the `OathMeshClient`:
+
+```python
+from oathmesh import OathMeshClient
+import urllib.request
+
+client = OathMeshClient(
+    issuer="https://issuer.oathmesh.dev",
+    api_key="your_api_key"
+)
+
+# Auto-fetches and caches tokens efficiently until TTL
+token = client.mint(
+    sub="service://inventory/worker",
+    aud="https://financial.internal",
+    act="payment.process"
+)
+
+req = urllib.request.Request("https://financial.internal/pay")
+req.add_header("Authorization", f"OathMesh {token}")
+response = urllib.request.urlopen(req)
+```
+
+---
+
 ## Core Verifier (Framework-agnostic)
 
 ```python
@@ -161,7 +188,7 @@ config = VerifierConfig(
 )
 
 # Extract token from any header format
-token = extract_token(auth_header)       # supports both "OathMesh ..." and "Bearer ..."
+token = extract_token(auth_header)       # extracting exactly from "OathMesh ..."
 
 # Verify
 caller = verify_raw_token(token, config)
@@ -197,7 +224,7 @@ Verify from a raw token string (no prefix).
 
 ### `extract_token(auth_header) → str | None`
 
-Extract token from `OathMesh` or `Bearer` prefixed headers.
+Extract token from exactly `OathMesh ` prefixed headers.
 
 ### `VerifiedCallerContext`
 
@@ -222,6 +249,7 @@ class OathMeshError(Exception):
     code: str       # e.g., "audience_mismatch"
     message: str    # human-readable
     fix: str | None # actionable instruction
+    step: int | None # execution step number (e.g. 11)
 
     def to_dict(self) -> dict:
         ...

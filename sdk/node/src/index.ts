@@ -38,6 +38,9 @@ export { verifyToken } from './middleware';
 // Core verifier (framework-agnostic)
 export { verifyOathToken, extractToken } from './verify';
 
+// Client for minting
+export { OathMeshClient, type MintRequest } from './client';
+
 // Types
 export {
   OathMeshError,

@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
-    <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
+  <a href="https://www.npmjs.com/package/@oathmesh/sdk">
+    <img src="https://img.shields.io/npm/v/@oathmesh/sdk.svg" alt="npm version">
   </a>
-  <a href="https://www.npmjs.com/package/@oathmesh/oathmesh">
-    <img src="https://img.shields.io/npm/dm/@oathmesh/oathmesh" alt="npm downloads">
+  <a href="https://www.npmjs.com/package/@oathmesh/sdk">
+    <img src="https://img.shields.io/npm/dm/@oathmesh/sdk" alt="npm downloads">
   </a>
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
     <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
@@ -28,11 +28,11 @@
 ## Installation
 
 ```bash
-npm install @oathmesh/oathmesh
+npm install @oathmesh/sdk
 # or
-yarn add @oathmesh/oathmesh
+yarn add @oathmesh/sdk
 # or
-pnpm add @oathmesh/oathmesh
+pnpm add @oathmesh/sdk
 ```
 
 ### Requirements
@@ -46,7 +46,7 @@ pnpm add @oathmesh/oathmesh
 ## Quick Start
 
 ```typescript
-import { verifyToken } from '@oathmesh/oathmesh';
+import { verifyToken } from '@oathmesh/sdk';
 
 app.use(verifyToken({
   audience: 'https://inventory.internal',
@@ -65,11 +65,11 @@ app.get('/inventory', (req, res) => {
 
 | Framework | Integration | Export |
 |-----------|-------------|--------|
-| **Express** | Middleware | `@oathmesh/oathmesh` |
-| **Next.js App** | Route handler | `@oathmesh/oathmesh/next` |
-| **Next.js Pages** | API wrapper | `@oathmesh/oathmesh/next` |
-| **Next.js Edge** | Edge middleware | `@oathmesh/oathmesh/next` |
-| **Any** | Core verifier | `@oathmesh/oathmesh` |
+| **Express** | Middleware | `@oathmesh/sdk` |
+| **Next.js App** | Route handler | `@oathmesh/sdk/next` |
+| **Next.js Pages** | API wrapper | `@oathmesh/sdk/next` |
+| **Next.js Edge** | Edge middleware | `@oathmesh/sdk/next` |
+| **Any** | Core verifier/Client | `@oathmesh/sdk` |
 
 ---
 
@@ -77,7 +77,7 @@ app.get('/inventory', (req, res) => {
 
 ```typescript
 import express from 'express';
-import { verifyToken } from '@oathmesh/oathmesh';
+import { verifyToken } from '@oathmesh/sdk';
 
 const app = express();
 
@@ -99,7 +99,7 @@ app.get('/inventory', (req, res) => {
 ```typescript
 // app/api/inventory/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { withOathMesh } from '@oathmesh/oathmesh/next';
+import { withOathMesh } from '@oathmesh/sdk/next';
 
 const oathmesh = withOathMesh({
   audience: 'https://inventory.internal',
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
 
 ```typescript
 // pages/api/inventory.ts
-import { withOathMeshApi } from '@oathmesh/oathmesh/next';
+import { withOathMeshApi } from '@oathmesh/sdk/next';
 
 export default withOathMeshApi(
   {
@@ -140,7 +140,7 @@ export default withOathMeshApi(
 ```typescript
 // middleware.ts (project root)
 import { NextRequest, NextResponse } from 'next/server';
-import { createEdgeVerifier } from '@oathmesh/oathmesh/next';
+import { createEdgeVerifier } from '@oathmesh/sdk/next';
 
 const verify = createEdgeVerifier({
   audience: 'https://inventory.internal',
@@ -161,12 +161,41 @@ export const config = {
 
 ---
 
-## Core Verifier (Framework-agnostic)
+## OathMeshClient (Auto-Minting)
 
-Use `verifyOathToken` directly in any runtime — Hono, Fastify, or raw Node:
+If you need to construct signed tokens to make upstream requests as a service, use the `OathMeshClient`:
 
 ```typescript
-import { verifyOathToken, extractToken, OathMeshError } from '@oathmesh/oathmesh';
+import { OathMeshClient } from '@oathmesh/sdk';
+
+const client = new OathMeshClient({
+  issuer: 'https://issuer.oathmesh.dev',
+  apiKey: process.env.API_KEY
+});
+
+// Auto-fetches and caches tokens efficiently until TTL
+const token = await client.mint({
+  sub: 'service://inventory/worker',
+  aud: 'https://financial.internal',
+  act: 'payment.process'
+});
+
+const response = await fetch('https://financial.internal/pay', {
+  headers: {
+    'Authorization': `OathMesh ${token}`
+  }
+});
+```
+
+---
+
+## Core Verifier (Framework-agnostic)
+
+Use `verifyOathToken` directly in any runtime — Hono, Fastify, or raw Node.
+**Note:** Only Authorization headers starting strictly with `OathMesh ` are verified. Legacy `Bearer` headers are invalid.
+
+```typescript
+import { verifyOathToken, extractToken, OathMeshError } from '@oathmesh/sdk';
 
 const token = extractToken(headers.authorization);
 
@@ -178,7 +207,7 @@ try {
   console.log(caller.principal.subject);
 } catch (err) {
   if (err instanceof OathMeshError) {
-    console.error(err.code, err.fix);
+    console.error(`Step ${err.step} Failed:`, err.code, err.fix);
   }
 }
 ```
@@ -206,13 +235,14 @@ verifyToken({
 
 ## Error Responses
 
-All verification failures return HTTP 401 with a stable JSON shape:
+All verification failures return HTTP 401 with a stable JSON shape containing the core `error` taxonomy, human message, and granular `step` ID:
 
 ```json
 {
   "error": "audience_mismatch",
   "message": "token audience does not match",
-  "fix": "mint with --aud https://inventory.internal"
+  "fix": "mint with --aud https://inventory.internal",
+  "step": 11
 }
 ```
 

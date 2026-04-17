@@ -22,15 +22,18 @@ class OathMeshError(Exception):
         fix: Actionable instruction for how to resolve the error.
     """
 
-    def __init__(self, code: str, message: str, fix: Optional[str] = None):
+    def __init__(self, code: str, message: str, fix: Optional[str] = None, step: Optional[int] = None):
         self.code = code
         self.message = message
         self.fix = fix
-        super().__init__(f"{code}: {message}")
+        self.step = step
+        super().__init__(f"[{step}] {code}: {message}" if step else f"{code}: {message}")
 
     def to_dict(self) -> dict:
         """Serialize to the standard OathMesh error JSON shape."""
         result: dict = {"error": self.code, "message": self.message}
         if self.fix:
             result["fix"] = self.fix
+        if self.step:
+            result["step"] = self.step
         return result

@@ -12,10 +12,6 @@ describe('extractToken', () => {
     expect(extractToken('OathMesh abc.def.ghi')).toBe('abc.def.ghi');
   });
 
-  it('extracts token from Bearer prefix (compat mode)', () => {
-    expect(extractToken('Bearer abc.def.ghi')).toBe('abc.def.ghi');
-  });
-
   it('returns null for missing header', () => {
     expect(extractToken(null)).toBeNull();
     expect(extractToken(undefined)).toBeNull();

@@ -6,7 +6,8 @@
 |---|---|---|
 | `OATHMESH_ISSUER` | — | Canonical issuer URL. Must be HTTPS in production. |
 | `OATHMESH_PRIVATE_KEY` | — | Ed25519 private key in PKCS8 PEM format (full string including headers). |
-| `OATHMESH_PRIVATE_KEY_FILE` | — | Dev-only: path to PEM file. Ignored if `OATHMESH_PRIVATE_KEY` is set. |
+| `OATHMESH_PRIVATE_KEY_B64` | — | Ed25519 private key Base64 encoded. Useful for CI/CD environments. |
+| `OATHMESH_PRIVATE_KEY_FILE` | — | Dev-only: path to PEM file. Ignored if `OATHMESH_PRIVATE_KEY` or B64 is set. |
 | `OATHMESH_PORT` | `4000` | HTTP listen port. |
 | `OATHMESH_CONFIG_FILE` | — | Path to Pkl configuration file. |
 | `OATHMESH_TTL_DEFAULT` | `120` | Default token TTL in seconds. |
@@ -16,8 +17,9 @@
 | `OATHMESH_RATE_LIMIT_BURST` | `20` | Burst size above steady-state rate. |
 | `OATHMESH_AUDIT_SINK` | `stdout` | Audit output: `stdout`, `file`, or `noop` (tests only). |
 | `OATHMESH_AUDIT_FILE` | — | File path when `OATHMESH_AUDIT_SINK=file`. |
-| `OATHMESH_JWKS_CACHE_TTL` | `300` | JWKS in-memory cache TTL in seconds. |
+| `OATHMESH_JWKS_CACHE_TTL` | `60` | JWKS in-memory cache TTL in seconds. |
 | `OATHMESH_LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error`. |
+| `OATHMESH_ENV` | `development` | Setting to `production` disables dangerous developer features like Policy Hot-Reloading. |
 | `REDIS_URL` | — | Redis connection URL for replay cache. |
 | `DATABASE_URL` | — | PostgreSQL connection URL (production). |
 
@@ -38,9 +40,9 @@ The issuer supports configuration via a Pkl file (`internal/config/issuer.pkl`):
 class IssuerConfig {
   issuer: String                          // Canonical issuer URL
   port: Int(isBetween(1, 65535)) = 4000   // HTTP listen port
-  privateKeySource: String("env"|"file") = "env"
+  privateKeySource: String("env"|"file"|"b64") = "env"
   privateKeyFile: String?                 // Path when source = "file"
-  jwksCacheTTLSeconds: Int = 300
+  jwksCacheTTLSeconds: Int = 60
   keyRotation: KeyRotationConfig = new {}
   ttl: TTLConfig = new {}
   rateLimit: RateLimitConfig = new {}

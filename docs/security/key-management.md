@@ -73,13 +73,13 @@ JWKS contains:
 
 ### Cache Behavior
 
-- JWKS is cached in memory with a default TTL of 5 minutes
+- JWKS is cached in memory with a default TTL of 60 seconds
 - If a `kid` is not in cache, the verifier fetches JWKS once and retries
 - If still missing after refresh: reject with `issuer_untrusted`
 
 ### Key Compromise Residual Window
 
-After revoking a key, receivers that cached JWKS will accept tokens signed with the old key for up to `OATHMESH_JWKS_CACHE_TTL` seconds (default 300s, i.e., 5 minutes). This is a residual risk during emergency key compromise.
+After revoking a key, receivers that cached JWKS will accept tokens signed with the old key for up to `OATHMESH_JWKS_CACHE_TTL` seconds (default 60s). This is a residual risk during emergency key compromise.
 
 **For emergency revocation:**
 1. Set `OATHMESH_JWKS_CACHE_TTL=0` on all receivers before rotating the key

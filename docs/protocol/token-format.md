@@ -85,7 +85,7 @@ The canonical transport header is:
 Authorization: OathMesh <token>
 ```
 
-A compatibility mode using `Authorization: Bearer <token>` exists for upstreams that force it, but `OathMesh` is always preferred.
+**Note:** Legacy `Bearer` tokens are fully deprecated and will fail strict Step-01 header validation. This breaks backwards compatibility with legacy upstream integrations that failed to migrate.
 
 ---
 

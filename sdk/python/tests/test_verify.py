@@ -11,9 +11,6 @@ class TestExtractToken:
     def test_oathmesh_prefix(self):
         assert extract_token("OathMesh abc.def.ghi") == "abc.def.ghi"
 
-    def test_bearer_prefix_compat(self):
-        assert extract_token("Bearer abc.def.ghi") == "abc.def.ghi"
-
     def test_none(self):
         assert extract_token(None) is None
 

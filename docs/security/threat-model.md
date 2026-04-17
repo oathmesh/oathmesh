@@ -55,7 +55,7 @@ This document covers threats to OathMesh as a machine-call identity system. It d
 **Response:** On key compromise:
 1. Generate a new key pair immediately
 2. Deploy the new key to the issuer
-3. The old key will expire from JWKS caches within 5 minutes (default cache TTL)
+3. The old key will expire from JWKS caches within 60 seconds (default cache TTL)
 4. All tokens signed with the old key will expire within 300 seconds
 
 ### 4. Algorithm Confusion

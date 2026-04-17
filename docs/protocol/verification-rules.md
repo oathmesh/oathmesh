@@ -26,7 +26,7 @@ Decode the second segment as JSON. Extract the `iss` (issuer) claim from the pay
 Verify `iss` appears in the receiver's explicitly configured trusted issuers list. No wildcards. No auto-discovery. No fallback. Unknown issuers are always rejected with `issuer_untrusted`.
 
 ## Step 05 — Load JWKS
-Fetch the issuer's JWKS from `{iss}/.well-known/jwks.json`. Use an in-memory cache with a default TTL of 5 minutes. If the `kid` from the token header is not in cache, fetch once. If still missing after refresh: reject with `issuer_untrusted`.
+Fetch the issuer's JWKS from `{iss}/.well-known/jwks.json`. Use an in-memory cache with a default TTL of 60 seconds. If the `kid` from the token header is not in cache, fetch once. If still missing after refresh: reject with `issuer_untrusted`.
 
 **Implementation requirement:** Use a dedicated `http.Client` with `Timeout: 5 * time.Second`. Never use `http.DefaultClient` (it has no timeout).
 
@@ -55,8 +55,11 @@ If the `rqh` claim is present: compute `sha256(canonical_request)` and verify it
 Check whether `jti` has been seen before within the token's TTL window. If seen: reject immediately with `replay_detected`. If not seen: record the `jti` with a TTL equal to the remaining token lifetime.
 
 Implementation options:
-- **MemoryReplayCache:** `sync.RWMutex` — reads under `RLock`, writes under `Lock`
+- **MemoryReplayCache:** 256-Shard Lock Table — atomic check-and-set eliminating global mutex contention and preventing TOCTOU replay bursts.
 - **RedisReplayCache:** `SET jti EX <remaining_ttl> NX` — atomic check-and-set, no race
+
+## Step 13.5 — Check Revocation (Optional)
+If a RevocationList is configured, verify the `sub` against the list. If revoked, reject with `subject_revoked`.
 
 ## Step 14 — Evaluate Policy
 Evaluate the Pkl policy rules in order. First matching rule wins. If no rule matches: deny. Emit an audit event regardless of outcome (allow **or** deny — this is never conditional).
@@ -75,6 +78,7 @@ Steps are ordered by cost: cheapest structural checks first (1–4), signature v
 | `audience_mismatch` | 10 | `aud` does not match configured audience |
 | `algorithm_not_allowed` | 02 | `alg` not in allowed list |
 | `claim_missing:{claim}` | 11 | Required claim absent |
-| `replay_detected` | 13 | `jti` seen before in replay cache |
-| `policy_denied` | 14 | No rule matched or explicit deny |
 | `binding_mismatch` | 12 | `rqh` present but hash does not match |
+| `replay_detected` | 13 | `jti` seen before in replay cache |
+| `subject_revoked` | 13.5 | Subject appears on active revocation list |
+| `policy_denied` | 14 | No rule matched or explicit deny |
