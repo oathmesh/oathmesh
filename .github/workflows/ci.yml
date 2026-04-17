@@ -125,7 +125,7 @@ jobs:
         run: openssl genpkey -algorithm Ed25519 -out private.pem
 
       - name: Start Docker services
-        run: docker compose up -d --build issuer chi-api express-api fastapi-api redis
+        run: docker compose up -d --build issuer chi-api express-api fastapi-api redis || (docker compose logs issuer && exit 1)
 
       - name: Wait for services
         run: |

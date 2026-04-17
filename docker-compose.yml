@@ -30,6 +30,8 @@ services:
       OATHMESH_PRIVATE_KEY_FILE: /run/secrets/private_key
       OATHMESH_AUDIT_SINK: stdout
       REDIS_URL: redis://redis:6379/0
+    tmpfs:
+      - /tmp
     depends_on:
       redis:
         condition: service_healthy
