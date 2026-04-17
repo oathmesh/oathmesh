@@ -10,14 +10,15 @@ jobs:
     name: Go Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: '1.26', cache: true }
       
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
+          version: latest
           args: >
             --enable=gosec,gocritic,staticcheck,exhaustive,noctx,bodyclose,rowserrcheck,sqlclosecheck
             --timeout=5m
@@ -52,9 +53,9 @@ jobs:
       run:
         working-directory: sdk/node
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22' }
       - run: npm install
       - run: npm audit --audit-level=moderate || true
       - run: npx tsc --noEmit || true
@@ -66,8 +67,8 @@ jobs:
       run:
         working-directory: sdk/python
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with: { python-version: '3.12' }
       - run: pip install -e ".[dev]" --break-system-packages || true
       - run: pip install pip-audit && pip-audit || true
@@ -77,7 +78,7 @@ jobs:
     name: Container Security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: docker build -f Dockerfile.issuer -t oathmesh:ci . || true
       - uses: aquasecurity/trivy-action@master
         if: success()
@@ -90,7 +91,7 @@ jobs:
     name: Generate SBOM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: anchore/sbom-action@v0
         with:
           artifact-name: oathmesh-sbom.spdx.json
