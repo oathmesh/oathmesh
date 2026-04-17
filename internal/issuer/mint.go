@@ -85,13 +85,13 @@ func (s *Server) mintHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(MintResponse{Token: token})
+	_ = json.NewEncoder(w).Encode(MintResponse{Token: token})
 }
 
 func (s *Server) writeError(w http.ResponseWriter, code, message, fix string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(ErrorResponse{
+	_ = json.NewEncoder(w).Encode(ErrorResponse{
 		Error:   code,
 		Message: message,
 		Fix:     fix,

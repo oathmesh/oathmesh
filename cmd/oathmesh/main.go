@@ -193,7 +193,7 @@ Exit codes:
 	cmd.Flags().String("audience", "", "Receiver audience URL (required)")
 	cmd.Flags().StringSlice("issuer", []string{}, "Trusted issuer URLs (repeatable)")
 	cmd.Flags().Bool("local-keys", false, "Use local keyset instead of fetching JWKS from issuer URL (dev only)")
-	cmd.MarkFlagRequired("audience")
+	_ = cmd.MarkFlagRequired("audience")
 	return cmd
 }
 
