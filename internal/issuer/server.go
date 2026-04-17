@@ -141,12 +141,12 @@ func middlewareLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ok"))
+	_, _ = w.Write([]byte("ok"))
 }
 
 func (s *Server) revokedSubjectsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	// Stub: return an empty list. In a full implementation, this reads from an active DB.
-	w.Write([]byte(`{"revocations": []}`))
+	_, _ = w.Write([]byte(`{"revocations": []}`))
 }

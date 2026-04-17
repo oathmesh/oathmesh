@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
@@ -100,20 +101,19 @@ func (c *JWKSCache) GetKey(_ string, kid string) (ed25519.PublicKey, string, err
 	var jwksURL string
 	var cacheKey string
 
-	// Priority 1: Fixed mode - user input IGNORED completely
-	if c.jwksURL != "" {
+	switch {
+	case c.jwksURL != "":
+		// Priority 1: Fixed mode - user input IGNORED completely
 		jwksURL = c.jwksURL
 		cacheKey = kid // keyed by kid only in fixed mode
-	} else if len(c.jwksEndpoints) > 0 {
+	case len(c.jwksEndpoints) > 0:
 		// Priority 2: Endpoints mode - use config map
-		// In this mode, user should pass the key in issuerKey parameter
-		// But we need to extract it - for now, use a generic key
 		jwksURL = c.jwksEndpoints["default"]
 		cacheKey = "default"
 		if jwksURL == "" {
 			return nil, "", fmt.Errorf("no default endpoint configured")
 		}
-	} else {
+	default:
 		// Priority 3: Backward compat - DEPRECATED
 		return nil, "", fmt.Errorf("jwks: use NewFixedJWKS or NewJWKSCache with endpoints")
 	}
@@ -148,7 +148,11 @@ func (c *JWKSCache) fetchAndCache(issuerKey, jwksURL, kid string) (ed25519.Publi
 
 	// Collapse concurrent fetches for the same issuer
 	_, err, _ := c.sf.Do(issuerKey, func() (any, error) {
-		resp, err := c.client.Get(jwksURL)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, jwksURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("build JWKS request for %s: %w", jwksURL, err)
+		}
+		resp, err := c.client.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("fetch JWKS from %s: %w", jwksURL, err)
 		}

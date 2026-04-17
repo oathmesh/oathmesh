@@ -90,7 +90,7 @@ func loadPrivateKey() (ed25519.PrivateKey, string, error) {
 func generateKid() string {
 	now := time.Now()
 	randBytes := make([]byte, 2)
-	rand.Read(randBytes)
+	_, _ = rand.Read(randBytes)
 	randHex := fmt.Sprintf("%02x%02x", randBytes[0], randBytes[1])
 	return fmt.Sprintf("issuer-key-%04d-%02d-%s", now.Year(), now.Month(), randHex)
 }

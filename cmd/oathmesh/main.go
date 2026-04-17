@@ -100,9 +100,9 @@ Exit codes:
 	cmd.Flags().String("env", "", "Environment label")
 	cmd.Flags().String("rqh", "", "Request hash binding (sha256:... format)")
 	cmd.Flags().Bool("inspect", false, "Decode and pretty-print the minted token (with UNVERIFIED warning)")
-	cmd.MarkFlagRequired("sub")
-	cmd.MarkFlagRequired("aud")
-	cmd.MarkFlagRequired("act")
+	_ = cmd.MarkFlagRequired("sub")
+	_ = cmd.MarkFlagRequired("aud")
+	_ = cmd.MarkFlagRequired("act")
 	return cmd
 }
 

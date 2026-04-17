@@ -50,7 +50,7 @@ func TestStdoutSink_EmitsNDJSON(t *testing.T) {
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 
 	// Verify JSON structure
 	var parsed map[string]interface{}

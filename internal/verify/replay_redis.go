@@ -81,10 +81,14 @@ func (rc *RedisReplayCache) Check(ctx context.Context, jti string, ttl time.Dura
 		ttl = time.Second
 	}
 
-	// SET key "1" EX ttl NX
-	// Returns true if the key was set (new jti), false if it already existed (replay)
-	result, err := rc.client.SetNX(ctx, key, "1", ttl).Result()
-	if err != nil {
+	// SET key "1" EX ttl NX — atomic check-and-set (Redis >= 2.6.12)
+	// Returns OK if key was set (new jti); returns redis.Nil if key existed (replay)
+	setArgs := redis.SetArgs{
+		TTL: ttl,
+		Mode: "NX",
+	}
+	err := rc.client.SetArgs(ctx, key, "1", setArgs).Err()
+	if err != nil && err != redis.Nil {
 		if rc.failClosed {
 			return false, fmt.Errorf("%w: redis SET NX failed: %v", ErrCacheUnavailable, err)
 		}
@@ -92,8 +96,8 @@ func (rc *RedisReplayCache) Check(ctx context.Context, jti string, ttl time.Dura
 		return false, nil
 	}
 
-	// SetNX returns true if the key was set (not a replay), false if it existed (replay)
-	return !result, nil
+	// redis.Nil means key already existed → replay detected
+	return err == redis.Nil, nil
 }
 
 // Ping checks connectivity to Redis.

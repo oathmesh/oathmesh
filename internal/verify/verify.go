@@ -507,6 +507,16 @@ func emitAndReturn(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims
 		metrics.PolicyDenials.Add(1)
 	case core.ErrReplayDetected:
 		metrics.ReplaysDetected.Add(1)
+	case core.ErrSignatureInvalid,
+		core.ErrIssuerUntrusted,
+		core.ErrTokenExpired,
+		core.ErrAudienceMismatch,
+		core.ErrAlgorithmNotAllowed,
+		core.ErrClaimMissing,
+		core.ErrBindingMismatch,
+		core.ErrBindingRequired,
+		core.ErrSubjectRevoked:
+		// counted by VerificationErrors.Add(1) above
 	}
 
 	emitAudit(ctx, cfg, claims, "deny", string(err.Code)+": "+err.Message)

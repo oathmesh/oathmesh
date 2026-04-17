@@ -337,7 +337,7 @@ func TestLoadPolicy_FromFile(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "test-policy.json")
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatalf("write temp policy: %v", err)
 	}
 
@@ -360,7 +360,7 @@ func TestWatchedPolicyEngine_HotReload(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "policy.json")
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatalf("write initial policy: %v", err)
 	}
 
@@ -385,7 +385,7 @@ func TestWatchedPolicyEngine_HotReload(t *testing.T) {
 		Rules:     []Rule{{Name: "default", Allow: false}},
 	}
 	denyData, _ := json.Marshal(denyPolicy)
-	if err := os.WriteFile(path, denyData, 0644); err != nil {
+	if err := os.WriteFile(path, denyData, 0600); err != nil {
 		t.Fatalf("write deny policy: %v", err)
 	}
 

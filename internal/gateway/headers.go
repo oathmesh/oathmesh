@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	HeaderSubject = "X-OathMesh-Subject"
-	HeaderAction  = "X-OathMesh-Action"
-	HeaderTokenID = "X-OathMesh-Token-Id"
+	HeaderSubject   = "X-OathMesh-Subject"
+	HeaderAction    = "X-OathMesh-Action"
+	HeaderAlgorithm = "X-OathMesh-Algorithm"
+	HeaderTokenID   = "X-OathMesh-Token-Id" //nolint:gosec // Not a credential, just a custom HTTP header name
 	HeaderIssuer  = "X-OathMesh-Issuer"
 	HeaderEnv     = "X-OathMesh-Env"
 )
