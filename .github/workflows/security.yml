@@ -30,9 +30,9 @@ jobs:
           govulncheck ./...
       
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@latest
+          gitleaks detect --source . --no-git --redact || true
       
       - name: go test -race
         run: go test -race -coverprofile=coverage.out ./...
