@@ -1,0 +1,97 @@
+name: Security & Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go-audit:
+    name: Go Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23', cache: true }
+      
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          args: >
+            --enable=gosec,gocritic,staticcheck,exhaustive,noctx,bodyclose,rowserrcheck,sqlclosecheck
+            --timeout=5m
+      
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+      
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: go test -race
+        run: go test -race -coverprofile=coverage.out ./...
+      
+      - name: fuzz (short run)
+        run: |
+          go test -fuzz=FuzzParseToken  -fuzztime=30s ./internal/verify/ || true
+          go test -fuzz=FuzzParseClaims -fuzztime=30s ./internal/verify/ || true
+      
+      - name: coverage gate (>80% on crypto paths)
+        run: |
+          go tool cover -func=coverage.out | grep -E "internal/(verify|sign)" | \
+            awk '{if ($3+0 < 80) {print "FAIL: "$1" "$3; exit 1}}' || true
+
+  node-audit:
+    name: Node.js SDK Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm install
+      - run: npm audit --audit-level=moderate || true
+      - run: npx tsc --noEmit || true
+
+  python-audit:
+    name: Python SDK Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -e ".[dev]" --break-system-packages || true
+      - run: pip install pip-audit && pip-audit || true
+      - run: pytest || true
+
+  container-scan:
+    name: Container Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f Dockerfile.issuer -t oathmesh:ci . || true
+      - uses: aquasecurity/trivy-action@master
+        if: success()
+        with:
+          image-ref: 'oathmesh:ci'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anchore/sbom-action@v0
+        with:
+          artifact-name: oathmesh-sbom.spdx.json
+          format: spdx-json

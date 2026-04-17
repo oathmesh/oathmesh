@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 
 const (
 	EnvPrivateKey     = "OATHMESH_PRIVATE_KEY"
+	EnvPrivateKeyB64  = "OATHMESH_PRIVATE_KEY_B64"
 	EnvPrivateKeyFile = "OATHMESH_PRIVATE_KEY_FILE"
 	EnvIssuer         = "OATHMESH_ISSUER"
 	DefaultIssuer     = "https://issuer.oathmesh.dev"
@@ -50,7 +52,16 @@ func LoadKeySet() (*KeySet, error) {
 }
 
 func loadPrivateKey() (ed25519.PrivateKey, string, error) {
-	pemData := os.Getenv(EnvPrivateKey)
+	var pemData = os.Getenv(EnvPrivateKey)
+	
+	if b64Data := os.Getenv(EnvPrivateKeyB64); b64Data != "" {
+		decoded, err := base64.StdEncoding.DecodeString(b64Data)
+		if err != nil {
+			return nil, "", fmt.Errorf("decode OATHMESH_PRIVATE_KEY_B64: %w", err)
+		}
+		pemData = string(decoded)
+	}
+
 	if pemData == "" {
 		keyFile := os.Getenv(EnvPrivateKeyFile)
 		if keyFile != "" {

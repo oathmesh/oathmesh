@@ -406,11 +406,20 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 
 		var evaluator verify.PolicyEvaluator
 		if policyFile != "" {
-			pe, err := policy.NewWatchedPolicyEngine(policyFile, slog.Default())
-			if err != nil {
-				return fmt.Errorf("failed to init policy engine: %w", err)
+			env := os.Getenv("OATHMESH_ENV")
+			if env == "development" {
+				pe, err := policy.NewWatchedPolicyEngine(policyFile, slog.Default())
+				if err != nil {
+					return fmt.Errorf("failed to init policy engine: %w", err)
+				}
+				evaluator = pe
+			} else {
+				p, err := policy.LoadPolicyFromFile(policyFile)
+				if err != nil {
+					return fmt.Errorf("failed to load policy engine: %w", err)
+				}
+				evaluator = policy.NewPolicyEngine(p)
 			}
-			evaluator = pe
 		}
 
 		var gatewayAuditSink core.AuditSink = audit.NewStdoutAuditSink()

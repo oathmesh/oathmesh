@@ -43,6 +43,7 @@ type Claims struct {
 	Aud         string   `json:"aud"`
 	Act         string   `json:"act"`
 	Iat         int64    `json:"iat"`
+	Nbf         int64    `json:"nbf,omitempty"`
 	Exp         int64    `json:"exp"`
 	JTI         string   `json:"jti"`
 	Scope       []string `json:"scope,omitempty"`
@@ -67,6 +68,7 @@ type MintRequest struct {
 	Aud    string   `json:"aud"`
 	Act    string   `json:"act"`
 	TTL    int      `json:"ttl_hint,omitempty"`
+	Nbf    int      `json:"nbf_hint,omitempty"`
 	Scope  []string `json:"scope,omitempty"`
 	Reason string   `json:"reason,omitempty"`
 	Env    string   `json:"env,omitempty"`
@@ -108,12 +110,18 @@ func SignToken(req MintRequest, issuer string, privateKey ed25519.PrivateKey, ki
 		ttl = MaxTTL
 	}
 
+	nbf := now
+	if req.Nbf > 0 {
+		nbf = now + int64(req.Nbf)
+	}
+
 	claims := Claims{
 		Iss:    issuer,
 		Sub:    req.Sub,
 		Aud:    req.Aud,
 		Act:    req.Act,
 		Iat:    now,
+		Nbf:    nbf,
 		Exp:    now + int64(ttl),
 		JTI:    uuid.New().String(),
 		Scope:  req.Scope,

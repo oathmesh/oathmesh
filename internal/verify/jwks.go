@@ -86,11 +86,6 @@ func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
 	}
 }
 
-// getJWKSEndpoint resolves an issuer key to its FULL JWKS URL (SSRF protection).
-// Returns empty string if key not found.
-func (c *JWKSCache) getJWKSEndpoint(issuerKey string) string {
-	return c.jwksEndpoints[issuerKey]
-}
 
 // GetKey returns the public key for the given issuer key and kid.
 // Algorithm (alg) is also returned for algorithm confusion checking.

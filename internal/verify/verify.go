@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -28,7 +29,10 @@ import (
 // VerifiedCallerContext on success, or an OathMeshError on failure.
 //
 // Execution order (optimized for cheap-checks-first):
-//
+
+var subjectRegex = regexp.MustCompile(`^(agent|svc|job|tool|user)://[a-zA-Z0-9/_.-]{1,256}$`)
+
+// Verify performs all 14 OathMesh verification steps and returns a
 //	01 → parse structure
 //	02 → alg check / none rejection
 //	03 → decode payload, extract iss
@@ -150,6 +154,15 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		return nil, emitAndReturn(ctx, cfg, &claims, err)
 	}
 
+	// ── Step 11.5: Verify subject format ────────────────────────────────
+	if !subjectRegex.MatchString(claims.Sub) {
+		return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+			core.ErrorCode(fmt.Sprintf("%s:sub", core.ErrClaimMissing)),
+			fmt.Sprintf("invalid subject format: %q", claims.Sub),
+			"subject must match schema (e.g. svc://, agent://, user:// followed by allowed chars)",
+		))
+	}
+
 	// ── Step 05: Load JWKS from trusted issuer ──────────────────────────
 	// Use in-memory cache (default TTL 5min, fetch timeout 5s).
 	// Refresh on kid miss — if kid not in cache, fetch once.
@@ -236,7 +249,7 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		))
 	}
 
-	// ── Step 09: Verify issued-at ───────────────────────────────────────
+	// ── Step 09: Verify issued-at and not-before ─────────────────────────
 	// iat <= time.Now() + 10s (reject future-issued tokens)
 	iatTime := time.Unix(claims.Iat, 0)
 	if iatTime.After(now.Add(clockSkew)) {
@@ -246,6 +259,18 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 				iatTime.Format(time.RFC3339), now.Format(time.RFC3339), clockSkew),
 			"check clock synchronization between issuer and receiver",
 		))
+	}
+
+	if claims.Nbf != 0 {
+		nbfTime := time.Unix(claims.Nbf, 0)
+		if nbfTime.After(now.Add(clockSkew)) {
+			return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+				core.ErrTokenExpired,
+				fmt.Sprintf("token not-before %s is in the future (current time: %s, skew tolerance: %s)",
+					nbfTime.Format(time.RFC3339), now.Format(time.RFC3339), clockSkew),
+				"token cannot be used yet",
+			))
+		}
 	}
 
 	// ── Step 10: Verify audience ────────────────────────────────────────
@@ -477,9 +502,10 @@ func emitAudit(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, ou
 // Used to ensure every verification failure is audited.
 func emitAndReturn(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, err *core.OathMeshError) *core.OathMeshError {
 	metrics.VerificationErrors.Add(1)
-	if err.Code == core.ErrPolicyDenied {
+	switch err.Code {
+	case core.ErrPolicyDenied:
 		metrics.PolicyDenials.Add(1)
-	} else if err.Code == core.ErrReplayDetected {
+	case core.ErrReplayDetected:
 		metrics.ReplaysDetected.Add(1)
 	}
 

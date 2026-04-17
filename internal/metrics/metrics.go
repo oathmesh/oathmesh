@@ -13,6 +13,7 @@ var (
 	ReplaysDetected      atomic.Uint64
 	PolicyDenials        atomic.Uint64
 	GatewayRequestsTotal atomic.Uint64
+	ReplayCacheSize      atomic.Int64
 )
 
 // Handler serves metrics in Prometheus text format.
@@ -43,4 +44,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "# HELP oathmesh_gateway_requests_total Total number of requests proxy through the gateway\n")
 	fmt.Fprintf(w, "# TYPE oathmesh_gateway_requests_total counter\n")
 	fmt.Fprintf(w, "oathmesh_gateway_requests_total %d\n", GatewayRequestsTotal.Load())
+
+	fmt.Fprintf(w, "# HELP oathmesh_replay_cache_size Current number of tracked jti keys in memory\n")
+	fmt.Fprintf(w, "# TYPE oathmesh_replay_cache_size gauge\n")
+	fmt.Fprintf(w, "oathmesh_replay_cache_size %d\n", ReplayCacheSize.Load())
 }
