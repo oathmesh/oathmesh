@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import jwt
 from jwt import PyJWKClient
-from typing import List, Optional, Callable, Any
+from typing import List, Optional, Callable
 from .errors import OathMeshError
 from .types import VerifiedCallerContext, Principal, Source, ReplayCache, PolicyEvaluator
 
