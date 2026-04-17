@@ -19,6 +19,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+          install-mode: goinstall
           args: >
             --enable=gosec,gocritic,staticcheck,exhaustive,noctx,bodyclose,rowserrcheck,sqlclosecheck
             --timeout=5m

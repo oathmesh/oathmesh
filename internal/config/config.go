@@ -12,6 +12,7 @@ type Config struct {
 	Issuer         string
 	Port           int
 	PrivateKey     string
+	PrivateKeyB64  string
 	PrivateKeyFile string
 	ConfigFile     string
 	Env            string
@@ -56,9 +57,10 @@ func LoadFromEnv() *Config {
 		Issuer:         getEnv("OATHMESH_ISSUER", "http://localhost:4000"),
 		Port:           getEnvInt("OATHMESH_PORT", 4000),
 		PrivateKey:     os.Getenv("OATHMESH_PRIVATE_KEY"),
+		PrivateKeyB64:  os.Getenv("OATHMESH_PRIVATE_KEY_B64"),
 		PrivateKeyFile: os.Getenv("OATHMESH_PRIVATE_KEY_FILE"),
 		ConfigFile:     os.Getenv("OATHMESH_CONFIG_FILE"),
-		Env:            getEnv("OATHMESH_ENV", "production"),
+		Env:            getEnv("OATHMESH_ENV", "development"),
 
 		TTLDefault: getEnvInt("OATHMESH_TTL_DEFAULT", 120),
 		TTLMax:     getEnvInt("OATHMESH_TTL_MAX", 300),
@@ -99,8 +101,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("OATHMESH_ISSUER must use HTTPS in non-development environments (got %q). Set OATHMESH_ENV=development to suppress this check", c.Issuer)
 	}
 
-	if c.PrivateKey == "" && c.PrivateKeyFile == "" {
-		return fmt.Errorf("OATHMESH_PRIVATE_KEY or OATHMESH_PRIVATE_KEY_FILE is required")
+	if c.PrivateKey == "" && c.PrivateKeyFile == "" && c.PrivateKeyB64 == "" {
+		return fmt.Errorf("OATHMESH_PRIVATE_KEY, OATHMESH_PRIVATE_KEY_B64, or OATHMESH_PRIVATE_KEY_FILE is required")
 	}
 	if c.TTLMax < 1 || c.TTLMax > 300 {
 		return fmt.Errorf("OATHMESH_TTL_MAX must be between 1 and 300")
