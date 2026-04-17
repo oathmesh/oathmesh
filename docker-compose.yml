@@ -25,7 +25,8 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      OATHMESH_ISSUER: http://issuer:4000
+      OATHMESH_ISSUER: http://localhost:4000
+      OATHMESH_ENV: development
       OATHMESH_PRIVATE_KEY_FILE: /run/secrets/private_key
       OATHMESH_AUDIT_SINK: stdout
       REDIS_URL: redis://redis:6379/0
