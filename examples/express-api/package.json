@@ -6,7 +6,8 @@
   },
   "dependencies": {
     "@oathmesh/sdk": "file:../../sdk/node",
-    "express": "^4.19.0"
+    "express": "^4.19.0",
+    "express-rate-limit": "^7.0.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

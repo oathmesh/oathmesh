@@ -8,12 +8,22 @@
 //   npx ts-node index.ts
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { verifyToken } from '@oathmesh/sdk';
 
 const app = express();
 
 const audience = process.env.OATHMESH_AUDIENCE || 'https://inventory.internal';
 const issuers = (process.env.OATHMESH_TRUSTED_ISSUERS || 'http://localhost:4000').split(',');
+
+// Rate limiter: 100 requests per 15 minutes per IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // Mount OathMesh verification on all routes below
 app.use(verifyToken({
