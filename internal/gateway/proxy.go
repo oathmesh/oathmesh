@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/oathmesh/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
@@ -33,6 +34,8 @@ func NewProxy(cfg Config) (http.Handler, error) {
 	// to inject our verification middleware before proxy.ServeHTTP.
 	
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		metrics.GatewayRequestsTotal.Add(1)
+		
 		// Step 1: Extract Token
 		authz := r.Header.Get("Authorization")
 		if authz == "" || !strings.HasPrefix(authz, "OathMesh ") {

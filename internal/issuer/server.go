@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
@@ -104,6 +105,7 @@ func (s *Server) router() *chi.Mux {
 	r.Use(middleware.Recoverer)
 
 	r.Get("/healthz", healthzHandler)
+	r.Get("/metrics", metrics.Handler)
 
 	r.Group(func(r chi.Router) {
 		r.Get("/.well-known/jwks.json", s.jwksHandler)
@@ -113,6 +115,7 @@ func (s *Server) router() *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Post("/v1/token", s.mintHandler)
 		r.Post("/v1/exchange/github", s.exchangeGitHubHandler)
+		r.Get("/v1/revoked-subjects", s.revokedSubjectsHandler)
 	})
 
 	if s.gatewayHandler != nil {
@@ -139,4 +142,11 @@ func middlewareLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
+}
+
+func (s *Server) revokedSubjectsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	// Stub: return an empty list. In a full implementation, this reads from an active DB.
+	w.Write([]byte(`{"revocations": []}`))
 }

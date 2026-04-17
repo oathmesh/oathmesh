@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -163,7 +164,7 @@ func (c *JWKSCache) fetchAndCache(issuerKey, jwksURL, kid string) (ed25519.Publi
 		}
 
 		var jwks sign.JWKS
-		if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		if err := json.NewDecoder(io.LimitReader(resp.Body, 64*1024)).Decode(&jwks); err != nil {
 			return nil, fmt.Errorf("decode JWKS from %s: %w", jwksURL, err)
 		}
 

@@ -49,6 +49,7 @@ export type ErrorCode =
   | 'policy_denied'
   | 'binding_mismatch'
   | 'binding_required'
+  | 'subject_revoked'
   | 'verification_failed';
 
 /** Structured error returned on verification failure. */

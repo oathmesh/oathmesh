@@ -18,6 +18,9 @@ type AuditEvent struct {
 	Source    *Source   `json:"src,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
 	RequestID string    `json:"request_id,omitempty"`
+	Seq       uint64    `json:"seq,omitempty"`
+	PrevHash  string    `json:"prev_hash,omitempty"`
+	HMAC      string    `json:"hmac,omitempty"`
 }
 
 type AuditSink interface {

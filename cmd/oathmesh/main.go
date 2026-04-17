@@ -14,8 +14,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/oathmesh/oathmesh/internal/audit"
+	"github.com/oathmesh/oathmesh/internal/core"
 	"github.com/oathmesh/oathmesh/internal/gateway"
 	"github.com/oathmesh/oathmesh/internal/issuer"
+	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/policy"
 	"github.com/oathmesh/oathmesh/internal/sign"
 	"github.com/oathmesh/oathmesh/internal/verify"
@@ -143,6 +145,7 @@ func mintRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("sign token: %w", err)
 	}
+	metrics.TokensMintedTotal.Add(1)
 
 	if jsonOutput {
 		output := map[string]string{"token": token}
@@ -410,13 +413,18 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 			evaluator = pe
 		}
 
+		var gatewayAuditSink core.AuditSink = audit.NewStdoutAuditSink()
+		if hmacKey := os.Getenv("OATHMESH_AUDIT_HMAC_KEY"); hmacKey != "" {
+			gatewayAuditSink = audit.NewHMACChainAuditSink(gatewayAuditSink, []byte(hmacKey))
+		}
+
 		vCfg := &verify.VerifierConfig{
 			Audience:        audience,
 			TrustedIssuers:  issuers,
 			JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil),
 			ReplayCache:     verify.NewMemoryReplayCache(),
 			PolicyEvaluator: evaluator,
-			AuditSink:       audit.NewStdoutAuditSink(),
+			AuditSink:       gatewayAuditSink,
 		}
 
 		gwCfg := gateway.Config{

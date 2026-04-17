@@ -30,6 +30,12 @@ jobs:
       - name: go test -race
         run: go test -race ./...
 
+      - name: go test -fuzz
+        run: |
+          go test -fuzz=FuzzParseToken -fuzztime=30s ./internal/sign
+          go test -fuzz=FuzzParseHeader -fuzztime=30s ./internal/sign
+        continue-on-error: true
+
       - name: go build
         run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
 

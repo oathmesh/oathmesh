@@ -10,7 +10,7 @@ ErrorCode = str  # One of the values below:
 # claim_missing:aud, claim_missing:act, claim_missing:jti,
 # signature_invalid, issuer_untrusted, token_expired,
 # audience_mismatch, algorithm_not_allowed, replay_detected,
-# policy_denied, binding_mismatch, verification_failed
+# policy_denied, binding_mismatch, binding_required, subject_revoked, verification_failed
 
 
 class OathMeshError(Exception):

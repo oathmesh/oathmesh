@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/oathmesh/oathmesh/internal/core"
+	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/sign"
 )
 
@@ -43,6 +44,8 @@ import (
 //	13 → replay cache
 //	14 → policy stub
 func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.VerifiedCallerContext, error) {
+	metrics.VerificationsTotal.Add(1)
+
 	nowFn := cfg.Now
 	if nowFn == nil {
 		nowFn = time.Now
@@ -304,6 +307,21 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		}
 	}
 
+	// ── Step 13.5: Check revocation list ────────────────────────────────
+	if cfg.RevocationList != nil {
+		revoked, err := cfg.RevocationList.IsRevoked(ctx, claims.Sub, iatTime)
+		if err != nil {
+			// Fail open on fetch errors (network partition tolerance)
+			// A robust implementation might log this, but we prioritize availability.
+		} else if revoked {
+			return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+				core.ErrSubjectRevoked,
+				fmt.Sprintf("subject %s has been revoked before token issuance", claims.Sub),
+				"mint a token for a valid, active subject",
+			))
+		}
+	}
+
 	// ── Step 14: Evaluate policy ────────────────────────────────────────
 	// First matching rule wins; if no rule matches → deny.
 	if cfg.PolicyEvaluator != nil {
@@ -458,6 +476,13 @@ func emitAudit(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, ou
 // emitAndReturn emits a deny audit event and returns the error.
 // Used to ensure every verification failure is audited.
 func emitAndReturn(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, err *core.OathMeshError) *core.OathMeshError {
+	metrics.VerificationErrors.Add(1)
+	if err.Code == core.ErrPolicyDenied {
+		metrics.PolicyDenials.Add(1)
+	} else if err.Code == core.ErrReplayDetected {
+		metrics.ReplaysDetected.Add(1)
+	}
+
 	emitAudit(ctx, cfg, claims, "deny", string(err.Code)+": "+err.Message)
 	return err
 }

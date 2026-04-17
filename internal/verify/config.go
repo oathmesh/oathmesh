@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"context"
 	"crypto/ed25519"
 	"time"
 
@@ -38,6 +39,10 @@ type VerifierConfig struct {
 	// If nil, no audit events are emitted.
 	AuditSink core.AuditSink
 
+	// RevocationList checks if a subject has been explicitly revoked.
+	// If nil, revocation checking is skipped.
+	RevocationList RevocationList
+
 	// PolicyEvaluator evaluates policy rules against verified token claims.
 	// If nil, all authenticated tokens are allowed (no policy enforcement).
 	// Wire this to a policy.PolicyEngine for production use.
@@ -74,6 +79,12 @@ type JWKSProvider interface {
 	// If the key is not in cache, the provider should fetch fresh JWKS
 	// from the resolved issuer's /.well-known/jwks.json endpoint.
 	GetKey(issuerKey string, kid string) (ed25519.PublicKey, string, error)
+}
+
+// RevocationList abstracts subject revocation checks before policy evaluation.
+type RevocationList interface {
+	// IsRevoked returns true if the subject was revoked before the token was issued.
+	IsRevoked(ctx context.Context, subject string, issuedAt time.Time) (bool, error)
 }
 
 // PolicyEvaluator evaluates OathMesh policy rules against token claims.

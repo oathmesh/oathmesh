@@ -13,6 +13,7 @@ const (
 	ErrPolicyDenied        ErrorCode = "policy_denied"
 	ErrBindingMismatch     ErrorCode = "binding_mismatch"
 	ErrBindingRequired     ErrorCode = "binding_required"
+	ErrSubjectRevoked      ErrorCode = "subject_revoked"
 )
 
 type OathMeshError struct {

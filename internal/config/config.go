@@ -26,8 +26,9 @@ type Config struct {
 	RateLimitBurst int
 
 	// Audit
-	AuditSink string
-	AuditFile string
+	AuditSink    string
+	AuditFile    string
+	AuditHMACKey string
 
 	// JWKS
 	JWKSCacheTTL int
@@ -66,10 +67,11 @@ func LoadFromEnv() *Config {
 		RateLimitRPM:   getEnvInt("OATHMESH_RATE_LIMIT_RPM", 100),
 		RateLimitBurst: getEnvInt("OATHMESH_RATE_LIMIT_BURST", 20),
 
-		AuditSink: getEnv("OATHMESH_AUDIT_SINK", "stdout"),
-		AuditFile: os.Getenv("OATHMESH_AUDIT_FILE"),
+		AuditSink:    getEnv("OATHMESH_AUDIT_SINK", "stdout"),
+		AuditFile:    os.Getenv("OATHMESH_AUDIT_FILE"),
+		AuditHMACKey: os.Getenv("OATHMESH_AUDIT_HMAC_KEY"),
 
-		JWKSCacheTTL: getEnvInt("OATHMESH_JWKS_CACHE_TTL", 300),
+		JWKSCacheTTL: getEnvInt("OATHMESH_JWKS_CACHE_TTL", 60),
 
 		RedisURL:    os.Getenv("REDIS_URL"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
