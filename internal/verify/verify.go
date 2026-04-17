@@ -215,6 +215,14 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 
 	// ── Step 08: Verify expiry ──────────────────────────────────────────
 	// time.Now() < exp (clock skew tolerance: max 10 seconds)
+	// Apply ceiling to prevent Unix time overflow panic/wrap-around
+	if claims.Exp > 4102444800 { // Year 2100
+		return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+			core.ErrTokenExpired,
+			"token expiry is artificially too far in the future",
+			"mint a token with a sane expiry (before year 2100)",
+		))
+	}
 	expTime := time.Unix(claims.Exp, 0)
 	if now.After(expTime.Add(clockSkew)) {
 		return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(

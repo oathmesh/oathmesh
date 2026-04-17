@@ -63,7 +63,6 @@ def extract_token(auth_header: Optional[str]) -> Optional[str]:
 
     Accepts:
       - ``OathMesh <token>`` (canonical)
-      - ``Bearer <token>`` (compatibility mode)
 
     Returns None if the header is missing or uses an unknown scheme.
     """
@@ -71,8 +70,6 @@ def extract_token(auth_header: Optional[str]) -> Optional[str]:
         return None
     if auth_header.startswith("OathMesh "):
         return auth_header[9:]
-    if auth_header.startswith("Bearer "):
-        return auth_header[7:]
     return None
 
 

@@ -768,3 +768,100 @@ func TestRedisReplayCache_FailOpen(t *testing.T) {
 		t.Error("fail-open should return replayed=false when Redis is down")
 	}
 }
+
+// ── Test Missing Edge Cases (TEST-04) ───────────────────────────────────────
+
+// Token with alg: "HS256" (Symmetric algorithm confusion)
+func TestVerify_AlgHS256(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+
+	headerJSON, _ := json.Marshal(map[string]string{
+		"typ": "om+jwt",
+		"alg": "HS256",
+		"kid": testKid,
+	})
+	claimsJSON, _ := json.Marshal(map[string]interface{}{
+		"iss": testIssuer,
+		"sub": testSubject,
+		"aud": testAudience,
+		"act": testAction,
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(120 * time.Second).Unix(),
+		"jti": uuid.New().String(),
+	})
+
+	token := buildRawToken(headerJSON, claimsJSON, privateKey)
+
+	cfg := testConfig(publicKey)
+	_, err := Verify(context.Background(), token, cfg)
+
+	assertOathMeshError(t, err, core.ErrAlgorithmNotAllowed)
+}
+
+// Token with exp = MAX_INT64 (Clock overflow)
+func TestVerify_MaxInt64Exp(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+
+	// Math.MaxInt64 is 9223372036854775807
+	token := mintTestToken(t, privateKey, func(c *sign.Claims) {
+		c.Exp = 9223372036854775807
+	})
+
+	cfg := testConfig(publicKey)
+	_, err := Verify(context.Background(), token, cfg)
+	assertOathMeshError(t, err, core.ErrTokenExpired)
+}
+
+// Token with aud as array vs string (JSON type confusion)
+func TestVerify_AudienceAsArray(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+
+	headerJSON, _ := json.Marshal(map[string]string{
+		"typ": "om+jwt",
+		"alg": "EdDSA",
+		"kid": testKid,
+	})
+	// Inject aud as array:
+	claimsJSON, _ := json.Marshal(map[string]interface{}{
+		"iss": testIssuer,
+		"sub": testSubject,
+		"aud": []string{testAudience}, // array instead of string
+		"act": testAction,
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(120 * time.Second).Unix(),
+		"jti": uuid.New().String(),
+	})
+
+	token := buildRawToken(headerJSON, claimsJSON, privateKey)
+
+	cfg := testConfig(publicKey)
+	_, err := Verify(context.Background(), token, cfg)
+
+	// Since sign.Claims defines Aud as string, json.Unmarshal will fail on array
+	assertOathMeshError(t, err, core.ErrClaimMissing)
+}
+
+// Clock Skew Exact Boundaries
+func TestVerify_ClockSkewBoundaries(t *testing.T) {
+	privateKey, publicKey := generateTestKeys(t)
+
+	// Exactly at tolerance boundary for iat (+10s)
+	tokenAtTolerance := mintTestToken(t, privateKey, func(c *sign.Claims) {
+		c.Iat = time.Now().Add(10 * time.Second).Unix()
+		c.Exp = time.Now().Add(130 * time.Second).Unix()
+	})
+
+	cfg := testConfig(publicKey)
+	_, err := Verify(context.Background(), tokenAtTolerance, cfg)
+	if err != nil {
+		t.Fatalf("expected exactly +10s iat to be accepted, got: %v", err)
+	}
+
+	// Just past tolerance boundary for iat (+11s)
+	tokenPastTolerance := mintTestToken(t, privateKey, func(c *sign.Claims) {
+		c.Iat = time.Now().Add(11 * time.Second).Unix()
+		c.Exp = time.Now().Add(131 * time.Second).Unix()
+	})
+	_, err = Verify(context.Background(), tokenPastTolerance, cfg)
+	assertOathMeshError(t, err, core.ErrTokenExpired)
+}

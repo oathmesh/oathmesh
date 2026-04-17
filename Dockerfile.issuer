@@ -13,10 +13,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /oathmesh ./cmd/oathmesh
 # ── Runtime stage ────────────────────────────────────────────────────────────
 FROM alpine:3.19
 
-RUN apk --no-cache add ca-certificates tzdata curl
+RUN apk --no-cache add ca-certificates tzdata curl && \
+    addgroup -g 10001 oathmesh && \
+    adduser -u 10001 -G oathmesh -s /bin/sh -D oathmesh
 
 WORKDIR /app
-COPY --from=builder /oathmesh ./bin/oathmesh
+COPY --from=builder --chown=oathmesh:oathmesh /oathmesh ./bin/oathmesh
+USER oathmesh
 
 EXPOSE 4000
 HEALTHCHECK --interval=10s --timeout=3s --retries=3 \

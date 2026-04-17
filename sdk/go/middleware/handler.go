@@ -79,13 +79,10 @@ func sendError(w http.ResponseWriter, r *http.Request, oe *core.OathMeshError) {
 }
 
 // extractToken pulls the raw token from an Authorization header.
-// Supports "OathMesh <token>" (canonical) and "Bearer <token>" (compat).
+// Supports "OathMesh <token>" (canonical).
 func extractToken(header string) string {
 	if strings.HasPrefix(header, "OathMesh ") {
 		return strings.TrimPrefix(header, "OathMesh ")
-	}
-	if strings.HasPrefix(header, "Bearer ") {
-		return strings.TrimPrefix(header, "Bearer ")
 	}
 	return ""
 }

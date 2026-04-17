@@ -19,6 +19,11 @@ services:
       dockerfile: Dockerfile.issuer
     ports:
       - "4000:4000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       OATHMESH_ISSUER: http://issuer:4000
       OATHMESH_PRIVATE_KEY_FILE: /run/secrets/private_key

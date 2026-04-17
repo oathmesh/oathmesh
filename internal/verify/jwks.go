@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/oathmesh/oathmesh/internal/sign"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -37,6 +38,7 @@ type JWKSCache struct {
 	ttl           time.Duration
 	jwksURL       string            // FIXED JWKS URL (fixed mode) - NEVER from user input
 	jwksEndpoints map[string]string // key -> FULL JWKS URL (endpoints mode)
+	sf            singleflight.Group
 }
 
 type jwksCacheEntry struct {
@@ -137,45 +139,59 @@ func (c *JWKSCache) GetKey(_ string, kid string) (ed25519.PublicKey, string, err
 }
 
 func (c *JWKSCache) fetchAndCache(issuerKey, jwksURL, kid string) (ed25519.PublicKey, string, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Double-check after acquiring write lock
+	// Double-check cache before starting singleflight to avoid edge-case double fetches
+	c.mu.RLock()
 	if entry, exists := c.entries[issuerKey]; exists && time.Now().Before(entry.until) {
 		key, alg, err := findKeyInJWKS(entry.jwks, kid)
 		if err == nil {
+			c.mu.RUnlock()
 			return key, alg, nil
 		}
 	}
+	c.mu.RUnlock()
 
-	// JWKS URL is from CONFIG only - ZERO user input in URL (CodeQL go/request-forgery fix)
-	// jwksURL comes from config.jwksEndpoints map, not from user input
-	resp, err := c.client.Get(jwksURL)
-	if err != nil {
-		return nil, "", fmt.Errorf("fetch JWKS from %s: %w", jwksURL, err)
-	}
-	defer resp.Body.Close()
+	// Collapse concurrent fetches for the same issuer
+	_, err, _ := c.sf.Do(issuerKey, func() (any, error) {
+		resp, err := c.client.Get(jwksURL)
+		if err != nil {
+			return nil, fmt.Errorf("fetch JWKS from %s: %w", jwksURL, err)
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("JWKS endpoint %s returned %d", jwksURL, resp.StatusCode)
-	}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("JWKS endpoint %s returned %d", jwksURL, resp.StatusCode)
+		}
 
-	var jwks sign.JWKS
-	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
-		return nil, "", fmt.Errorf("decode JWKS from %s: %w", jwksURL, err)
-	}
+		var jwks sign.JWKS
+		if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+			return nil, fmt.Errorf("decode JWKS from %s: %w", jwksURL, err)
+		}
 
-	c.entries[issuerKey] = &jwksCacheEntry{
-		jwks:   &jwks,
-		until:  time.Now().Add(c.ttl),
-		issuer: issuerKey,
-	}
+		c.mu.Lock()
+		c.entries[issuerKey] = &jwksCacheEntry{
+			jwks:   &jwks,
+			until:  time.Now().Add(c.ttl),
+			issuer: issuerKey,
+		}
+		c.mu.Unlock()
 
-	key, alg, err := findKeyInJWKS(&jwks, kid)
+		return nil, nil
+	})
+
 	if err != nil {
 		return nil, "", err
 	}
-	return key, alg, nil
+
+	// Now that fetch is complete (or if it was a deduplicated call), try finding key again
+	c.mu.RLock()
+	entry, exists := c.entries[issuerKey]
+	c.mu.RUnlock()
+
+	if !exists {
+		return nil, "", fmt.Errorf("cache repopulation failed unexpectedly for %q", issuerKey)
+	}
+
+	return findKeyInJWKS(entry.jwks, kid)
 }
 
 func findKeyInJWKS(jwks *sign.JWKS, kid string) (ed25519.PublicKey, string, error) {

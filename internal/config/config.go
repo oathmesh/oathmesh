@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -13,6 +14,7 @@ type Config struct {
 	PrivateKey     string
 	PrivateKeyFile string
 	ConfigFile     string
+	Env            string
 
 	// TTL
 	TTLDefault int
@@ -55,6 +57,7 @@ func LoadFromEnv() *Config {
 		PrivateKey:     os.Getenv("OATHMESH_PRIVATE_KEY"),
 		PrivateKeyFile: os.Getenv("OATHMESH_PRIVATE_KEY_FILE"),
 		ConfigFile:     os.Getenv("OATHMESH_CONFIG_FILE"),
+		Env:            getEnv("OATHMESH_ENV", "production"),
 
 		TTLDefault: getEnvInt("OATHMESH_TTL_DEFAULT", 120),
 		TTLMax:     getEnvInt("OATHMESH_TTL_MAX", 300),
@@ -85,6 +88,15 @@ func (c *Config) Validate() error {
 	if c.Issuer == "" {
 		return fmt.Errorf("OATHMESH_ISSUER is required")
 	}
+
+	u, err := url.Parse(c.Issuer)
+	if err != nil {
+		return fmt.Errorf("invalid OATHMESH_ISSUER: %w", err)
+	}
+	if c.Env != "development" && u.Scheme != "https" {
+		return fmt.Errorf("OATHMESH_ISSUER must use HTTPS in non-development environments (got %q). Set OATHMESH_ENV=development to suppress this check", c.Issuer)
+	}
+
 	if c.PrivateKey == "" && c.PrivateKeyFile == "" {
 		return fmt.Errorf("OATHMESH_PRIVATE_KEY or OATHMESH_PRIVATE_KEY_FILE is required")
 	}

@@ -32,14 +32,12 @@ function getJWKS(issuer: string): ReturnType<typeof createRemoteJWKSet> {
  *
  * Accepts:
  *   - `OathMesh <token>` (canonical)
- *   - `Bearer <token>` (compatibility — only when the token contains om+jwt typ)
  *
  * @returns The raw token string, or null if the header is missing/invalid.
  */
 export function extractToken(authHeader: string | null | undefined): string | null {
   if (!authHeader) return null;
   if (authHeader.startsWith('OathMesh ')) return authHeader.slice(9);
-  if (authHeader.startsWith('Bearer ')) return authHeader.slice(7);
   return null;
 }
 
