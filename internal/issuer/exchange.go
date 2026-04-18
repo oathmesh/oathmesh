@@ -227,13 +227,16 @@ func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("Content-Type") != "application/json" {
-		s.writeError(w, "invalid_content_type", "Content-Type must be application/json", "")
+		s.writeError(w, "invalid_content_type", "Content-Type must be application/json", "set Content-Type: application/json header")
 		return
 	}
 
+	// Enforce request body size limit to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
+
 	var req GitHubExchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, "invalid_request", "Failed to parse request body", err.Error())
+		s.writeError(w, "invalid_request", "Failed to parse request body", "check JSON syntax and ensure body is under 64KB")
 		return
 	}
 
@@ -244,7 +247,9 @@ func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
 
 	githubClaims, err := verifyGitHubToken(r.Context(), req.GitHubToken)
 	if err != nil {
-		s.writeError(w, "invalid_token", "Failed to verify GitHub OIDC token", err.Error())
+		// Do NOT expose internal verification details to caller
+		s.logger.Error("github token verification failed", "error", err)
+		s.writeError(w, "invalid_token", "Failed to verify GitHub OIDC token", "ensure the GitHub OIDC token is valid and not expired")
 		return
 	}
 
@@ -270,7 +275,9 @@ func (s *Server) exchangeGitHubHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.keySet.SignToken(mintReq)
 	if err != nil {
-		s.writeError(w, "mint_failed", "Failed to sign token", err.Error())
+		// Do NOT expose internal signing errors to caller
+		s.logger.Error("exchange mint failed", "error", err)
+		s.writeError(w, "mint_failed", "Failed to sign token", "contact the issuer operator")
 		return
 	}
 

@@ -12,9 +12,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/oathmesh/oathmesh/internal/config"
 	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/sign"
 )
+
+// maxRequestBodySize is the maximum allowed request body for POST endpoints.
+// 64 KiB is more than sufficient for any OathMesh mint or exchange request.
+const maxRequestBodySize = 64 * 1024
 
 type Server struct {
 	httpServer *http.Server
@@ -25,6 +30,7 @@ type Server struct {
 	}
 	logger         *slog.Logger
 	port           string
+	cfg            *config.Config
 	rateLimiter    *RateLimiter
 	gatewayHandler http.Handler
 }
@@ -34,6 +40,8 @@ func NewServer(keySet interface {
 	JWKS() (*sign.JWKS, error)
 	SignToken(sign.MintRequest) (string, error)
 }) *Server {
+	cfg := config.LoadFromEnv()
+
 	port := os.Getenv("OATHMESH_PORT")
 	if port == "" {
 		port = "4000"
@@ -43,12 +51,13 @@ func NewServer(keySet interface {
 		Level: slog.LevelInfo,
 	}))
 
-	rateLimiter := NewRateLimiter(100, 20)
+	rateLimiter := NewRateLimiter(cfg.RateLimitRPM, cfg.RateLimitBurst)
 
 	return &Server{
 		keySet:      keySet,
 		logger:      logger,
 		port:        port,
+		cfg:         cfg,
 		rateLimiter: rateLimiter,
 	}
 }
@@ -104,6 +113,7 @@ func (s *Server) router() *chi.Mux {
 	r.Use(middlewareLogger(s.logger))
 	r.Use(middleware.Recoverer)
 
+	// ── Public endpoints (no auth) ──────────────────────────────────────
 	r.Get("/healthz", healthzHandler)
 	r.Get("/metrics", metrics.Handler)
 
@@ -112,7 +122,10 @@ func (s *Server) router() *chi.Mux {
 		r.Get("/.well-known/oathmesh-issuer", s.discoveryHandler)
 	})
 
+	// ── Authenticated mint endpoints ────────────────────────────────────
+	// Protected by MintAuth middleware (pre-shared key).
 	r.Group(func(r chi.Router) {
+		r.Use(MintAuth)
 		r.Post("/v1/token", s.mintHandler)
 		r.Post("/v1/exchange/github", s.exchangeGitHubHandler)
 		r.Get("/v1/revoked-subjects", s.revokedSubjectsHandler)
