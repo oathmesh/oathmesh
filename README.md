@@ -256,9 +256,8 @@ caller = verify_token(request.headers["authorization"], config)
 
 - 🔜 **Rust SDK** — Coming soon
 - 🔜 **Java SDK** — Coming soon  
-- 🗓️ **Enhanced Gateway** — mTLS support, rate limiting
-- 🗓️ **OpenTelemetry** — Distributed tracing and metric ingestion
-- 🗓️ **AWS KMS Native Backend** — Alternative to local file persistence
+- 🗓️ **Policy UI** — Visual policy editor
+- 🗓️ **Audit Dashboard** — Web-based log viewer
 
 ---
 
@@ -303,6 +302,7 @@ If OathMesh helps you build safer systems, please:
 - [Token Format](docs/protocol/token-format.md) · [Claim Reference](docs/protocol/claim-reference.md)
 - [Verification Rules](docs/protocol/verification-rules.md) · [Threat Model](docs/security/threat-model.md)
 - [Replay Defense](docs/security/replay-defense.md) · [Key Management](docs/security/key-management.md)
+- [SOC2 Compliance Matrix](docs/security/soc2-compliance.md)
 
 ---
 
