@@ -71,7 +71,7 @@ func (rc *MemoryReplayCache) Check(ctx context.Context, jti string, ttl time.Dur
 		if len(shard.entries) >= maxShardItems {
 			rc.inlinePrune(shard)
 		}
-		metrics.ReplayCacheSize.Add(1)
+		metrics.ReplayCacheSize.Inc()
 	}
 
 	if ttl < time.Second {
@@ -103,7 +103,7 @@ func (rc *MemoryReplayCache) inlinePrune(shard *cacheShard) {
 		}
 	}
 	if evicted > 0 {
-		metrics.ReplayCacheSize.Add(int64(-evicted))
+		metrics.ReplayCacheSize.Sub(float64(evicted))
 	}
 }
 
@@ -133,7 +133,7 @@ func (rc *MemoryReplayCache) cleanup() {
 				}
 				shard.Unlock()
 				if evicted > 0 {
-					metrics.ReplayCacheSize.Add(int64(-evicted))
+					metrics.ReplayCacheSize.Sub(float64(evicted))
 				}
 			}
 		}

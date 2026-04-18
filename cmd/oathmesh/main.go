@@ -22,6 +22,7 @@ import (
 	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/policy"
 	"github.com/oathmesh/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/telemetry"
 	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
@@ -149,7 +150,7 @@ func mintRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("sign token: %w", err)
 	}
-	metrics.TokensMintedTotal.Add(1)
+	metrics.TokensMintedTotal.Inc()
 
 	if jsonOutput {
 		output := map[string]string{"token": token}
@@ -385,6 +386,12 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	}
+
+	shutdownTracer, err := telemetry.InitTracer(cmd.Context(), "oathmesh-issuer")
+	if err != nil {
+		return fmt.Errorf("failed to init telemetry: %w", err)
+	}
+	defer shutdownTracer(context.Background())
 
 	ks, err := sign.LoadKeySet()
 	if err != nil {

@@ -1,51 +1,57 @@
 package metrics
 
 import (
-	"fmt"
 	"net/http"
-	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
-	TokensMintedTotal    atomic.Uint64
-	VerificationsTotal   atomic.Uint64
-	VerificationErrors   atomic.Uint64
-	ReplaysDetected      atomic.Uint64
-	PolicyDenials        atomic.Uint64
-	GatewayRequestsTotal atomic.Uint64
-	ReplayCacheSize      atomic.Int64
+	TokensMintedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_tokens_minted_total",
+		Help: "Total number of tokens mints executed securely.",
+	})
+
+	VerificationsTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_verifications_total",
+		Help: "Total number of tokens formally verified via the 14-step boundary.",
+	})
+
+	VerificationErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_verification_errors",
+		Help: "Total number of token evaluations that failed due to validation rules.",
+	})
+
+	ReplaysDetected = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_replays_detected",
+		Help: "Total number of identical tokens caught and denied by the replay boundary.",
+	})
+
+	PolicyDenials = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_policy_denials",
+		Help: "Total number of verifications actively rejected by the Pkl security matrix.",
+	})
+
+	GatewayRequestsTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_gateway_requests_total",
+		Help: "Total number of requests fully proxied via Gateway instances.",
+	})
+
+	ReplayCacheSize = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "oathmesh_replay_cache_size",
+		Help: "Current total volume of in-memory replay assertions globally tracking.",
+	})
+
+	RequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "oathmesh_request_duration_seconds",
+		Help:    "Latency distributions bound strictly mapping across the runtime.",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"method", "route"})
 )
 
-// Handler serves metrics in Prometheus text format.
+// Handler serves metrics natively adhering to the Prometheus exposition guidelines.
 func Handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-	w.WriteHeader(http.StatusOK)
-
-	fmt.Fprintf(w, "# HELP oathmesh_tokens_minted_total Total number of tokens minted\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_tokens_minted_total counter\n")
-	fmt.Fprintf(w, "oathmesh_tokens_minted_total %d\n", TokensMintedTotal.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_verifications_total Total number of token verifications\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_verifications_total counter\n")
-	fmt.Fprintf(w, "oathmesh_verifications_total %d\n", VerificationsTotal.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_verification_errors Total number of token verification validation failures\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_verification_errors counter\n")
-	fmt.Fprintf(w, "oathmesh_verification_errors %d\n", VerificationErrors.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_replays_detected Total number of blocked replay attempts\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_replays_detected counter\n")
-	fmt.Fprintf(w, "oathmesh_replays_detected %d\n", ReplaysDetected.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_policy_denials Total number of policy verification denials\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_policy_denials counter\n")
-	fmt.Fprintf(w, "oathmesh_policy_denials %d\n", PolicyDenials.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_gateway_requests_total Total number of requests proxy through the gateway\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_gateway_requests_total counter\n")
-	fmt.Fprintf(w, "oathmesh_gateway_requests_total %d\n", GatewayRequestsTotal.Load())
-
-	fmt.Fprintf(w, "# HELP oathmesh_replay_cache_size Current number of tracked jti keys in memory\n")
-	fmt.Fprintf(w, "# TYPE oathmesh_replay_cache_size gauge\n")
-	fmt.Fprintf(w, "oathmesh_replay_cache_size %d\n", ReplayCacheSize.Load())
+	promhttp.Handler().ServeHTTP(w, r)
 }

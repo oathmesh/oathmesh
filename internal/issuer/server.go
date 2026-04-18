@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/riandyrn/otelchi"
 
 	"github.com/oathmesh/oathmesh/internal/config"
 	"github.com/oathmesh/oathmesh/internal/metrics"
@@ -124,6 +125,8 @@ func (s *Server) router() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middlewareLogger(s.logger))
 	r.Use(middleware.Recoverer)
+	r.Use(otelchi.Middleware("oathmesh-issuer"))
+	r.Use(metrics.LatencyMiddleware)
 
 	// ── Public endpoints (no auth) ──────────────────────────────────────
 	r.Get("/healthz", healthzHandler)

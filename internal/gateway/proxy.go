@@ -34,7 +34,7 @@ func NewProxy(cfg Config) (http.Handler, error) {
 	// to inject our verification middleware before proxy.ServeHTTP.
 	
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		metrics.GatewayRequestsTotal.Add(1)
+		metrics.GatewayRequestsTotal.Inc()
 		
 		// Step 1: Extract Token
 		authz := r.Header.Get("Authorization")

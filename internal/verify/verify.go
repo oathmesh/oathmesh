@@ -48,7 +48,7 @@ var subjectRegex = regexp.MustCompile(`^(agent|svc|job|tool|user)://[a-zA-Z0-9/_
 //	13 → replay cache
 //	14 → policy stub
 func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.VerifiedCallerContext, error) {
-	metrics.VerificationsTotal.Add(1)
+	metrics.VerificationsTotal.Inc()
 
 	nowFn := cfg.Now
 	if nowFn == nil {
@@ -501,12 +501,12 @@ func emitAudit(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, ou
 // emitAndReturn emits a deny audit event and returns the error.
 // Used to ensure every verification failure is audited.
 func emitAndReturn(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims, err *core.OathMeshError) *core.OathMeshError {
-	metrics.VerificationErrors.Add(1)
+	metrics.VerificationErrors.Inc()
 	switch err.Code {
 	case core.ErrPolicyDenied:
-		metrics.PolicyDenials.Add(1)
+		metrics.PolicyDenials.Inc()
 	case core.ErrReplayDetected:
-		metrics.ReplaysDetected.Add(1)
+		metrics.ReplaysDetected.Inc()
 	case core.ErrSignatureInvalid,
 		core.ErrIssuerUntrusted,
 		core.ErrTokenExpired,
