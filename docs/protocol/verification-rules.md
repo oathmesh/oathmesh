@@ -62,7 +62,7 @@ Implementation options:
 If a RevocationList is configured, verify the `sub` against the list. If revoked, reject with `subject_revoked`.
 
 ## Step 14 — Evaluate Policy
-Evaluate the Pkl policy rules in order. First matching rule wins. If no rule matches: deny. Emit an audit event regardless of outcome (allow **or** deny — this is never conditional).
+Evaluate the Pkl policy rules in order dynamically resolving contexts including `sub`, `act`, `env`, and `tenant` boundaries. First matching rule wins. If no rule matches: deny. Emit an audit event regardless of outcome (allow **or** deny — this is never conditional).
 
 ## Design Rationale
 

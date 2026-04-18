@@ -45,6 +45,7 @@ The token is output on stdout (pipeable).
 | `--scope` | | | Scope values (repeatable) |
 | `--reason` | | | Reason claim |
 | `--env` | | | Environment label |
+| `--tenant` | | | Tenant scope binding securely configuring namespace boundaries |
 | `--rqh` | | | Request hash binding (`sha256:...` format) |
 | `--inspect` | | | Decode and pretty-print the minted token (with UNVERIFIED warning) |
 

@@ -30,7 +30,7 @@ Optional claims enrich the audit trail and policy evaluation context. They are n
 | `src.sha` | string | Git commit SHA. |
 | `delegated_by` | string (URI) | If the call is on behalf of a human, their `user://` URI. |
 | `env` | string | Environment label (e.g., `"prod"`, `"staging"`, `"dev"`). |
-| `tenant` | string | Tenant identifier for multi-tenant systems. |
+| `tenant` | string | Tenant identifier explicitly isolating logical boundaries for multi-tenant evaluation natively. |
 | `rqh` | string | Request hash binding. Format: `"sha256:<hex>"`. When present, the receiver verifies `sha256(canonical_request) == rqh`. See [Replay Defense](../security/replay-defense.md). |
 
 ## Subject URI Schemes
