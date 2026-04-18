@@ -22,8 +22,8 @@
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
     <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
   </a>
-  <a href="https://github.com/oathmesh/oathmesh/tree/main/sdk/node">
-    <img src="https://img.shields.io/npm/v/@oathmesh/oathmesh.svg" alt="npm version">
+  <a href="https://www.npmjs.com/package/@oathmesh/sdk">
+    <img src="https://img.shields.io/npm/v/@oathmesh/sdk.svg" alt="npm version">
   </a>
   <a href="https://github.com/oathmesh/oathmesh/releases">
     <img src="https://img.shields.io/pypi/v/oathmesh.svg" alt="pypi version">
@@ -66,7 +66,7 @@
 | Language | Package | Frameworks |
 |----------|---------|------------|
 | **Go** | [`github.com/oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh) | chi, stdlib `net/http` |
-| **Node.js** | [`@oathmesh/oathmesh`](https://github.com/oathmesh/oathmesh/tree/main/sdk/node) | Express, **Next.js** (App, Pages, Edge) |
+| **Node.js** | [`@oathmesh/sdk`](https://www.npmjs.com/package/@oathmesh/sdk) | Express, **Next.js** (App, Pages, Edge) |
 | **Python** | [`oathmesh`](https://github.com/oathmesh/oathmesh/releases) | FastAPI, Flask, Django |
 
 ### SDK Feature Comparison
@@ -146,11 +146,11 @@ go install github.com/oathmesh/oathmesh/cmd/oathmesh@latest
 ### Node.js / TypeScript
 
 ```bash
-npm install @oathmesh/oathmesh
+npm install @oathmesh/sdk
 # or
-yarn add @oathmesh/oathmesh
+yarn add @oathmesh/sdk
 # or
-pnpm add @oathmesh/oathmesh
+pnpm add @oathmesh/sdk
 ```
 
 ### Python
@@ -182,7 +182,7 @@ caller := middleware.CallerFrom(r.Context())
 ### Express (TypeScript)
 
 ```typescript
-import { verifyToken } from '@oathmesh/oathmesh';
+import { verifyToken } from '@oathmesh/sdk';
 
 app.use(verifyToken({ audience, trustedIssuers }));
 // req.oathmeshContext is fully typed
@@ -191,7 +191,7 @@ app.use(verifyToken({ audience, trustedIssuers }));
 ### Next.js (App Router)
 
 ```typescript
-import { withOathMesh } from '@oathmesh/oathmesh/next';
+import { withOathMesh } from '@oathmesh/sdk/next';
 
 const oathmesh = withOathMesh({ audience, trustedIssuers });
 

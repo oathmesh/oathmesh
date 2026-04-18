@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  OathMesh-protected Express.js API using @oathmesh/oathmesh.
+  OathMesh-protected Express.js API using @oathmesh/sdk.
 </p>
 
 <p align="center">
