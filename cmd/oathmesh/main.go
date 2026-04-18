@@ -103,6 +103,7 @@ Exit codes:
 	cmd.Flags().StringSlice("scope", []string{}, "Scope values (repeatable)")
 	cmd.Flags().String("reason", "", "Reason claim")
 	cmd.Flags().String("env", "", "Environment label")
+	cmd.Flags().String("tenant", "", "Tenant scope binding")
 	cmd.Flags().String("rqh", "", "Request hash binding (sha256:... format)")
 	cmd.Flags().Bool("inspect", false, "Decode and pretty-print the minted token (with UNVERIFIED warning)")
 	_ = cmd.MarkFlagRequired("sub")
@@ -119,6 +120,7 @@ func mintRunE(cmd *cobra.Command, args []string) error {
 	scope, _ := cmd.Flags().GetStringSlice("scope")
 	reason, _ := cmd.Flags().GetString("reason")
 	env, _ := cmd.Flags().GetString("env")
+	tenant, _ := cmd.Flags().GetString("tenant")
 	rqh, _ := cmd.Flags().GetString("rqh")
 	inspect, _ := cmd.Flags().GetBool("inspect")
 
@@ -143,6 +145,7 @@ func mintRunE(cmd *cobra.Command, args []string) error {
 		Scope:  scope,
 		Reason: reason,
 		Env:    env,
+		Tenant: tenant,
 		RQH:    rqh,
 	}
 

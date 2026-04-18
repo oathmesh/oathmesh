@@ -72,6 +72,7 @@ type MintRequest struct {
 	Scope  []string `json:"scope,omitempty"`
 	Reason string   `json:"reason,omitempty"`
 	Env    string   `json:"env,omitempty"`
+	Tenant string   `json:"tenant,omitempty"`
 	RQH    string   `json:"rqh,omitempty"`
 	Src    *Source  `json:"src,omitempty"`
 }
@@ -127,6 +128,7 @@ func SignToken(req MintRequest, issuer string, privateKey ed25519.PrivateKey, ki
 		Scope:  req.Scope,
 		Reason: req.Reason,
 		Env:    req.Env,
+		Tenant: req.Tenant,
 		RQH:    req.RQH,
 		Src:    req.Src,
 	}

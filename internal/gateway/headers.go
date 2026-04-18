@@ -13,6 +13,7 @@ const (
 	HeaderTokenID   = "X-OathMesh-Token-Id" //nolint:gosec // Not a credential, just a custom HTTP header name
 	HeaderIssuer  = "X-OathMesh-Issuer"
 	HeaderEnv     = "X-OathMesh-Env"
+	HeaderTenant  = "X-OathMesh-Tenant"
 )
 
 // InjectHeaders removes the Authorization header so the raw Oath Token is
@@ -32,5 +33,11 @@ func InjectHeaders(req *http.Request, vcc *core.VerifiedCallerContext) {
 		req.Header.Set(HeaderEnv, vcc.Env)
 	} else {
 		req.Header.Del(HeaderEnv)
+	}
+
+	if vcc.Tenant != "" {
+		req.Header.Set(HeaderTenant, vcc.Tenant)
+	} else {
+		req.Header.Del(HeaderTenant)
 	}
 }

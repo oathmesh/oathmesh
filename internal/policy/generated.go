@@ -24,8 +24,9 @@ type MatchCriteria struct {
 	Sub   *string         `pkl:"sub"`
 	Act   *string         `pkl:"act"`
 	Scope *[]string       `pkl:"scope"`
-	Env   *string         `pkl:"env"`
-	Src   *SourceCriteria `pkl:"src"`
+	Env    *string         `pkl:"env"`
+	Tenant *string         `pkl:"tenant"`
+	Src    *SourceCriteria `pkl:"src"`
 }
 
 // SourceCriteria provenance match criteria

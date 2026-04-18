@@ -14,6 +14,7 @@ type VerifiedCallerContext struct {
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 	Env       string
+	Tenant    string
 }
 
 type Principal struct {

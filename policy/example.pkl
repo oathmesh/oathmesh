@@ -27,6 +27,8 @@ rules {
     match {
       sub = "agent://repo/acme/deploy-bot"
       act = "inventory.write"
+      env = "production"
+      tenant = "acme-corp"
       src {
         type = "github_actions"
         repo = "acme/storefront"

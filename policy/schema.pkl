@@ -22,6 +22,8 @@ class MatchCriteria {
   act: String?
   /// Scope values required — all listed must be present in token
   scope: Listing<String>?
+  /// Tenant label exact match constraints explicitly scoped.
+  tenant: String?
   /// Environment label exact match (e.g., "prod")
   env: String?
   /// Source (provenance) criteria

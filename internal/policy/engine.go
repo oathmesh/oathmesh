@@ -101,6 +101,11 @@ func matchesRule(rule *Rule, input *verify.PolicyInput) bool {
 		return false
 	}
 
+	// Tenant: exact match
+	if m.Tenant != nil && *m.Tenant != input.Tenant {
+		return false
+	}
+
 	// Scope: all listed scope values must be present in token (token ⊇ rule)
 	if m.Scope != nil {
 		for _, required := range *m.Scope {

@@ -101,6 +101,7 @@ type PolicyInput struct {
 	Act      string
 	Scope    []string
 	Env      string
+	Tenant   string
 	SrcType  string
 	SrcRepo  string
 	SrcWflow string

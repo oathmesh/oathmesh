@@ -111,6 +111,7 @@ func (s *KMSSigner) SignToken(req MintRequest) (string, error) {
 		Scope:  req.Scope,
 		Reason: req.Reason,
 		Env:    req.Env,
+		Tenant: req.Tenant,
 		RQH:    req.RQH,
 		Src:    req.Src,
 	}

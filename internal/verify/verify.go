@@ -355,8 +355,9 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 			Sub:   claims.Sub,
 			Aud:   claims.Aud,
 			Act:   claims.Act,
-			Scope: claims.Scope,
-			Env:   claims.Env,
+			Scope:  claims.Scope,
+			Env:    claims.Env,
+			Tenant: claims.Tenant,
 		}
 		if claims.Src != nil {
 			policyInput.SrcType = claims.Src.Type
@@ -399,6 +400,7 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		IssuedAt:  iatTime,
 		ExpiresAt: expTime,
 		Env:       claims.Env,
+		Tenant:    claims.Tenant,
 	}
 
 	// Emit audit event — allow
