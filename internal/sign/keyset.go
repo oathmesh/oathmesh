@@ -3,12 +3,10 @@ package sign
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -153,32 +151,17 @@ func GenerateAndSaveKeyPair(path string) (ed25519.PrivateKey, error) {
 		return nil, err
 	}
 
-	pemData, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	pemBytes, err := MarshalPrivateKeyToPEM(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("marshal private key: %w", err)
 	}
 
-	pemBlock := fmt.Sprintf("-----BEGIN PRIVATE KEY-----\n%s-----END PRIVATE KEY-----\n",
-		strings.TrimSpace(formatPEM(pemData)))
-
-	err = os.WriteFile(path, []byte(pemBlock), 0600)
+	err = os.WriteFile(path, pemBytes, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("write key file: %w", err)
 	}
 
 	return privateKey, nil
-}
-
-func formatPEM(data []byte) string {
-	var lines []string
-	for i := 0; i < len(data); i += 64 {
-		end := i + 64
-		if end > len(data) {
-			end = len(data)
-		}
-		lines = append(lines, string(data[i:end]))
-	}
-	return strings.Join(lines, "\n")
 }
 
 func RotateKey(ks *KeySet) error {
@@ -199,6 +182,15 @@ func RotateKey(ks *KeySet) error {
 	ks.PublicKeys[newKid] = newPublicKey
 	if ks.PreviousKid != "" {
 		ks.PublicKeys[ks.PreviousKid] = PublicKeyFromPrivate(ks.Previous)
+	}
+
+	// Persist to disk if a key file is configured
+	keyFile := os.Getenv(EnvPrivateKeyFile)
+	if keyFile != "" {
+		pemBytes, err := MarshalPrivateKeyToPEM(newPrivateKey)
+		if err == nil {
+			_ = os.WriteFile(keyFile, pemBytes, 0600)
+		}
 	}
 
 	return nil

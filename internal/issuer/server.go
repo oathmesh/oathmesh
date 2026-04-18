@@ -2,6 +2,7 @@ package issuer
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/oathmesh/oathmesh/internal/config"
 	"github.com/oathmesh/oathmesh/internal/metrics"
 	"github.com/oathmesh/oathmesh/internal/sign"
+	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
 // maxRequestBodySize is the maximum allowed request body for POST endpoints.
@@ -33,6 +35,7 @@ type Server struct {
 	cfg            *config.Config
 	rateLimiter    *RateLimiter
 	gatewayHandler http.Handler
+	revocations    *verify.RedisRevocationList
 }
 
 func NewServer(keySet interface {
@@ -53,12 +56,21 @@ func NewServer(keySet interface {
 
 	rateLimiter := NewRateLimiter(cfg.RateLimitRPM, cfg.RateLimitBurst)
 
+	var revList *verify.RedisRevocationList
+	if cfg.RedisURL != "" {
+		rl, err := verify.NewRedisRevocationList(cfg.RedisURL)
+		if err == nil {
+			revList = rl
+		}
+	}
+
 	return &Server{
 		keySet:      keySet,
 		logger:      logger,
 		port:        port,
 		cfg:         cfg,
 		rateLimiter: rateLimiter,
+		revocations: revList,
 	}
 }
 
@@ -120,15 +132,18 @@ func (s *Server) router() *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Get("/.well-known/jwks.json", s.jwksHandler)
 		r.Get("/.well-known/oathmesh-issuer", s.discoveryHandler)
+		r.Get("/v1/revoked-subjects", s.revokedSubjectsHandler)
 	})
 
-	// ── Authenticated mint endpoints ────────────────────────────────────
+	// ── Authenticated mint & admin endpoints ───────────────────────────
 	// Protected by MintAuth middleware (pre-shared key).
 	r.Group(func(r chi.Router) {
 		r.Use(MintAuth)
 		r.Post("/v1/token", s.mintHandler)
 		r.Post("/v1/exchange/github", s.exchangeGitHubHandler)
-		r.Get("/v1/revoked-subjects", s.revokedSubjectsHandler)
+		r.Post("/v1/exchange/gitlab", s.exchangeGitLabHandler)
+		r.Post("/v1/admin/revoke", s.revokeHandler)
+		r.Delete("/v1/admin/revoke", s.unrevokeHandler)
 	})
 
 	if s.gatewayHandler != nil {
@@ -157,9 +172,81 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
+// ── Revocation Handlers ──────────────────────────────────────────────────────
+
+type RevokeRequest struct {
+	Subject string `json:"sub"`
+}
+
+func (s *Server) revokeHandler(w http.ResponseWriter, r *http.Request) {
+	if s.revocations == nil {
+		s.writeError(w, "revocation_disabled", "Redis is not configured. Revocation is unavailable.", "Set REDIS_URL")
+		return
+	}
+
+	var req RevokeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, "invalid_request", "Failed to parse request body", "")
+		return
+	}
+	if req.Subject == "" {
+		s.writeError(w, "missing_subject", "Subject is required", "")
+		return
+	}
+
+	if err := s.revocations.Revoke(r.Context(), req.Subject); err != nil {
+		s.logger.Error("failed to revoke subject", "error", err)
+		s.writeError(w, "internal_error", "Failed to revoke subject", "")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status": "revoked"}`))
+}
+
+func (s *Server) unrevokeHandler(w http.ResponseWriter, r *http.Request) {
+	if s.revocations == nil {
+		s.writeError(w, "revocation_disabled", "Redis is not configured. Revocation is unavailable.", "Set REDIS_URL")
+		return
+	}
+
+	var req RevokeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, "invalid_request", "Failed to parse request body", "")
+		return
+	}
+	if req.Subject == "" {
+		s.writeError(w, "missing_subject", "Subject is required", "")
+		return
+	}
+
+	if err := s.revocations.Unrevoke(r.Context(), req.Subject); err != nil {
+		s.logger.Error("failed to unrevoke subject", "error", err)
+		s.writeError(w, "internal_error", "Failed to unrevoke subject", "")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status": "unrevoked"}`))
+}
+
 func (s *Server) revokedSubjectsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if s.revocations == nil {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"revocations": []}`))
+		return
+	}
+
+	list, err := s.revocations.List(r.Context())
+	if err != nil {
+		s.logger.Error("failed to list revocations", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	// Stub: return an empty list. In a full implementation, this reads from an active DB.
-	_, _ = w.Write([]byte(`{"revocations": []}`))
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"revocations": list,
+	})
 }

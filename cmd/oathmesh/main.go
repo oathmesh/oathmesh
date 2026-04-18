@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -60,6 +62,8 @@ OathMesh authenticates the caller. The receiver authorizes the request.`,
 	rootCmd.AddCommand(buildServeCmd())
 	rootCmd.AddCommand(buildKeysCmd())
 	rootCmd.AddCommand(buildPolicyCmd())
+	rootCmd.AddCommand(buildRevokeCmd())
+	rootCmd.AddCommand(buildUnrevokeCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		if !quiet {
@@ -636,6 +640,108 @@ func validateSubjectURI(sub string) error {
 		"invalid subject URI %q: must start with one of: svc://, agent://, job://, tool://, user://",
 		sub,
 	)
+}
+
+func buildRevokeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "revoke <subject>",
+		Short: "Revoke all tokens for a subject backing the Redis revocation list",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sub := args[0]
+			issuerURL, _ := cmd.Flags().GetString("issuer")
+			if issuerURL == "" {
+				issuerURL = os.Getenv("OATHMESH_ISSUER")
+			}
+			if issuerURL == "" {
+				return fmt.Errorf("issuer URL is required (use --issuer or OATHMESH_ISSUER)")
+			}
+
+			secret := os.Getenv("OATHMESH_MINT_SECRET")
+			if secret == "" {
+				return fmt.Errorf("OATHMESH_MINT_SECRET environment variable must be set to authenticate")
+			}
+
+			if err := validateSubjectURI(sub); err != nil {
+				return err
+			}
+
+			reqBody := fmt.Sprintf(`{"sub":"%s"}`, sub)
+			req, err := http.NewRequest(http.MethodPost, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+secret)
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return fmt.Errorf("http request failed: %w", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				return fmt.Errorf("failed to revoke subject (status %d): %s", resp.StatusCode, string(body))
+			}
+
+			if !quiet {
+				fmt.Printf("✓ Subject %q successfully revoked.\n", sub)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().String("issuer", "", "OathMesh issuer URL (e.g. http://localhost:4000)")
+	return cmd
+}
+
+func buildUnrevokeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unrevoke <subject>",
+		Short: "Unrevoke a subject from the Redis revocation list",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sub := args[0]
+			issuerURL, _ := cmd.Flags().GetString("issuer")
+			if issuerURL == "" {
+				issuerURL = os.Getenv("OATHMESH_ISSUER")
+			}
+			if issuerURL == "" {
+				return fmt.Errorf("issuer URL is required (use --issuer or OATHMESH_ISSUER)")
+			}
+
+			secret := os.Getenv("OATHMESH_MINT_SECRET")
+			if secret == "" {
+				return fmt.Errorf("OATHMESH_MINT_SECRET environment variable must be set to authenticate")
+			}
+
+			reqBody := fmt.Sprintf(`{"sub":"%s"}`, sub)
+			req, err := http.NewRequest(http.MethodDelete, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+secret)
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return fmt.Errorf("http request failed: %w", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				return fmt.Errorf("failed to unrevoke subject (status %d): %s", resp.StatusCode, string(body))
+			}
+
+			if !quiet {
+				fmt.Printf("✓ Subject %q successfully unrevoked.\n", sub)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().String("issuer", "", "OathMesh issuer URL (e.g. http://localhost:4000)")
+	return cmd
 }
 
 // printInspection decodes and pretty-prints a token with expiry countdown.

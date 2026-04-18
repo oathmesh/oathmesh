@@ -28,7 +28,7 @@ const (
 )
 
 // mintTestToken creates a valid signed Oath Token for testing.
-func mintTestToken(t *testing.T, privateKey ed25519.PrivateKey, overrides func(*sign.Claims)) string {
+func mintTestToken(t testing.TB, privateKey ed25519.PrivateKey, overrides func(*sign.Claims)) string {
 	t.Helper()
 
 	claims := sign.Claims{
@@ -69,7 +69,7 @@ func testConfig(publicKey ed25519.PublicKey) *VerifierConfig {
 }
 
 // generateTestKeys creates a fresh Ed25519 key pair.
-func generateTestKeys(t *testing.T) (ed25519.PrivateKey, ed25519.PublicKey) {
+func generateTestKeys(t testing.TB) (ed25519.PrivateKey, ed25519.PublicKey) {
 	t.Helper()
 	privateKey, publicKey, err := sign.GenerateKeyPair()
 	if err != nil {
