@@ -391,7 +391,7 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to init telemetry: %w", err)
 	}
-	defer shutdownTracer(context.Background())
+	defer func() { _ = shutdownTracer(context.Background()) }()
 
 	ks, err := sign.LoadKeySet()
 	if err != nil {
