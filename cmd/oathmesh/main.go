@@ -393,12 +393,25 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = shutdownTracer(context.Background()) }()
 
-	ks, err := sign.LoadKeySet()
-	if err != nil {
-		return fmt.Errorf("load keyset: %w", err)
+	var signer sign.Signer
+	cfgIssuer := os.Getenv("OATHMESH_ISSUER")
+	if cfgIssuer == "" {
+		cfgIssuer = "https://issuer.oathmesh.dev"
 	}
 
-	srv := issuer.NewServer(ks)
+	if kmsKeyID := os.Getenv("OATHMESH_KMS_KEY_ID"); kmsKeyID != "" {
+		signer, err = sign.NewKMSSigner(context.Background(), kmsKeyID, cfgIssuer)
+		if err != nil {
+			return fmt.Errorf("failed to mount AWS KMS signer: %w", err)
+		}
+	} else {
+		signer, err = sign.LoadKeySet()
+		if err != nil {
+			return fmt.Errorf("load local keyset: %w", err)
+		}
+	}
+
+	srv := issuer.NewServer(signer)
 
 	if gatewayEnabled {
 		upstream := os.Getenv("OATHMESH_GATEWAY_UPSTREAM")

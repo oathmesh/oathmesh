@@ -26,11 +26,7 @@ const maxRequestBodySize = 64 * 1024
 
 type Server struct {
 	httpServer *http.Server
-	keySet     interface {
-		GetIssuer() string
-		JWKS() (*sign.JWKS, error)
-		SignToken(sign.MintRequest) (string, error)
-	}
+	keySet         sign.Signer
 	logger         *slog.Logger
 	port           string
 	cfg            *config.Config
@@ -39,11 +35,7 @@ type Server struct {
 	revocations    *verify.RedisRevocationList
 }
 
-func NewServer(keySet interface {
-	GetIssuer() string
-	JWKS() (*sign.JWKS, error)
-	SignToken(sign.MintRequest) (string, error)
-}) *Server {
+func NewServer(keySet sign.Signer) *Server {
 	cfg := config.LoadFromEnv()
 
 	port := os.Getenv("OATHMESH_PORT")
