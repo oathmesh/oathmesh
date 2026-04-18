@@ -219,6 +219,43 @@ oathmesh keys rotate --json
 
 ---
 
+## `oathmesh revoke`
+
+Revoke all tokens for a given subject by publishing to the active Redis revocation backend.
+
+### Arguments & Configuration
+
+Requires the `OATHMESH_MINT_SECRET` and `OATHMESH_ISSUER` environment variables to authenticate the remote capability.
+
+| Arg | Required | Description |
+|-----|----------|-------------|
+| `<subject>` | ✓ | Subject URI string to revoke entirely (e.g. `svc://bad-actor`) |
+| `--issuer` | | Issuer URL (can use `OATHMESH_ISSUER` instead) |
+
+### Examples
+
+```bash
+export OATHMESH_MINT_SECRET="development_secret"
+export OATHMESH_ISSUER="http://localhost:4000"
+
+oathmesh revoke 'svc://compromised-agent'
+```
+
+---
+
+## `oathmesh unrevoke`
+
+Revert a subject's revocation status from the Redis caching backend.
+
+### Examples
+
+```bash
+export OATHMESH_MINT_SECRET="development_secret"
+oathmesh unrevoke 'svc://compromised-agent'
+```
+
+---
+
 ## `oathmesh policy validate`
 
 Validate a `.pkl` or `.json` policy file against the OathMesh policy schema.
