@@ -667,7 +667,7 @@ func buildRevokeCmd() *cobra.Command {
 			}
 
 			reqBody := fmt.Sprintf(`{"sub":"%s"}`, sub)
-			req, err := http.NewRequest(http.MethodPost, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
+			req, err := http.NewRequestWithContext(cmd.Context(), http.MethodPost, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
 			if err != nil {
 				return err
 			}
@@ -716,7 +716,7 @@ func buildUnrevokeCmd() *cobra.Command {
 			}
 
 			reqBody := fmt.Sprintf(`{"sub":"%s"}`, sub)
-			req, err := http.NewRequest(http.MethodDelete, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
+			req, err := http.NewRequestWithContext(cmd.Context(), http.MethodDelete, issuerURL+"/v1/admin/revoke", strings.NewReader(reqBody))
 			if err != nil {
 				return err
 			}
