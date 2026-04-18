@@ -16,7 +16,7 @@
   Stop leaking API keys. Replace static secrets with cryptographically verified tokens that expire in 5 minutes or less.
 </p>
 
-> ⚠️ **Pre-production:** OathMesh has not yet received an independent security audit. Do not use in production until v1.1.0 or later, which will include a third-party audit report.
+> ⚠️ **Pre-production:** OathMesh has not yet received an independent security audit, but it is currently structurally ready for Early Adopter/MVP deployments.
 
 <p align="center">
   <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
@@ -55,6 +55,9 @@
 - 📊 **Full Audit Trail** — Every allow and deny logged as NDJSON
 - 🔄 **Policy-Driven** — Apple Pkl-based rules, hot-reload, default deny
 - 🌐 **Gateway Mode** — Reverse proxy that injects verified context headers
+- 🛠️ **CLI Native** — Terminal-driven management for robust GitOps integration
+- 🛑 **Stateful Revocation** — Redis-backed O(1) revocation lists directly synced
+- 🤖 **CI Native Auto-Sign** — Automagical native OIDC exchange mappings for GitHub Actions and GitLab CI
 
 ---
 
@@ -105,8 +108,9 @@ curl -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
 git clone https://github.com/oathmesh/oathmesh.git
 cd oathmesh
 
-# Generate a development key
-openssl genpkey -algorithm Ed25519 -out private.pem
+# Set up local environment
+export OATHMESH_MINT_SECRET="your-pre-shared-secret"
+export OATHMESH_PRIVATE_KEY_FILE="./private.pem"
 
 # Build the CLI
 make build
@@ -114,7 +118,7 @@ make build
 # Start services
 docker-compose up -d
 
-# Mint a token
+# Provide the MintAuth secret securely to mint tokens
 TOKEN=$(./bin/oathmesh mint \
   --sub "agent://repo/acme/deploy-bot" \
   --aud "https://inventory.internal" \
@@ -122,6 +126,9 @@ TOKEN=$(./bin/oathmesh mint \
 
 # Call a protected API
 curl -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
+
+# Revoke a token directly via CLI safely authenticated
+./bin/oathmesh revoke 'agent://repo/acme/deploy-bot'
 ```
 
 Run `./demo.sh` for the full automated golden-path demo.
@@ -250,9 +257,8 @@ caller = verify_token(request.headers["authorization"], config)
 - 🔜 **Rust SDK** — Coming soon
 - 🔜 **Java SDK** — Coming soon  
 - 🗓️ **Enhanced Gateway** — mTLS support, rate limiting
-- 🗓️ **Policy UI** — Visual policy editor
-- 🗓️ **Audit Dashboard** — Web-based log viewer
-- 🗓️ **More Issuers** — GitLab CI, GitHub App exchange
+- 🗓️ **OpenTelemetry** — Distributed tracing and metric ingestion
+- 🗓️ **AWS KMS Native Backend** — Alternative to local file persistence
 
 ---
 

@@ -70,6 +70,7 @@ cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign
 Caller                    Issuer
   │                         │
   │  POST /v1/token         │
+  │  Authorization: Bearer  │
   │  {sub, aud, act, ttl}   │
   │────────────────────────▶│
   │                         │ 1. Validate request
@@ -156,7 +157,7 @@ Caller          Gateway              Upstream
 
 ### Scaling Considerations
 
-- **Issuer:** Stateless, horizontally scalable (read JWKS from shared location)
+- **Issuer:** Primarily stateless for minting via shared keys, but acts as a control plane proxy bridging administrative revocation interactions dynamically securely to Redis.
 - **Verifier:** Stateless, scales with request volume
 - **Replay cache:** 
   - Dev: In-memory (single instance)
