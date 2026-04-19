@@ -50,7 +50,7 @@ func StreamInterceptor(
 		}
 
 		// Inject verified claims into context
-		newCtx := context.WithValue(ctx, contextKeyVerifiedClaims, vcc)
+		newCtx := WithVerifiedCaller(ctx, vcc)
 
 		// Create a wrappedServerStream to use the new context
 		wrapped := &wrappedServerStream{

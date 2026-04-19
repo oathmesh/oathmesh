@@ -30,6 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
     "fastapi>=0.100.0",
     "httpx>=0.25.0",
 ]
@@ -42,3 +43,8 @@ Homepage = "https://github.com/oathmesh/oathmesh"
 Documentation = "https://github.com/oathmesh/oathmesh/tree/main/docs"
 Repository = "https://github.com/oathmesh/oathmesh"
 Issues = "https://github.com/oathmesh/oathmesh/issues"
+
+[tool.pytest.ini_options]
+markers = [
+    "asyncio: marks tests that run with asyncio event loop",
+]

@@ -4,7 +4,13 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/oathmesh/oathmesh/internal/core"
 )
+
+type contextKey string
+
+var contextKeyVerifiedClaims contextKey = "oathmesh:verified_claims"
 
 // GRPCMiddlewareConfig holds configuration for gRPC interceptors.
 type GRPCMiddlewareConfig struct {
@@ -106,4 +112,9 @@ func (rl *SimpleRateLimiter) cleanup() {
 		}
 		rl.mu.Unlock()
 	}
+}
+
+// WithVerifiedCaller injects verified caller claims into context.
+func WithVerifiedCaller(ctx context.Context, vcc *core.VerifiedCallerContext) context.Context {
+	return context.WithValue(ctx, contextKeyVerifiedClaims, vcc)
 }

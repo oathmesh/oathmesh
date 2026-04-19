@@ -223,7 +223,7 @@ func TestVerifiedCallerFrom_WithoutInjectedContext(t *testing.T) {
 	}
 
 	vcc := &core.VerifiedCallerContext{Principal: core.Principal{Issuer: testIssuer, Subject: "svc://integration/claims"}}
-	ctx := context.WithValue(context.Background(), "oathmesh:verified_claims", vcc)
+	ctx := middleware.WithVerifiedCaller(context.Background(), vcc)
 
 	got := middleware.VerifiedCallerFrom(ctx)
 	if got == nil || got.Principal.Subject != "svc://integration/claims" {

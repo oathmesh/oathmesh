@@ -16,11 +16,6 @@ import (
 	"github.com/oathmesh/oathmesh/internal/verify"
 )
 
-const (
-	// contextKeyVerifiedClaims is the key for storing VerifiedCallerContext in context.
-	contextKeyVerifiedClaims = "oathmesh:verified_claims"
-)
-
 // UnaryInterceptor returns a gRPC unary interceptor that verifies OathMesh tokens.
 func UnaryInterceptor(
 	verifierCfg *verify.VerifierConfig,
@@ -58,7 +53,7 @@ func UnaryInterceptor(
 		}
 
 		// Inject verified claims into context
-		newCtx := context.WithValue(ctx, contextKeyVerifiedClaims, vcc)
+		newCtx := WithVerifiedCaller(ctx, vcc)
 
 		// Call the handler with the enriched context
 		result, err := handler(newCtx, req)
@@ -109,11 +104,15 @@ func mapErrorToGRPCCode(err error) (codes.Code, string) {
 			return codes.Unauthenticated, oe.Message
 		case core.ErrAudienceMismatch:
 			return codes.Unauthenticated, oe.Message
+		case core.ErrAlgorithmNotAllowed:
+			return codes.Unauthenticated, oe.Message
 		case core.ErrPolicyDenied:
 			return codes.PermissionDenied, oe.Message
 		case core.ErrSubjectRevoked:
 			return codes.PermissionDenied, oe.Message
 		case core.ErrReplayDetected:
+			return codes.Unauthenticated, oe.Message
+		case core.ErrBindingMismatch, core.ErrBindingRequired:
 			return codes.Unauthenticated, oe.Message
 		default:
 			return codes.Internal, "verification failed"
