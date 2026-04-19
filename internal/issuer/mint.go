@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/oathmesh/oathmesh/internal/sign"
 )
@@ -32,7 +33,9 @@ type MintRequest struct {
 }
 
 type MintResponse struct {
-	Token string `json:"token"`
+	Token     string `json:"token"`
+	ExpiresIn int    `json:"expires_in"`
+	TokenType string `json:"token_type"`
 }
 
 type ErrorResponse struct {
@@ -111,7 +114,11 @@ func (s *Server) mintHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(MintResponse{Token: token})
+	_ = json.NewEncoder(w).Encode(MintResponse{
+		Token:     token,
+		ExpiresIn: computeExpiresIn(req, token),
+		TokenType: "OathMesh",
+	})
 }
 
 // validateSubjectURI checks that a subject string starts with a known URI scheme.
@@ -154,4 +161,22 @@ func (s *Server) writeError(w http.ResponseWriter, code, message, fix string) {
 		Message: message,
 		Fix:     fix,
 	})
+}
+
+func computeExpiresIn(req MintRequest, token string) int {
+	if claims, err := sign.UnverifiedClaims(token); err == nil {
+		now := time.Now().Unix()
+		if claims.Exp > now {
+			return int(claims.Exp - now)
+		}
+	}
+
+	ttl := req.TTL
+	if ttl <= 0 {
+		ttl = sign.DefaultTTL
+	}
+	if ttl > sign.MaxTTL {
+		ttl = sign.MaxTTL
+	}
+	return ttl
 }

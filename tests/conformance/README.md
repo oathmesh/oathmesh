@@ -14,10 +14,29 @@ Canonical cases are defined in `tests/conformance/cases.json`:
 - issuer trust checks
 - audience checks
 - replay detection
-- revocation expectations (Go core; marked N/A for Node/Python)
+- `alg=none` rejection
+- subject format validation
+- binding-required semantics (`requireRequestBinding` / `require_request_binding`)
+- future `iat` rejection
+- revocation expectations (Go core; marked SKIP/N/A for Node/Python)
 - middleware auth header handling semantics
 
 Each case points to existing test tooling commands (`go test`, `vitest`, `pytest`).
+
+## Current case matrix
+
+| Case ID | Go | Node | Python |
+|---|---|---|---|
+| `token_parsing_validation_failures` | ✅ | ✅ | ✅ |
+| `issuer_check_untrusted` | ✅ | ✅ | ✅ |
+| `audience_check_mismatch` | ✅ | ✅ | ✅ |
+| `replay_detection_semantics` | ✅ | ✅ | ✅ |
+| `revocation_subject_revoked` | ✅ | SKIP (no revocation list wiring in conformance target) | SKIP (no revocation list wiring in conformance target) |
+| `alg_none_rejection` | ✅ | ✅ | ✅ |
+| `subject_format_validation` | ✅ | ✅ | ✅ |
+| `binding_required_semantics` | ✅ | ✅ | ✅ |
+| `iat_future_rejection` | ✅ | ✅ | ✅ |
+| `middleware_auth_header_handling_semantics` | ✅ | ✅ | ✅ |
 
 ## Run locally
 

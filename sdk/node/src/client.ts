@@ -14,8 +14,8 @@ export interface MintRequest {
 
 export interface MintResponse {
   token: string;
-  expires_in: number;
-  token_type: string;
+  expires_in?: number;
+  token_type?: string;
 }
 
 export interface OathMeshClientConfig {
@@ -64,11 +64,33 @@ export class OathMeshClient {
 
     const data = await res.json() as MintResponse;
     
-    this.tokenCache.set(cacheKey, {
-      token: data.token,
-      expiresAt: Date.now() + data.expires_in * 1000
-    });
+    const expiresIn = (typeof data.expires_in === 'number' && data.expires_in > 0)
+      ? data.expires_in
+      : inferExpiresInFromToken(data.token);
+    if (expiresIn > 0) {
+      this.tokenCache.set(cacheKey, {
+        token: data.token,
+        expiresAt: Date.now() + expiresIn * 1000
+      });
+    }
 
     return data.token;
+  }
+}
+
+function inferExpiresInFromToken(token: string): number {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return 0;
+    }
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as { exp?: number };
+    if (typeof payload.exp !== 'number') {
+      return 0;
+    }
+    const delta = payload.exp - Math.floor(Date.now() / 1000);
+    return delta > 0 ? delta : 0;
+  } catch {
+    return 0;
   }
 }

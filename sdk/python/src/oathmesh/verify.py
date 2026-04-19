@@ -6,17 +6,23 @@ Supports Ed25519 (EdDSA) and ES256 algorithms.
 
 from __future__ import annotations
 
+import hashlib
+import re
+import time
 import jwt
 from jwt import PyJWKClient
 from typing import List, Optional, Callable
 from .errors import OathMeshError
-from .types import VerifiedCallerContext, Principal, Source, ReplayCache, PolicyEvaluator
+from .types import VerifiedCallerContext, Principal, Source, ReplayCache, PolicyEvaluator, RevocationList
 
 # Module-level JWKS client cache — shared across calls within the same process.
 # In serverless (Lambda, Cloud Functions), module scope persists across warm invocations.
 _jwks_clients: dict[str, PyJWKClient] = {}
 
 ALLOWED_ALGORITHMS = ["EdDSA", "ES256"]
+SUBJECT_RE = re.compile(r"^(agent|svc|job|tool|user)://[a-zA-Z0-9/_.-]{1,256}$")
+CLOCK_SKEW_SECONDS = 10
+MAX_EXP_UNIX = 4102444800
 
 
 class VerifierConfig:
@@ -44,7 +50,9 @@ class VerifierConfig:
         audience: str,
         trusted_issuers: List[str],
         require_request_binding: bool = False,
+        request_hash: Optional[str] = None,
         replay_cache: Optional[ReplayCache] = None,
+        revocation_list: Optional[RevocationList] = None,
         policy_evaluator: Optional[PolicyEvaluator] = None,
         on_verified: Optional[Callable[[VerifiedCallerContext], None]] = None,
         on_denied: Optional[Callable[[OathMeshError], None]] = None,
@@ -52,7 +60,9 @@ class VerifierConfig:
         self.audience = audience
         self.trusted_issuers = trusted_issuers
         self.require_request_binding = require_request_binding
+        self.request_hash = request_hash
         self.replay_cache = replay_cache
+        self.revocation_list = revocation_list
         self.policy_evaluator = policy_evaluator
         self.on_verified = on_verified
         self.on_denied = on_denied
@@ -106,15 +116,24 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
 
     Use this when you've already extracted the token from the header.
     """
+    parts = token.split(".")
+    if len(parts) != 3:
+        _deny(
+            config,
+            "claim_missing",
+            f"invalid token format: expected 3 segments, got {len(parts)}",
+            "provide a valid OathMesh token in compact JWS format (header.payload.signature)",
+        )
+
     # Step 02: Decode and validate header
     try:
         unverified_header = jwt.get_unverified_header(token)
     except jwt.DecodeError:
-        _deny(config, "verification_failed", "malformed token header", "check token format")
+        _deny(config, "claim_missing", "failed to decode token header", "provide a valid base64url-encoded token header")
 
     typ = unverified_header.get("typ", "")
     if typ != "om+jwt":
-        _deny(config, "algorithm_not_allowed", f'invalid token type "{typ}"', "token typ must be om+jwt")
+        _deny(config, "claim_missing", f'token type "{typ}" is not valid — expected "om+jwt"', "token typ must be om+jwt")
 
     alg = unverified_header.get("alg", "")
     if alg == "none":
@@ -126,13 +145,30 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
     try:
         unverified_claims = jwt.decode(token, options={"verify_signature": False})
     except jwt.DecodeError:
-        _deny(config, "verification_failed", "malformed token payload", "check token format")
+        _deny(config, "claim_missing", "failed to decode token payload", "provide a valid base64url-encoded token payload")
 
     iss = unverified_claims.get("iss")
     if not iss:
         _deny(config, "claim_missing:iss", "missing iss claim", "include iss when minting")
     if iss not in config.trusted_issuers:
         _deny(config, "issuer_untrusted", f'issuer "{iss}" is not trusted', "add it to trusted_issuers")
+
+    # Step 11 (moved early): verify required claims.
+    _required_string_claim(config, unverified_claims, "sub")
+    _required_string_claim(config, unverified_claims, "aud")
+    _required_string_claim(config, unverified_claims, "act")
+    _required_number_claim(config, unverified_claims, "iat")
+    _required_number_claim(config, unverified_claims, "exp")
+    _required_string_claim(config, unverified_claims, "jti")
+
+    # Step 11.5: subject format
+    if not SUBJECT_RE.match(str(unverified_claims["sub"])):
+        _deny(
+            config,
+            "claim_missing:sub",
+            f'invalid subject format: "{unverified_claims["sub"]}"',
+            "subject must match schema (svc://, agent://, job://, tool://, user:// plus allowed chars)"
+        )
 
     # Step 05-06: Load JWKS and verify signature
     jwks_client = _get_jwks_client(iss)
@@ -148,7 +184,8 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
             signing_key.key,
             algorithms=ALLOWED_ALGORITHMS,
             audience=config.audience,
-            leeway=10,
+            issuer=iss,
+            leeway=CLOCK_SKEW_SECONDS,
         )
     except jwt.ExpiredSignatureError:
         _deny(config, "token_expired", "token has expired", "mint a new token")
@@ -161,13 +198,46 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
     except Exception as e:
         _deny(config, "verification_failed", str(e), "check token format")
 
-    # Step 11: Verify required claims
+    # Step 07: post-signature issuer trust re-check.
+    if data.get("iss") not in config.trusted_issuers:
+        _deny(config, "issuer_untrusted", f'issuer "{data.get("iss")}" failed post-signature trust check', "verify trusted_issuers configuration")
+
+    # Ensure signed payload still carries required claims.
     if not data.get("sub"):
         _deny(config, "claim_missing:sub", "missing sub claim", "include sub when minting")
     if not data.get("act"):
         _deny(config, "claim_missing:act", "missing act claim", "include act when minting")
     if not data.get("jti"):
         _deny(config, "claim_missing:jti", "missing jti claim", "jti is auto-generated by the issuer")
+
+    # Step 08-10: temporal and audience checks aligned with Go.
+    now = int(time.time())
+    exp = int(data["exp"])
+    if exp > MAX_EXP_UNIX:
+        _deny(config, "token_expired", "token expiry is invalid or too far in the future", "mint a token with sane exp")
+    if now > exp + CLOCK_SKEW_SECONDS:
+        _deny(config, "token_expired", "token has expired", "mint a new token")
+
+    iat = int(data["iat"])
+    if iat > now + CLOCK_SKEW_SECONDS:
+        _deny(config, "token_expired", "token issued-at is in the future", "check clock synchronization between issuer and receiver")
+
+    if data.get("nbf") is not None and int(data["nbf"]) > now + CLOCK_SKEW_SECONDS:
+        _deny(config, "token_expired", "token not-before is in the future", "token cannot be used yet")
+
+    if data.get("aud") != config.audience:
+        _deny(config, "audience_mismatch", "token audience does not match", f"mint with aud={config.audience}")
+
+    # Step 12: verify request hash binding when both are present.
+    if data.get("rqh") and config.request_hash:
+        expected_hash = "sha256:" + hashlib.sha256(config.request_hash.encode("utf-8")).hexdigest()
+        if data["rqh"] != expected_hash:
+            _deny(
+                config,
+                "binding_mismatch",
+                f'request hash mismatch: token has "{data["rqh"]}" but request hash is "{expected_hash}"',
+                "ensure the request body has not been modified since token minting",
+            )
 
     # Step 12b: Enforce rqh if RequireRequestBinding is set
     if config.require_request_binding and not data.get("rqh"):
@@ -191,9 +261,18 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
         if jti:
             config.replay_cache.add(jti)
 
+    # Step 13.5: optional revocation list.
+    if config.revocation_list and config.revocation_list.is_revoked(str(data["sub"])):
+        _deny(config, "subject_revoked", f'subject {data["sub"]} has been revoked', "mint a token for an active subject")
+
     # Step 14: Evaluate policy (if configured)
     if config.policy_evaluator:
-        from .types import PolicyInput
+        src_data = data.get("src")
+        src_type = src_repo = src_wflow = None
+        if isinstance(src_data, dict):
+            src_type = src_data.get("type")
+            src_repo = src_data.get("repo")
+            src_wflow = src_data.get("workflow")
         policy_input = PolicyInput(
             iss=iss,
             sub=data["sub"],
@@ -201,6 +280,10 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
             act=data["act"],
             scope=data.get("scope"),
             env=data.get("env"),
+            tenant=data.get("tenant"),
+            src_type=src_type,
+            src_repo=src_repo,
+            src_wflow=src_wflow,
         )
         decision = config.policy_evaluator.evaluate(policy_input)
         if decision.outcome == "deny":
@@ -228,6 +311,7 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
         action=data["act"],
         token_id=data["jti"],
         environment=data.get("env", ""),
+        tenant=data.get("tenant", ""),
         scope=data.get("scope", []),
         reason=data.get("reason"),
         source=source,
@@ -253,3 +337,17 @@ def _deny(config: VerifierConfig, code: str, message: str, fix: str) -> None:
     if config.on_denied:
         config.on_denied(err)
     raise err
+
+
+def _required_string_claim(config: VerifierConfig, claims: dict, name: str) -> str:
+    value = claims.get(name)
+    if not isinstance(value, str) or value == "":
+        _deny(config, f"claim_missing:{name}", f"missing {name} claim", f"include {name} when minting")
+    return value
+
+
+def _required_number_claim(config: VerifierConfig, claims: dict, name: str) -> int:
+    value = claims.get(name)
+    if not isinstance(value, (int, float)):
+        _deny(config, f"claim_missing:{name}", f"missing {name} claim", f"include {name} when minting")
+    return int(value)

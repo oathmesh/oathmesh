@@ -1,5 +1,6 @@
 import json
 import time
+import base64
 from typing import Optional, List, Dict, Any
 import urllib.request
 import urllib.error
@@ -75,7 +76,9 @@ class OathMeshClient:
             raise OathMeshError("verification_failed", f"Failed to mint token: {str(e)}")
 
         token = res_data.get("token")
-        expires_in = res_data.get("expires_in", 0)
+        expires_in = res_data.get("expires_in")
+        if not isinstance(expires_in, (int, float)) or expires_in <= 0:
+            expires_in = _infer_expires_in_from_token(token)
         
         self._cache[cache_key] = {
             "token": token,
@@ -83,3 +86,20 @@ class OathMeshClient:
         }
         
         return token
+
+
+def _infer_expires_in_from_token(token: str) -> int:
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            return 0
+        payload = parts[1]
+        payload += "=" * (-len(payload) % 4)
+        claims = json.loads(base64.urlsafe_b64decode(payload.encode("utf-8")).decode("utf-8"))
+        exp = claims.get("exp")
+        if not isinstance(exp, (int, float)):
+            return 0
+        delta = int(exp - time.time())
+        return delta if delta > 0 else 0
+    except Exception:
+        return 0

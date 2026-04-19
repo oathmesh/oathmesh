@@ -94,6 +94,9 @@ Verifier semantics:
 - Canonical and required header for verification is `Authorization: OathMesh <token>`.
 - `extract_token` returns `None` for non-OathMesh schemes.
 - If upstream sends `Bearer`, translate it to `OathMesh` before calling verifier APIs.
+- Verifier behavior is aligned with canonical Go step semantics for conformance-critical checks (including `alg=none` rejection, subject format validation, binding-required semantics, and future-`iat` rejection).
+- Parity is behavioral across language runtimes; implementations are intentionally language-native, not byte-identical.
+- `revocation_list` remains optional. Cross-SDK conformance currently marks Python revocation behavior as SKIP/N/A.
 
 ## Error Handling
 

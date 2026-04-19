@@ -33,7 +33,7 @@ import (
 cfg := &verify.VerifierConfig{
     Audience:       "https://inventory.internal",
     TrustedIssuers: []string{"https://issuer.oathmesh.tech"},
-    JWKSProvider:   verify.NewJWKSCache(verify.DefaultJWKSCacheTTL),
+    JWKSProvider:   verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil),
     ReplayCache:    verify.NewMemoryReplayCache(),
 }
 ```

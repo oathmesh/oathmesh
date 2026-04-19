@@ -41,12 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Demo script health polling loop fixed
 - SDK parity across Go, Node.js, and Python implementations
+- Conformance cases expanded with `alg_none_rejection`, `subject_format_validation`, `binding_required_semantics`, and `iat_future_rejection`
 
 ### Security
 - Added request binding requirement (rqh claim) enforcement
 - NetworkPolicy in Kubernetes deployment
 - TLS enforcement for production issuer URLs
 - Replay attack defense with in-memory and Redis-backed cache
+
+### Changed
+- Node.js and Python verifier behavior tightened toward canonical Go step semantics for conformance-critical checks
+- Revocation-list behavior remains optional in Node.js/Python SDKs and is currently SKIP/N/A in cross-SDK conformance
 
 ## [0.1.0] - 2025-04-13
 

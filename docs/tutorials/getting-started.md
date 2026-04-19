@@ -50,6 +50,8 @@ TOKEN=$(curl -s http://localhost:4000/v1/token \
   }' | jq -r '.token')
 ```
 
+`/v1/token` responds with JSON fields `token`, `expires_in`, and `token_type`. The command above extracts `.token` for use in the `Authorization` header.
+
 Quick check:
 
 ```bash

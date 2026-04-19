@@ -18,6 +18,19 @@ const config: VerifierConfig = {
   trustedIssuers: ['https://issuer.local'],
 };
 
+function baseClaims(overrides: Record<string, unknown> = {}) {
+  return {
+    iss: 'https://issuer.local',
+    sub: 'svc://node/conformance',
+    aud: 'https://inventory.internal',
+    act: 'read',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 120,
+    jti: 'jti-node-conformance-1',
+    ...overrides,
+  };
+}
+
 describe('conformance parity cases', () => {
   beforeEach(() => {
     mockDecodeProtectedHeader.mockReset();
@@ -31,40 +44,34 @@ describe('conformance parity cases', () => {
     });
 
     await expect(verifyOathToken('not-a-token', config)).rejects.toMatchObject({
-      code: 'verification_failed',
+      code: 'claim_missing',
     });
   });
 
   it('issuer_check_untrusted', async () => {
     mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
-    mockDecodeJwt.mockReturnValueOnce({ iss: 'https://evil.local' });
+    mockDecodeJwt.mockReturnValueOnce(baseClaims({ iss: 'https://evil.local' }));
 
-    await expect(verifyOathToken('token', config)).rejects.toMatchObject({
+    await expect(verifyOathToken('token.part.sig', config)).rejects.toMatchObject({
       code: 'issuer_untrusted',
     });
   });
 
   it('audience_check_mismatch', async () => {
     mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
-    mockDecodeJwt.mockReturnValueOnce({ iss: 'https://issuer.local' });
+    mockDecodeJwt.mockReturnValueOnce(baseClaims());
     mockJwtVerify.mockRejectedValueOnce(new Error('audience mismatch'));
 
-    await expect(verifyOathToken('token', config)).rejects.toMatchObject({
+    await expect(verifyOathToken('token.part.sig', config)).rejects.toMatchObject({
       code: 'audience_mismatch',
     });
   });
 
   it('replay_detection_semantics', async () => {
     mockDecodeProtectedHeader.mockReturnValue({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
-    mockDecodeJwt.mockReturnValue({ iss: 'https://issuer.local' });
+    mockDecodeJwt.mockReturnValue(baseClaims());
     mockJwtVerify.mockResolvedValue({
-      payload: {
-        iss: 'https://issuer.local',
-        sub: 'svc://node/conformance',
-        aud: 'https://inventory.internal',
-        act: 'read',
-        jti: 'jti-node-conformance-1',
-      },
+      payload: baseClaims(),
     });
 
     let seen = false;
@@ -78,8 +85,8 @@ describe('conformance parity cases', () => {
       },
     };
 
-    await verifyOathToken('token', replayConfig);
-    await expect(verifyOathToken('token', replayConfig)).rejects.toMatchObject({
+    await verifyOathToken('token.part.sig', replayConfig);
+    await expect(verifyOathToken('token.part.sig', replayConfig)).rejects.toMatchObject({
       code: 'replay_detected',
     });
   });
@@ -88,5 +95,39 @@ describe('conformance parity cases', () => {
     expect(extractToken(undefined)).toBeNull();
     expect(extractToken('Bearer abc')).toBeNull();
     expect(extractToken('OathMesh abc.def.ghi')).toBe('abc.def.ghi');
+  });
+
+  it('alg_none_rejection', async () => {
+    mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'none', kid: 'k1' });
+    await expect(verifyOathToken('token.part.sig', config)).rejects.toMatchObject({
+      code: 'algorithm_not_allowed',
+    });
+  });
+
+  it('subject_format_validation', async () => {
+    mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
+    mockDecodeJwt.mockReturnValueOnce(baseClaims({ sub: 'not-a-valid-subject' }));
+    await expect(verifyOathToken('token.part.sig', config)).rejects.toMatchObject({
+      code: 'claim_missing:sub',
+    });
+  });
+
+  it('binding_required_semantics', async () => {
+    mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
+    mockDecodeJwt.mockReturnValueOnce(baseClaims());
+    mockJwtVerify.mockResolvedValueOnce({ payload: baseClaims() });
+    await expect(verifyOathToken('token.part.sig', { ...config, requireRequestBinding: true })).rejects.toMatchObject({
+      code: 'binding_required',
+    });
+  });
+
+  it('iat_future_rejection', async () => {
+    const iat = Math.floor(Date.now() / 1000) + 60;
+    mockDecodeProtectedHeader.mockReturnValueOnce({ typ: 'om+jwt', alg: 'EdDSA', kid: 'k1' });
+    mockDecodeJwt.mockReturnValueOnce(baseClaims({ iat }));
+    mockJwtVerify.mockResolvedValueOnce({ payload: baseClaims({ iat }) });
+    await expect(verifyOathToken('token.part.sig', config)).rejects.toMatchObject({
+      code: 'token_expired',
+    });
   });
 });

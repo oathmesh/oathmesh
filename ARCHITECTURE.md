@@ -71,7 +71,7 @@ cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign
 | Caller |--------------------------->| Issuer |---------------------------------------------->| Receiver |
 +--------+   {sub,aud,act,ttl hint}   +--------+                                               +----------+
     ^                                      |                                                         |
-    | 2) { token, exp, jti }               | Validate + clamp TTL (1-300s)                         |
+    | 2) { token, expires_in, token_type } | Validate + clamp TTL (1-300s)                         |
     +--------------------------------------+ Generate jti + sign JWS                                 |
                                                                                                       |
                                                                                                       v
@@ -93,7 +93,7 @@ START: Authorization header present and token extracted
   +--> [02] Validate header (typ/alg, reject alg=none)
   +--> [03] Decode payload, read iss
   +--> [04] Check trusted issuer list
-  +--> [05] Load JWKS (cache with refresh)
+  +--> [05] Load JWKS (cache; mapped endpoint or {iss}/.well-known/jwks.json)
   +--> [06] Verify signature
   +--> [07] Re-check iss after signature
   +--> [08] Check exp (10s skew)
@@ -153,7 +153,7 @@ Caller                    Issuer
   │                         │ 3. Set iat = now, exp = iat + clamped_ttl
   │                         │ 4. Generate jti (uuid.New())
   │                         │ 5. Sign with Ed25519 private key
-  │  {token: "<om+jwt>"}   │
+  │  {token: "<om+jwt>", expires_in: 120, token_type: "OathMesh"} │
   │◀────────────────────────│
 ```
 
@@ -169,7 +169,7 @@ Caller                 Receiver (or Gateway)
   │                         │  Step 02: Validate header (typ, alg)
   │                         │  Step 03: Decode payload, extract iss
   │                         │  Step 04: Check iss against trusted list
-  │                         │  Step 05: Load JWKS (cached)
+  │                         │  Step 05: Load JWKS (mapped endpoint or issuer-derived URL, cached)
   │                         │  Step 06: Verify JWS signature
   │                         │  Step 07: Re-verify iss after sig check
   │                         │  Step 08: Check exp (+ 10s skew)

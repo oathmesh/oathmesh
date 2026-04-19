@@ -73,14 +73,20 @@
 
 | Feature | Go SDK | Node.js SDK | Python SDK |
 |---------|--------|-------------|------------|
-| **Token verification** | ✅ Full 14-step | ✅ Full 14-step | ✅ Full 14-step |
+| **Token verification** | ✅ Full 14-step | ✅ Full 14-step (Go-aligned semantics) | ✅ Full 14-step (Go-aligned semantics) |
 | **alg:none rejection** | ✅ | ✅ | ✅ |
 | **Exact audience match** | ✅ | ✅ | ✅ |
+| **Subject format validation** | ✅ | ✅ | ✅ |
 | **rqh binding** | ✅ | ✅ | ✅ |
+| **Binding-required mode (`rqh`)** | ✅ | ✅ | ✅ |
+| **Future `iat` rejection** | ✅ | ✅ | ✅ |
 | **Replay cache** | ✅ Built-in | ✅ Built-in (InMemoryReplayCache) | ✅ Built-in (InMemoryReplayCache) |
+| **Revocation list (step 13.5)** | ✅ Conformance-covered | ⚠️ Optional API (conformance N/A) | ⚠️ Optional API (conformance N/A) |
 | **Policy evaluation** | ✅ Built-in (Pkl) | ✅ Built-in (JSON) | ✅ Built-in (JSON) |
 
-> **Note:** All three SDKs now implement the full 14-step verification pipeline including replay protection and policy evaluation. The Go SDK uses Pkl for policy, while Node.js and Python SDKs use simple JSON-based policies. Use `requireRequestBinding: true` (Node) or `require_request_binding=True` (Python) for write/mutate endpoints.
+> **Conformance note:** Node.js and Python verifiers were tightened toward the canonical Go step semantics (for example: `alg=none` rejection, subject format validation, required request binding semantics, and future-`iat` rejection). This is behavioral parity, not byte-level implementation equivalence across languages.
+>
+> **Revocation note:** Go conformance covers revocation-list behavior. Node.js and Python expose optional revocation list hooks, but revocation is currently marked N/A in cross-SDK conformance for those targets.
 
 ---
 

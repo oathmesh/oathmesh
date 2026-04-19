@@ -4,9 +4,12 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -87,17 +90,16 @@ func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
 	}
 }
 
-
 // GetKey returns the public key for the given issuer key and kid.
 // Algorithm (alg) is also returned for algorithm confusion checking.
 //
 // Three modes (in order of priority):
 //  1. Fixed mode (NewFixedJWKS): jwksURL is hardcoded - user input is IGNORED completely
 //  2. Endpoints mode: issuerKey maps to full JWKS URL from config
-//  3. Backward compat: treat parameter as base URL (DEPRECATED)
+//  3. Trusted-issuer URL mode: derive "<issuer>/.well-known/jwks.json" from issuerKey
 //
 // In Fixed mode: ZERO user input flows to HTTP request (CodeQL satisfied).
-func (c *JWKSCache) GetKey(_ string, kid string) (ed25519.PublicKey, string, error) {
+func (c *JWKSCache) GetKey(issuerKey string, kid string) (ed25519.PublicKey, string, error) {
 	var jwksURL string
 	var cacheKey string
 
@@ -107,15 +109,25 @@ func (c *JWKSCache) GetKey(_ string, kid string) (ed25519.PublicKey, string, err
 		jwksURL = c.jwksURL
 		cacheKey = kid // keyed by kid only in fixed mode
 	case len(c.jwksEndpoints) > 0:
-		// Priority 2: Endpoints mode - use config map
-		jwksURL = c.jwksEndpoints["default"]
-		cacheKey = "default"
+		// Priority 2: Endpoints mode - use issuerKey first, then optional default fallback.
+		jwksURL = c.jwksEndpoints[issuerKey]
+		cacheKey = issuerKey
 		if jwksURL == "" {
-			return nil, "", fmt.Errorf("no default endpoint configured")
+			jwksURL = c.jwksEndpoints["default"]
+			cacheKey = "default"
+		}
+		if jwksURL == "" {
+			return nil, "", fmt.Errorf("no endpoint configured for issuer %q", issuerKey)
 		}
 	default:
-		// Priority 3: Backward compat - DEPRECATED
-		return nil, "", fmt.Errorf("jwks: use NewFixedJWKS or NewJWKSCache with endpoints")
+		// Priority 3: trusted-issuer URL mode.
+		// issuerKey comes from the verifier after trusted-issuer allowlist validation.
+		derived, err := jwksURLFromIssuer(issuerKey)
+		if err != nil {
+			return nil, "", err
+		}
+		jwksURL = derived
+		cacheKey = issuerKey
 	}
 
 	// Try cache first (keyed by cacheKey)
@@ -205,6 +217,24 @@ func findKeyInJWKS(jwks *sign.JWKS, kid string) (ed25519.PublicKey, string, erro
 		}
 	}
 	return nil, "", fmt.Errorf("key %s not found in JWKS", kid)
+}
+
+func jwksURLFromIssuer(issuer string) (string, error) {
+	trimmed := strings.TrimSpace(issuer)
+	if trimmed == "" {
+		return "", errors.New("issuer URL is empty")
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("invalid issuer URL %q: %w", issuer, err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", fmt.Errorf("invalid issuer URL %q: missing scheme or host", issuer)
+	}
+	u.Path = strings.TrimRight(u.Path, "/") + "/.well-known/jwks.json"
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u.String(), nil
 }
 
 // StaticJWKSProvider is a test helper that returns keys from a static map.

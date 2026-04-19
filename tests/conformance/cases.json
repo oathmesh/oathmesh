@@ -190,6 +190,166 @@
       }
     },
     {
+      "id": "alg_none_rejection",
+      "category": "verification",
+      "description": "alg=none is rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_alg_none_rejection$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "alg_none_rejection"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "alg_none_rejection",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "subject_format_validation",
+      "category": "verification",
+      "description": "Invalid subject format is rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_subject_format_validation$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "subject_format_validation"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "subject_format_validation",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "binding_required_semantics",
+      "category": "binding",
+      "description": "Tokens without rqh are rejected when request binding is required.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_binding_required_semantics$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "binding_required_semantics"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "binding_required_semantics",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "iat_future_rejection",
+      "category": "verification",
+      "description": "Tokens issued too far in the future are rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_iat_future_rejection$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "iat_future_rejection"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "iat_future_rejection",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
       "id": "middleware_auth_header_handling_semantics",
       "category": "middleware",
       "description": "Missing/wrong auth header scheme is rejected as claim_missing:token.",

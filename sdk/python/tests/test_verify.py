@@ -72,7 +72,7 @@ class TestVerifyToken:
     def test_malformed_token(self):
         with pytest.raises(OathMeshError) as exc_info:
             verify_token("OathMesh not-a-real-token", self.CONFIG)
-        assert exc_info.value.code in ("verification_failed", "algorithm_not_allowed")
+        assert exc_info.value.code in ("verification_failed", "algorithm_not_allowed", "claim_missing")
 
     def test_on_denied_hook_fires(self):
         errors = []

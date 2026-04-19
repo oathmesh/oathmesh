@@ -33,6 +33,7 @@ class VerifiedCallerContext:
     action: str
     token_id: str
     environment: str = ""
+    tenant: str = ""
     scope: List[str] = field(default_factory=list)
     reason: Optional[str] = None
     source: Optional[Source] = None
@@ -50,6 +51,13 @@ class ReplayCache:
         Returns True if the token has been replayed (already used).
         Returns False if this is the first time seeing this JTI.
         """
+        raise NotImplementedError
+
+
+class RevocationList:
+    """Revocation list interface for subject-level revocation checks."""
+
+    def is_revoked(self, subject: str) -> bool:
         raise NotImplementedError
     
     def add(self, jti: str) -> None:
@@ -95,6 +103,10 @@ class PolicyInput:
     act: str
     scope: Optional[List[str]] = None
     env: Optional[str] = None
+    tenant: Optional[str] = None
+    src_type: Optional[str] = None
+    src_repo: Optional[str] = None
+    src_wflow: Optional[str] = None
 
 
 @dataclass
@@ -159,6 +171,21 @@ class JsonPolicyEvaluator(PolicyEvaluator):
             return False
         if 'env' in match and input.env != match['env']:
             return False
+        if 'tenant' in match and input.tenant != match['tenant']:
+            return False
+        if 'scope' in match:
+            current_scope = input.scope or []
+            for required_scope in match['scope']:
+                if required_scope not in current_scope:
+                    return False
+        src_match = match.get('src')
+        if isinstance(src_match, dict):
+            if 'type' in src_match and not self._match_pattern(input.src_type or '', src_match['type']):
+                return False
+            if 'repo' in src_match and not self._match_pattern(input.src_repo or '', src_match['repo']):
+                return False
+            if 'workflow' in src_match and not self._match_pattern(input.src_wflow or '', src_match['workflow']):
+                return False
         
         return True
     

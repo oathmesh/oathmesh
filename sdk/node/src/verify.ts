@@ -6,6 +6,7 @@
  * It has no dependency on any HTTP framework.
  */
 
+import { createHash } from 'crypto';
 import { createRemoteJWKSet, jwtVerify, decodeProtectedHeader, decodeJwt } from 'jose';
 import { OathMeshError, type VerifierConfig, type VerifiedCallerContext, type PolicyInput } from './types';
 
@@ -16,6 +17,11 @@ import { OathMeshError, type VerifierConfig, type VerifiedCallerContext, type Po
  * module scope persists across requests.
  */
 const globalJWKSCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+const SUBJECT_REGEX = /^(agent|svc|job|tool|user):\/\/[a-zA-Z0-9/_.-]{1,256}$/;
+const CLOCK_SKEW_SECONDS = 10;
+const MAX_EXP_UNIX = 4102444800; // 2100-01-01
+type RequiredStringClaimName = 'iss' | 'sub' | 'aud' | 'act' | 'jti';
+type RequiredNumberClaimName = 'iat' | 'exp';
 
 function getJWKS(issuer: string): ReturnType<typeof createRemoteJWKSet> {
   let jwks = globalJWKSCache.get(issuer);
@@ -57,19 +63,27 @@ export async function verifyOathToken(
   config: VerifierConfig
 ): Promise<VerifiedCallerContext> {
   const { audience, trustedIssuers } = config;
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    throw new OathMeshError(
+      'claim_missing',
+      `invalid token format: expected 3 segments, got ${parts.length}`,
+      'provide a valid OathMesh token in compact JWS format (header.payload.signature)'
+    );
+  }
 
   // Step 02: Decode and validate header
   let header: ReturnType<typeof decodeProtectedHeader>;
   try {
     header = decodeProtectedHeader(token);
   } catch {
-    throw new OathMeshError('verification_failed', 'malformed token header', 'check token format');
+    throw new OathMeshError('claim_missing', 'failed to decode token header', 'provide a valid base64url-encoded token header');
   }
 
   if (header.typ !== 'om+jwt') {
     throw new OathMeshError(
-      'algorithm_not_allowed',
-      `invalid token type "${header.typ}"`,
+      'claim_missing',
+      `token type "${header.typ}" is not valid — expected "om+jwt"`,
       'token typ must be om+jwt'
     );
   }
@@ -89,14 +103,14 @@ export async function verifyOathToken(
   }
 
   // Step 03–04: Extract issuer and check trust
-  let claims: ReturnType<typeof decodeJwt>;
+  let claims: Record<string, unknown>;
   try {
-    claims = decodeJwt(token);
+    claims = decodeJwt(token) as Record<string, unknown>;
   } catch {
-    throw new OathMeshError('verification_failed', 'malformed token payload', 'check token format');
+    throw new OathMeshError('claim_missing', 'failed to decode token payload', 'provide a valid base64url-encoded token payload');
   }
 
-  const iss = claims.iss;
+  const iss = claims.iss as string | undefined;
   if (!iss) {
     throw new OathMeshError('claim_missing:iss', 'missing iss claim', 'include iss when minting');
   }
@@ -108,6 +122,23 @@ export async function verifyOathToken(
     );
   }
 
+  // Step 11 (moved early): required claims.
+  const sub = requiredStringClaim(claims, 'sub');
+  const aud = requiredStringClaim(claims, 'aud');
+  const act = requiredStringClaim(claims, 'act');
+  requiredNumberClaim(claims, 'iat');
+  requiredNumberClaim(claims, 'exp');
+  const jti = requiredStringClaim(claims, 'jti');
+
+  // Step 11.5: subject format validation.
+  if (!SUBJECT_REGEX.test(sub)) {
+    throw new OathMeshError(
+      'claim_missing:sub',
+      `invalid subject format: "${sub}"`,
+      'subject must match schema (svc://, agent://, job://, tool://, user:// plus allowed chars)'
+    );
+  }
+
   // Step 05–06: Load JWKS and verify signature
   const jwks = getJWKS(iss);
 
@@ -116,17 +147,64 @@ export async function verifyOathToken(
     const result = await jwtVerify(token, jwks, {
       audience,
       issuer: iss,
-      clockTolerance: 10,
+      clockTolerance: CLOCK_SKEW_SECONDS,
     });
     payload = result.payload as Record<string, unknown>;
   } catch (err) {
     throw mapJoseError(err as Error, audience);
   }
 
-  // Step 11: Verify required claims
+  // Step 07: post-signature issuer trust re-check.
+  if (!trustedIssuers.includes(iss)) {
+    throw new OathMeshError('issuer_untrusted', `issuer "${iss}" failed post-signature trust check`, 'verify trustedIssuers configuration');
+  }
+
+  // Step 08-10: temporal and audience checks aligned with Go semantics.
+  const now = Math.floor(Date.now() / 1000);
+  const exp = Number(payload.exp);
+  if (!Number.isFinite(exp) || exp > MAX_EXP_UNIX) {
+    throw new OathMeshError('token_expired', 'token expiry is invalid or too far in the future', 'mint a token with sane exp');
+  }
+  if (now > exp + CLOCK_SKEW_SECONDS) {
+    throw new OathMeshError('token_expired', 'token has expired', 'mint a new token — Oath Tokens are short-lived');
+  }
+
+  const iat = Number(payload.iat);
+  if (!Number.isFinite(iat) || iat > now + CLOCK_SKEW_SECONDS) {
+    throw new OathMeshError('token_expired', 'token issued-at is in the future', 'check clock synchronization between issuer and receiver');
+  }
+
+  if (payload.nbf !== undefined) {
+    const nbf = Number(payload.nbf);
+    if (Number.isFinite(nbf) && nbf > now + CLOCK_SKEW_SECONDS) {
+      throw new OathMeshError('token_expired', 'token not-before is in the future', 'token cannot be used yet');
+    }
+  }
+
+  if (payload.aud !== audience) {
+    throw new OathMeshError(
+      'audience_mismatch',
+      `token was minted for "${String(payload.aud)}" but received by "${audience}"`,
+      `mint with --aud ${audience}`
+    );
+  }
+
+  // Ensure signed payload still carries required claims.
   if (!payload.sub) throw new OathMeshError('claim_missing:sub', 'missing sub claim', 'include sub when minting');
   if (!payload.act) throw new OathMeshError('claim_missing:act', 'missing act claim', 'include act when minting');
   if (!payload.jti) throw new OathMeshError('claim_missing:jti', 'missing jti claim', 'jti is auto-generated by the issuer');
+
+  // Step 12: request hash binding.
+  if (typeof payload.rqh === 'string' && payload.rqh !== '' && config.requestHash) {
+    const expectedHash = `sha256:${createHash('sha256').update(config.requestHash).digest('hex')}`;
+    if (payload.rqh !== expectedHash) {
+      throw new OathMeshError(
+        'binding_mismatch',
+        `request hash mismatch: token has "${payload.rqh}" but request hash is "${expectedHash}"`,
+        'ensure the request body has not been modified since the token was minted'
+      );
+    }
+  }
 
   // Step 12b: Enforce rqh if RequireRequestBinding is set
   if (config.requireRequestBinding && !payload.rqh) {
@@ -139,26 +217,43 @@ export async function verifyOathToken(
 
   // Step 13: Check replay cache (if configured)
   if (config.replayCache) {
-    const jti = payload.jti as string;
-    if (config.replayCache.check(jti)) {
+    const replayed = await config.replayCache.check(payload.jti as string);
+    if (replayed) {
       throw new OathMeshError(
         'replay_detected',
-        `token ${jti} has already been used`,
+        `token ${payload.jti as string} has already been used`,
         'each Oath Token can only be used once — mint a new token'
       );
     }
-    config.replayCache.add(jti);
+    await config.replayCache.add(payload.jti as string);
+  }
+
+  // Step 13.5: optional revocation list.
+  if (config.revocationList) {
+    const revoked = await config.revocationList.isRevoked(payload.sub as string);
+    if (revoked) {
+      throw new OathMeshError(
+        'subject_revoked',
+        `subject ${payload.sub as string} has been revoked`,
+        'mint a token for an active subject'
+      );
+    }
   }
 
   // Step 14: Evaluate policy (if configured)
   if (config.policyEvaluator) {
+    const source = normalizeSource(payload.src);
     const policyInput: PolicyInput = {
       iss,
       sub: payload.sub as string,
-      aud: payload.aud as string,
+      aud: aud,
       act: payload.act as string,
-      scope: payload.scope as string[] | undefined,
+      scope: normalizeScope(payload.scope),
       env: payload.env as string | undefined,
+      tenant: payload.tenant as string | undefined,
+      srcType: source?.type,
+      srcRepo: source?.repo,
+      srcWflow: source?.workflow,
     };
     const decision = await config.policyEvaluator.evaluate(policyInput);
     if (decision.outcome === 'deny') {
@@ -171,17 +266,19 @@ export async function verifyOathToken(
   }
 
   // Build verified context
+  const source = normalizeSource(payload.src);
   return {
     principal: {
       issuer: iss,
       subject: payload.sub as string,
     },
     action: payload.act as string,
-    tokenId: payload.jti as string,
+    tokenId: jti,
     environment: (payload.env as string) || '',
-    scope: payload.scope as string[] | undefined,
+    tenant: payload.tenant as string | undefined,
+    scope: normalizeScope(payload.scope),
     reason: payload.reason as string | undefined,
-    source: payload.src as VerifiedCallerContext['source'],
+    source,
   };
 }
 
@@ -197,6 +294,9 @@ function mapJoseError(err: Error, audience: string): OathMeshError {
     if (msg.includes('audience')) {
       return new OathMeshError('audience_mismatch', 'token audience does not match', `mint with --aud ${audience}`);
     }
+    if (msg.includes('issuer')) {
+      return new OathMeshError('issuer_untrusted', 'issuer verification failed', 'check trustedIssuers configuration');
+    }
   }
   if (msg.includes('signature') || err.name === 'JWSSignatureVerificationFailed') {
     return new OathMeshError('signature_invalid', 'JWS signature verification failed', 'check that the token was signed by a trusted issuer');
@@ -205,4 +305,47 @@ function mapJoseError(err: Error, audience: string): OathMeshError {
     return new OathMeshError('issuer_untrusted', 'issuer verification failed', 'check trustedIssuers configuration');
   }
   return new OathMeshError('verification_failed', msg || 'token verification failed', 'check token format and issuer availability');
+}
+
+function requiredStringClaim(claims: Record<string, unknown>, name: RequiredStringClaimName): string {
+  const value = claims[name];
+  if (typeof value !== 'string' || value === '') {
+    throw new OathMeshError(`claim_missing:${name}`, `missing ${name} claim`, `include ${name} when minting`);
+  }
+  return value;
+}
+
+function requiredNumberClaim(claims: Record<string, unknown>, name: RequiredNumberClaimName): number {
+  const value = claims[name];
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new OathMeshError(`claim_missing:${name}`, `missing ${name} claim`, `include ${name} when minting`);
+  }
+  return value;
+}
+
+function normalizeScope(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) {
+    return undefined;
+  }
+  const scope = raw.filter((v): v is string => typeof v === 'string');
+  return scope.length > 0 ? scope : undefined;
+}
+
+function normalizeSource(raw: unknown): VerifiedCallerContext['source'] | undefined {
+  if (!raw || typeof raw !== 'object') {
+    return undefined;
+  }
+  const src = raw as Record<string, unknown>;
+  if (typeof src.type !== 'string' || src.type === '') {
+    return undefined;
+  }
+  return {
+    type: src.type,
+    repo: typeof src.repo === 'string' ? src.repo : undefined,
+    workflow: typeof src.workflow === 'string' ? src.workflow : undefined,
+    runId: typeof src.run_id === 'string'
+      ? src.run_id
+      : (typeof src.runId === 'string' ? src.runId : undefined),
+    sha: typeof src.sha === 'string' ? src.sha : undefined,
+  };
 }

@@ -27,6 +27,7 @@ export interface VerifiedCallerContext {
   action: string;
   tokenId: string;
   environment: string;
+  tenant?: string;
   scope?: string[];
   reason?: string;
   source?: Source;
@@ -34,11 +35,14 @@ export interface VerifiedCallerContext {
 
 /** Machine-readable error code from the OathMesh error taxonomy. */
 export type ErrorCode =
+  | 'claim_missing'
   | 'claim_missing:token'
   | 'claim_missing:iss'
   | 'claim_missing:sub'
   | 'claim_missing:aud'
   | 'claim_missing:act'
+  | 'claim_missing:iat'
+  | 'claim_missing:exp'
   | 'claim_missing:jti'
   | 'signature_invalid'
   | 'issuer_untrusted'
@@ -92,12 +96,22 @@ export interface VerifierConfig {
    */
   requireRequestBinding?: boolean;
   /**
+   * Canonical request string used to verify rqh request hash binding.
+   * When set and token contains rqh, verifier enforces exact hash match.
+   */
+  requestHash?: string;
+  /**
    * Replay cache for preventing token reuse.
    * If provided, tokens with duplicate jti within TTL are rejected.
    * Use InMemoryReplayCache for development, or implement Redis-based cache for production.
    * Default: undefined (no replay checking).
    */
   replayCache?: ReplayCache;
+  /**
+   * Optional revocation list check.
+   * If configured and subject is revoked, verification fails with subject_revoked.
+   */
+  revocationList?: RevocationList;
   /**
    * Policy evaluator for authorization decisions.
    * If provided, token verification includes policy evaluation.
@@ -142,6 +156,10 @@ export interface ReplayCache {
   add(jti: string): void | Promise<void>;
 }
 
+export interface RevocationList {
+  isRevoked(subject: string): boolean | Promise<boolean>;
+}
+
 /**
  * In-memory replay cache implementation for development/single-instance.
  * Uses a Map with TTL to automatically expire old entries.
@@ -181,6 +199,10 @@ export interface PolicyInput {
   act: string;
   scope?: string[];
   env?: string;
+  tenant?: string;
+  srcType?: string;
+  srcRepo?: string;
+  srcWflow?: string;
 }
 
 /**
@@ -210,6 +232,12 @@ export interface JsonPolicyRule {
     act?: string;
     scope?: string[];
     env?: string;
+    tenant?: string;
+    src?: {
+      type?: string;
+      repo?: string;
+      workflow?: string;
+    };
   };
   allow: boolean;
   ruleName?: string;
@@ -258,6 +286,21 @@ export class JsonPolicyEvaluator implements PolicyEvaluator {
     if (match.aud && !this.matchPattern(input.aud, match.aud)) return false;
     if (match.act && !this.matchPattern(input.act, match.act)) return false;
     if (match.env && input.env !== match.env) return false;
+    if (match.tenant && input.tenant !== match.tenant) return false;
+    if (match.scope) {
+      const currentScope = input.scope ?? [];
+      for (const requiredScope of match.scope) {
+        if (!currentScope.includes(requiredScope)) {
+          return false;
+        }
+      }
+    }
+
+    if (match.src) {
+      if (match.src.type && !this.matchPattern(input.srcType ?? '', match.src.type)) return false;
+      if (match.src.repo && !this.matchPattern(input.srcRepo ?? '', match.src.repo)) return false;
+      if (match.src.workflow && !this.matchPattern(input.srcWflow ?? '', match.src.workflow)) return false;
+    }
 
     return true;
   }

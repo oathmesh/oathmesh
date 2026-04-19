@@ -203,6 +203,18 @@ Start the OathMesh issuer HTTP server.
 | `GET` | `/.well-known/oathmesh-issuer` | Discovery |
 | `GET` | `/healthz` | Liveness check (no auth) |
 
+### `POST /v1/token` Response
+
+```json
+{
+  "token": "<om+jwt>",
+  "expires_in": 120,
+  "token_type": "OathMesh"
+}
+```
+
+`expires_in` is the remaining token lifetime in seconds at response time (server-side TTL cap is 300 seconds).
+
 ### Flags
 
 | Flag | Required | Default | Description |
