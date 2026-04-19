@@ -46,7 +46,7 @@ r := chi.NewRouter()
 r.Use(middleware.OathMeshMiddleware(cfg))
 ```
 
-`verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil)` derives each JWKS URL from the trusted issuer (`<issuer>/.well-known/jwks.json`). If you provide an endpoints map, lookup uses the issuer key first and then an optional `"default"` endpoint.
+`verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil)` works with `VerifierConfig.TrustedIssuers`: the verifier registers trusted issuer JWKS URLs (`<issuer>/.well-known/jwks.json`) before fetch. If you provide an endpoints map, lookup uses the issuer key first and then an optional `"default"` endpoint.
 
 ## HTTP Middleware
 
@@ -135,7 +135,7 @@ authorization: OathMesh <token>
 
 - **Audience:** Must exactly match token `aud`.
 - **TrustedIssuers:** Use explicit issuer URLs; avoid broad or inferred trust.
-- **JWKSProvider:** Use `verify.NewJWKSCache(ttl, nil)` for issuer-derived JWKS URLs, or pass `map[string]string` for explicit issuer-key endpoint wiring (with optional `"default"` fallback).
+- **JWKSProvider:** Use `verify.NewJWKSCache(ttl, nil)` with `TrustedIssuers` for trusted issuer-derived JWKS URLs, or pass `map[string]string` for explicit issuer-key endpoint wiring (with optional `"default"` fallback).
 - **ReplayCache:** Use at least `verify.NewMemoryReplayCache()`; use shared backing store for multi-instance deployments.
 - **PolicyEvaluator:** Add policy enforcement for authZ decisions.
 - **RevocationList:** Enable subject revocation checks for rapid access withdrawal.

@@ -169,8 +169,17 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 	// If still missing after refresh: reject with issuer_untrusted.
 	jwksProvider := cfg.JWKSProvider
 	if jwksProvider == nil {
-		// nil mappings = backward compatibility mode (treats parameter as URL)
 		jwksProvider = NewJWKSCache(DefaultJWKSCacheTTL, nil)
+	}
+	// Ensure JWKSCache request targets are derived from trusted issuer config.
+	if jwksCache, ok := jwksProvider.(*JWKSCache); ok {
+		if err := jwksCache.RegisterTrustedIssuers(cfg.TrustedIssuers); err != nil {
+			return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
+				core.ErrIssuerUntrusted,
+				fmt.Sprintf("failed to register trusted issuer JWKS endpoints: %v", err),
+				"ensure trusted issuers are valid absolute URLs with scheme and host",
+			))
+		}
 	}
 
 	publicKey, jwksAlg, err := jwksProvider.GetKey(claims.Iss, header.Kid)
@@ -351,10 +360,10 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 	// First matching rule wins; if no rule matches → deny.
 	if cfg.PolicyEvaluator != nil {
 		policyInput := &PolicyInput{
-			Iss:   claims.Iss,
-			Sub:   claims.Sub,
-			Aud:   claims.Aud,
-			Act:   claims.Act,
+			Iss:    claims.Iss,
+			Sub:    claims.Sub,
+			Aud:    claims.Aud,
+			Act:    claims.Act,
 			Scope:  claims.Scope,
 			Env:    claims.Env,
 			Tenant: claims.Tenant,

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,7 +32,7 @@ func makeJWKSFixture(t *testing.T, kid string) ([]byte, ed25519.PublicKey) {
 	return data, pub
 }
 
-func TestJWKSCache_BackwardCompatibleIssuerURLMode(t *testing.T) {
+func TestJWKSCache_TrustedIssuerRegistrationMode(t *testing.T) {
 	const kid = "kid-backward-compat"
 	jwksBody, pub := makeJWKSFixture(t, kid)
 
@@ -45,6 +46,9 @@ func TestJWKSCache_BackwardCompatibleIssuerURLMode(t *testing.T) {
 	defer srv.Close()
 
 	cache := NewJWKSCache(60*time.Second, nil)
+	if err := cache.RegisterTrustedIssuers([]string{srv.URL}); err != nil {
+		t.Fatalf("RegisterTrustedIssuers failed: %v", err)
+	}
 	key, alg, err := cache.GetKey(srv.URL, kid)
 	if err != nil {
 		t.Fatalf("GetKey failed: %v", err)
@@ -54,6 +58,28 @@ func TestJWKSCache_BackwardCompatibleIssuerURLMode(t *testing.T) {
 	}
 	if !bytes.Equal(key, pub) {
 		t.Fatal("resolved key does not match expected public key")
+	}
+}
+
+func TestJWKSCache_UnregisteredIssuerDoesNotFetch(t *testing.T) {
+	const kid = "kid-unregistered"
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	cache := NewJWKSCache(60*time.Second, nil)
+	_, _, err := cache.GetKey(srv.URL, kid)
+	if err == nil {
+		t.Fatal("expected error for unregistered issuer")
+	}
+	if !strings.Contains(err.Error(), "no trusted JWKS endpoint configured") {
+		t.Fatalf("expected trusted endpoint error, got: %v", err)
+	}
+	if requests != 0 {
+		t.Fatalf("expected 0 outbound requests for unregistered issuer, got %d", requests)
 	}
 }
 

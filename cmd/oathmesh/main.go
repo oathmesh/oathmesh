@@ -218,7 +218,7 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 		os.Exit(2)
 	}
 
-	// Build JWKS provider: default fetches from issuer URL,
+	// Build JWKS provider: default resolves against trusted issuers,
 	// --local-keys uses the local keyset (dev/testing only).
 	var jwksProvider verify.JWKSProvider
 	if localKeys {
@@ -233,7 +233,7 @@ func verifyRunE(cmd *cobra.Command, args []string) error {
 			issuers = []string{ks.GetIssuer()}
 		}
 	} else {
-		// Default: fetch JWKS from the iss claim URL
+		// Default: fetch JWKS from trusted issuer URLs
 		jwksProvider = verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil)
 		// If no issuers specified, extract from token (unverified) for JWKS fetch,
 		// but the verify pipeline will still check against trusted issuers.

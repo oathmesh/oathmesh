@@ -29,10 +29,10 @@ const (
 // JWKSCache fetches and caches JWKS from issuer endpoints.
 // Thread-safe via sync.RWMutex. Refreshes on kid miss.
 //
-// SECURITY: Uses PRE-CONFIGURED JWKS URL to prevent SSRF attacks (CodeQL go/request-forgery).
+// SECURITY: Uses trusted, pre-resolved JWKS URLs to prevent SSRF (CodeQL go/request-forgery).
 // Two modes:
 //  1. Fixed mode (NewFixedJWKS): Single hardcoded URL, user input is IGNORED
-//  2. Endpoints mode (NewJWKSCache): User provides key, we look up URL from config map
+//  2. Trusted-endpoints mode (NewJWKSCache): issuer key resolves to trusted URL from config/registration
 //
 // In FIXED mode: jwksURL is a constant string in config - ZERO user input flows to HTTP request.
 // This satisfies CodeQL completely - the URL is hardcoded at startup, not influenced by user at runtime.
@@ -42,7 +42,7 @@ type JWKSCache struct {
 	client        *http.Client
 	ttl           time.Duration
 	jwksURL       string            // FIXED JWKS URL (fixed mode) - NEVER from user input
-	jwksEndpoints map[string]string // key -> FULL JWKS URL (endpoints mode)
+	jwksEndpoints map[string]string // key -> trusted FULL JWKS URL
 	sf            singleflight.Group
 }
 
@@ -72,7 +72,7 @@ func NewFixedJWKS(ttl time.Duration, jwksURL string) *JWKSCache {
 	}
 }
 
-// NewJWKSCache creates a JWKS cache with endpoint mappings.
+// NewJWKSCache creates a JWKS cache with trusted endpoint mappings.
 // The endpoints map issuer keys to FULL JWKS URLs (including /.well-known/jwks.json).
 // Example: map[string]string{"prod": "https://issuer.com/.well-known/jwks.json"}
 func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
@@ -82,12 +82,45 @@ func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
 	if endpoints == nil {
 		endpoints = make(map[string]string)
 	}
+	copied := make(map[string]string, len(endpoints))
+	for k, v := range endpoints {
+		copied[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
 	return &JWKSCache{
 		entries:       make(map[string]*jwksCacheEntry),
 		client:        &http.Client{Timeout: JWKSFetchTimeout},
 		ttl:           ttl,
-		jwksEndpoints: endpoints,
+		jwksEndpoints: copied,
 	}
+}
+
+// RegisterTrustedIssuers precomputes and stores trusted issuer->JWKS mappings.
+// This keeps request targets server-controlled instead of deriving URLs from runtime token values.
+func (c *JWKSCache) RegisterTrustedIssuers(issuers []string) error {
+	if len(issuers) == 0 {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.jwksEndpoints == nil {
+		c.jwksEndpoints = make(map[string]string)
+	}
+	for _, issuer := range issuers {
+		trimmed := strings.TrimSpace(issuer)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := c.jwksEndpoints[trimmed]; exists {
+			continue
+		}
+		jwksURL, err := jwksURLFromIssuer(trimmed)
+		if err != nil {
+			return fmt.Errorf("register trusted issuer %q: %w", trimmed, err)
+		}
+		c.jwksEndpoints[trimmed] = jwksURL
+	}
+	return nil
 }
 
 // GetKey returns the public key for the given issuer key and kid.
@@ -96,38 +129,13 @@ func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
 // Three modes (in order of priority):
 //  1. Fixed mode (NewFixedJWKS): jwksURL is hardcoded - user input is IGNORED completely
 //  2. Endpoints mode: issuerKey maps to full JWKS URL from config
-//  3. Trusted-issuer URL mode: derive "<issuer>/.well-known/jwks.json" from issuerKey
+//  3. Trusted-issuer registration mode: issuers are pre-registered via RegisterTrustedIssuers
 //
 // In Fixed mode: ZERO user input flows to HTTP request (CodeQL satisfied).
 func (c *JWKSCache) GetKey(issuerKey string, kid string) (ed25519.PublicKey, string, error) {
-	var jwksURL string
-	var cacheKey string
-
-	switch {
-	case c.jwksURL != "":
-		// Priority 1: Fixed mode - user input IGNORED completely
-		jwksURL = c.jwksURL
-		cacheKey = kid // keyed by kid only in fixed mode
-	case len(c.jwksEndpoints) > 0:
-		// Priority 2: Endpoints mode - use issuerKey first, then optional default fallback.
-		jwksURL = c.jwksEndpoints[issuerKey]
-		cacheKey = issuerKey
-		if jwksURL == "" {
-			jwksURL = c.jwksEndpoints["default"]
-			cacheKey = "default"
-		}
-		if jwksURL == "" {
-			return nil, "", fmt.Errorf("no endpoint configured for issuer %q", issuerKey)
-		}
-	default:
-		// Priority 3: trusted-issuer URL mode.
-		// issuerKey comes from the verifier after trusted-issuer allowlist validation.
-		derived, err := jwksURLFromIssuer(issuerKey)
-		if err != nil {
-			return nil, "", err
-		}
-		jwksURL = derived
-		cacheKey = issuerKey
+	cacheKey, jwksURL, err := c.resolveJWKSURL(issuerKey, kid)
+	if err != nil {
+		return nil, "", err
 	}
 
 	// Try cache first (keyed by cacheKey)
@@ -144,6 +152,35 @@ func (c *JWKSCache) GetKey(issuerKey string, kid string) (ed25519.PublicKey, str
 
 	// Fetch fresh JWKS - jwksURL is from CONFIG, not user input
 	return c.fetchAndCache(cacheKey, jwksURL, kid)
+}
+
+func (c *JWKSCache) resolveJWKSURL(issuerKey, kid string) (string, string, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	switch {
+	case c.jwksURL != "":
+		// Fixed mode ignores issuerKey entirely.
+		return kid, c.jwksURL, nil
+	case len(c.jwksEndpoints) > 0:
+		// Use issuer key first, then optional default fallback.
+		jwksURL := c.jwksEndpoints[issuerKey]
+		cacheKey := issuerKey
+		if jwksURL == "" {
+			jwksURL = c.jwksEndpoints["default"]
+			cacheKey = "default"
+		}
+		if jwksURL == "" {
+			return "", "", fmt.Errorf("no trusted JWKS endpoint configured for issuer %q", issuerKey)
+		}
+		normalized, err := normalizeJWKSURL(jwksURL)
+		if err != nil {
+			return "", "", fmt.Errorf("invalid trusted JWKS endpoint for issuer %q: %w", issuerKey, err)
+		}
+		return cacheKey, normalized, nil
+	default:
+		return "", "", fmt.Errorf("no trusted JWKS endpoint configured for issuer %q", issuerKey)
+	}
 }
 
 func (c *JWKSCache) fetchAndCache(issuerKey, jwksURL, kid string) (ed25519.PublicKey, string, error) {
@@ -234,6 +271,30 @@ func jwksURLFromIssuer(issuer string) (string, error) {
 	u.Path = strings.TrimRight(u.Path, "/") + "/.well-known/jwks.json"
 	u.RawQuery = ""
 	u.Fragment = ""
+	return u.String(), nil
+}
+
+func normalizeJWKSURL(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", errors.New("JWKS URL is empty")
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("invalid JWKS URL %q: %w", raw, err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", fmt.Errorf("invalid JWKS URL %q: missing scheme or host", raw)
+	}
+	if u.Scheme != "https" && u.Scheme != "http" {
+		return "", fmt.Errorf("invalid JWKS URL %q: unsupported scheme %q", raw, u.Scheme)
+	}
+	if u.User != nil {
+		return "", fmt.Errorf("invalid JWKS URL %q: userinfo is not allowed", raw)
+	}
+	if u.RawQuery != "" || u.Fragment != "" {
+		return "", fmt.Errorf("invalid JWKS URL %q: query and fragment are not allowed", raw)
+	}
 	return u.String(), nil
 }
 
