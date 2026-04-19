@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Issuer         string
 	Port           int
+	KMSKeyID       string
 	PrivateKey     string
 	PrivateKeyB64  string
 	PrivateKeyFile string
@@ -56,6 +57,7 @@ func LoadFromEnv() *Config {
 	return &Config{
 		Issuer:         getEnv("OATHMESH_ISSUER", "http://localhost:4000"),
 		Port:           getEnvInt("OATHMESH_PORT", 4000),
+		KMSKeyID:       os.Getenv("OATHMESH_KMS_KEY_ID"),
 		PrivateKey:     os.Getenv("OATHMESH_PRIVATE_KEY"),
 		PrivateKeyB64:  os.Getenv("OATHMESH_PRIVATE_KEY_B64"),
 		PrivateKeyFile: os.Getenv("OATHMESH_PRIVATE_KEY_FILE"),
@@ -101,7 +103,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("OATHMESH_ISSUER must use HTTPS in non-development environments (got %q). Set OATHMESH_ENV=development to suppress this check", c.Issuer)
 	}
 
-	if c.PrivateKey == "" && c.PrivateKeyFile == "" && c.PrivateKeyB64 == "" {
+	if c.KMSKeyID == "" && c.PrivateKey == "" && c.PrivateKeyFile == "" && c.PrivateKeyB64 == "" {
 		return fmt.Errorf("OATHMESH_PRIVATE_KEY, OATHMESH_PRIVATE_KEY_B64, or OATHMESH_PRIVATE_KEY_FILE is required")
 	}
 	if c.TTLMax < 1 || c.TTLMax > 300 {

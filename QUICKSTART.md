@@ -1,63 +1,58 @@
-# Quick Start
+# 🚦 Quick Start
 
-> 📖 **For detailed, step-by-step guidance:** See [Getting Started](docs/GETTING_STARTED.md) in the docs folder. That guide will walk you through different paths (local demo, protecting your own API, or learning concepts first).
-
-Get from zero to a protected API call in 5 commands.
+One minimal happy path: clone → build → run → mint → protected API success.
 
 ## Prerequisites
 
-- Go 1.23+
-- Docker & Docker Compose
-- openssl
+- Go toolchain that satisfies `go.mod` (currently `go 1.26.2`)
+- Docker + Docker Compose
+- OpenSSL
+- curl
 
-## 5 Commands to Protected API
+Canonical local endpoints from `docker-compose.yml`:
+- Issuer: `http://localhost:4000`
+- Protected chi API: `http://localhost:8081/inventory`
+
+## Happy Path (bash / zsh)
 
 ```bash
-# 1. Clone and enter the repo
 git clone https://github.com/oathmesh/oathmesh.git
 cd oathmesh
 
-# 2. Generate a development key
 openssl genpkey -algorithm Ed25519 -out private.pem
+go build -o bin/oathmesh ./cmd/oathmesh
+docker compose up -d --build
 
-# 3. Start services (issuer + demo API)
-docker-compose up -d --build
-
-# 4. Mint a token (max TTL 300s)
-TOKEN=$(./bin/oathmesh mint \
+TOKEN=$(OATHMESH_ISSUER=http://localhost:4000 OATHMESH_PRIVATE_KEY_FILE=./private.pem ./bin/oathmesh mint \
   --sub "agent://repo/acme/deploy-bot" \
   --aud "https://inventory.internal" \
   --act "deploy" \
   --quiet)
 
-# 5. Call the protected API
-curl -H "Authorization: OathMesh $TOKEN" http://localhost:8080/inventory
+curl -i -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
 ```
 
-Expected response:
-```json
-{"subject":"agent://repo/acme/deploy-bot","action":"deploy"}
+Expected success: `HTTP/1.1 200 OK` with JSON from `chi-api`.
+
+## Happy Path (PowerShell)
+
+```powershell
+openssl genpkey -algorithm Ed25519 -out private.pem
+go build -o bin/oathmesh.exe ./cmd/oathmesh
+docker compose up -d --build
+
+$env:OATHMESH_ISSUER = "http://localhost:4000"
+$env:OATHMESH_PRIVATE_KEY_FILE = ".\private.pem"
+$TOKEN = & .\bin\oathmesh.exe mint --sub "agent://repo/acme/deploy-bot" --aud "https://inventory.internal" --act "deploy" --quiet
+Invoke-WebRequest -Headers @{ Authorization = "OathMesh $TOKEN" } -Uri "http://localhost:8081/inventory"
 ```
 
-## What Just Happened?
+Expected success: `StatusCode : 200`.
 
-1. **Generated an Ed25519 key** — Your machine identity signing key
-2. **Started the issuer** — Serves tokens at `http://localhost:4000`
-3. **Started a demo API** — Protected by OathMesh middleware at `http://localhost:8080`
-4. **Minted a token** — 300-second max TTL, cryptographically signed
-5. **Called the API** — Token verified, identity extracted, request allowed
+## Quick fixes
 
-## Next Steps
+- Ports `4000` or `8081` busy: `docker compose down` then rerun `docker compose up -d --build`
+- Minted token expired (max 300s): mint again
 
-- Read the full [Architecture documentation](ARCHITECTURE.md)
-- Explore [SDK documentation](sdk/)
-- Learn about [verification rules](docs/protocol/verification-rules.md)
-- Set up [production deployment](docs/deployment/)
-
-## Troubleshooting
-
-**Port already in use?** Stop existing containers: `docker-compose down`
-
-**Token expired?** Mint a new one — tokens max out at 300 seconds
-
-**Want to run without Docker?** See [From Source](README.md#option-2-from-source)
+Next step (Step 2, guided onboarding): [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)  
+Then continue to Step 3 (full docs index): [docs/INDEX.md](docs/INDEX.md)

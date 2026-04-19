@@ -13,7 +13,7 @@ Run a real local flow: start issuer + receiver, mint a token, verify it, and cal
 ## Prerequisites
 
 - Docker + Docker Compose
-- Go 1.22+
+- Go 1.26.2+
 - `curl` and `jq`
 
 ## 1) Start local services

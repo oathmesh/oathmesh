@@ -48,7 +48,7 @@ All assertions explicitly contain unique `JTI` tokens inherently rejecting ident
 
 ### Excluded Scopes
 - AWS KMS underlying hardware infrastructure configurations logically.
-- Core language vulnerabilities mapping directly tracking Go 1.25.0 vulnerabilities aggressively handled explicitly.
+- Core language vulnerabilities mapping directly tracking Go 1.26.2 vulnerabilities aggressively handled explicitly.
 
 ### Disclosure 
 External researchers verifying scopes exactly mappings to `security@oathmesh.tech` dynamically securely tracking reports aggressively responding under 48 hours natively.

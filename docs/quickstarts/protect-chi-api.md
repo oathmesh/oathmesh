@@ -6,7 +6,7 @@
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-⏱️ **Time**: ~5 minutes | 📋 **Prerequisites**: Go 1.22+, running OathMesh issuer | 🎯 **Outcome**: Go chi API with OathMesh middleware protecting endpoints
+⏱️ **Time**: ~5 minutes | 📋 **Prerequisites**: Go 1.26.2+, running OathMesh issuer | 🎯 **Outcome**: Go chi API with OathMesh middleware protecting endpoints
 
 ---
 
@@ -14,7 +14,7 @@
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.26.2+
 - A running OathMesh issuer (or use `docker-compose up` from the repo root)
 - A private key for minting tokens (`openssl genpkey -algorithm Ed25519 -out private.pem`)
 

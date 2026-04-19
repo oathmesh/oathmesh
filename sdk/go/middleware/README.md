@@ -30,7 +30,7 @@ Middleware and interceptors for verifying OathMesh tokens in Go services.
 go get github.com/oathmesh/oathmesh/sdk/go/middleware
 ```
 
-**Requirements:** Go 1.22+
+**Requirements:** Go 1.26.2+
 
 ## Quick Start
 

@@ -26,7 +26,7 @@ make demo            # Full demo
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.26.2+
 - Docker and Docker Compose (for integration tests)
 - Node.js 18+ (for Node SDK development)
 - Python 3.8+ (for Python SDK development)

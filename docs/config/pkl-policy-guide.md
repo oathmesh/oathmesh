@@ -60,13 +60,13 @@ rules {
 ### 2. Validate
 
 ```bash
-oathmesh policy validate policy/production.pkl
+oathmesh policy validate policy/example.pkl
 ```
 
 Or using Pkl directly:
 
 ```bash
-pkl eval policy/production.pkl
+pkl eval policy/example.pkl
 ```
 
 Schema errors surface at validation time with line numbers and clear messages â€” not at request time.
@@ -76,7 +76,7 @@ Schema errors surface at validation time with line numbers and clear messages â€
 Place the policy file where the issuer or gateway can read it. Set the path via environment variable or CLI flag:
 
 ```bash
-OATHMESH_GATEWAY_POLICY=policy/production.pkl
+OATHMESH_GATEWAY_POLICY=policy/example.pkl
 ```
 
 ### 4. Hot-Reload

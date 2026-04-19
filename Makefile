@@ -1,4 +1,4 @@
-.PHONY: help dev test test-all race lint build demo clean docker-up docker-down pkl-gen test-node test-python audit-prep
+.PHONY: help dev test test-all race lint quality-local build demo clean docker-up docker-down pkl-gen test-node test-python audit-prep
 
 help: ## Show this help
 	@echo "OathMesh Makefile"
@@ -35,6 +35,12 @@ test-all: race test-node test-python ## Run ALL tests (Go + Node + Python)
 
 lint: ## Run golangci-lint
 	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || echo "golangci-lint not installed — run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+
+quality-local: ## Run minimal local quality checks (test, lint, security)
+	@echo "Running local quality checks..."
+	@go test ./...
+	@$(MAKE) lint
+	@command -v govulncheck >/dev/null 2>&1 && govulncheck ./... || echo "govulncheck not installed — run: go install golang.org/x/vuln/cmd/govulncheck@latest"
 
 # ── Docker ───────────────────────────────────────────────────────────────────
 

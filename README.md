@@ -84,54 +84,31 @@
 
 ---
 
-## 🚀 Quick Start
+## 🚦 Start Here
 
-### Option 1: Docker (Fastest)
+Use this canonical developer entry flow:
 
-```bash
-# Start the issuer and demo services
-docker-compose up -d
+1. **Step 1 (commands):** [QUICKSTART.md](QUICKSTART.md)
+2. **Step 2 (guided onboarding):** [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+3. **Step 3 (full docs index):** [docs/INDEX.md](docs/INDEX.md)
 
-# Mint a token
-TOKEN=$(docker compose exec oathmesh ./bin/oathmesh mint \
-  --sub "agent://repo/acme/deploy-bot" \
-  --aud "https://inventory.internal" \
-  --act "deploy" --quiet)
+Step 1 is the canonical runnable path for local verification (issuer `http://localhost:4000`, protected `chi-api` at `http://localhost:8081`).
 
-# Call a protected API
-curl -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
-```
+### ✅ Local quality checks (before a PR)
 
-### Option 2: From Source
+Run the minimal local quality workflow:
 
 ```bash
-git clone https://github.com/oathmesh/oathmesh.git
-cd oathmesh
-
-# Set up local environment
-export OATHMESH_MINT_SECRET="your-pre-shared-secret"
-export OATHMESH_PRIVATE_KEY_FILE="./private.pem"
-
-# Build the CLI
-make build
-
-# Start services
-docker-compose up -d
-
-# Provide the MintAuth secret securely to mint tokens
-TOKEN=$(./bin/oathmesh mint \
-  --sub "agent://repo/acme/deploy-bot" \
-  --aud "https://inventory.internal" \
-  --act "deploy" --quiet)
-
-# Call a protected API
-curl -H "Authorization: OathMesh $TOKEN" http://localhost:8081/inventory
-
-# Revoke a token directly via CLI safely authenticated
-./bin/oathmesh revoke 'agent://repo/acme/deploy-bot'
+make quality-local
 ```
 
-Run `./demo.sh` for the full automated golden-path demo.
+If `make` is not available (for example on some Windows setups), run the same flow manually:
+
+```bash
+go test ./...
+golangci-lint run ./...  # if installed
+govulncheck ./...        # if installed
+```
 
 ---
 

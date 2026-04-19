@@ -16,7 +16,7 @@
 
 ---
 
-> 🆕 **New here?** Start with the [main README](../README.md) and the [Getting Started tutorial](tutorials/getting-started.md).
+> 🆕 **New here?** Follow the Start Here flow: [README](../README.md) → [QUICKSTART.md](../QUICKSTART.md) → [GETTING_STARTED.md](GETTING_STARTED.md) → [INDEX.md](INDEX.md).
 
 ## Global Flags
 
@@ -54,8 +54,8 @@ The token is output on stdout (pipeable).
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `1` | Signing failure |
-| `2` | Config error (missing key, invalid flags) |
+| `1` | Signing failure or CLI usage error |
+| `2` | Runtime config error (e.g., missing signing key, invalid `--sub`) |
 
 ### Examples
 
@@ -95,7 +95,7 @@ oathmesh mint \
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
-| `config error` with exit `2` | Missing signing key config | Set `OATHMESH_PRIVATE_KEY` or `OATHMESH_PRIVATE_KEY_FILE` |
+| `config error` with exit `2` | Missing signing key config | Set `OATHMESH_KMS_KEY_ID` or one of `OATHMESH_PRIVATE_KEY`, `OATHMESH_PRIVATE_KEY_B64`, `OATHMESH_PRIVATE_KEY_FILE` |
 | `invalid subject scheme` | `--sub` is not a supported URI scheme | Use `svc://`, `agent://`, `job://`, `tool://`, or `user://` |
 | Token TTL not what you requested | TTL hint > max allowed | Keep `--ttl` at 300s or below |
 
@@ -121,8 +121,8 @@ The token can be provided as a positional argument, via `--token` flag, or read 
 | Code | Meaning |
 |------|---------|
 | `0` | Valid token |
-| `1` | Auth failure (signature, expiry, policy, replay, etc.) |
-| `2` | Config error (missing flags, bad keyset) |
+| `1` | Auth failure (signature, expiry, policy, replay, etc.) or CLI usage error |
+| `2` | Runtime config error (e.g., missing token, bad local keyset) |
 
 ### Examples
 
@@ -208,8 +208,25 @@ Start the OathMesh issuer HTTP server.
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
 | `--port` | | `4000` | Listen port |
-| `--config` | | | Pkl config file path |
-| `--gateway` | | | Enable reverse proxy / gateway mode |
+| `--config` | | | Reserved config file path (currently unused; env vars are source of truth) |
+| `--gateway` | | | Enable reverse proxy / gateway mode (requires policy in non-development) |
+
+### First-Run Notes
+
+- `oathmesh serve` reads configuration from environment variables.
+- You must provide signing configuration via either `OATHMESH_KMS_KEY_ID` or one of:
+  - `OATHMESH_PRIVATE_KEY`
+  - `OATHMESH_PRIVATE_KEY_B64`
+  - `OATHMESH_PRIVATE_KEY_FILE`
+
+### Gateway Mode
+
+- `oathmesh serve --gateway` also requires:
+  - `OATHMESH_GATEWAY_UPSTREAM`
+  - `OATHMESH_GATEWAY_AUDIENCE`
+  - `OATHMESH_GATEWAY_ISSUERS`
+- If `OATHMESH_ENV` is not `development`, it also requires:
+  - `OATHMESH_GATEWAY_POLICY`
 
 ### Exit Codes
 
@@ -221,16 +238,17 @@ Start the OathMesh issuer HTTP server.
 ### Examples
 
 ```bash
-oathmesh serve
-oathmesh serve --port 8080
-oathmesh serve --config internal/config/issuer.pkl
+OATHMESH_PRIVATE_KEY_FILE=./private.pem oathmesh serve
+OATHMESH_PRIVATE_KEY_FILE=./private.pem oathmesh serve --port 8080
+OATHMESH_PRIVATE_KEY_FILE=./private.pem OATHMESH_GATEWAY_UPSTREAM=http://localhost:3000 OATHMESH_GATEWAY_AUDIENCE=https://api.internal OATHMESH_GATEWAY_ISSUERS=http://localhost:4000 oathmesh serve --gateway
+OATHMESH_ENV=production OATHMESH_PRIVATE_KEY_FILE=./private.pem OATHMESH_GATEWAY_UPSTREAM=https://upstream.internal OATHMESH_GATEWAY_AUDIENCE=https://api.internal OATHMESH_GATEWAY_ISSUERS=https://issuer.oathmesh.tech OATHMESH_GATEWAY_POLICY=policy/production.json oathmesh serve --gateway
 ```
 
 ### Common Serve Errors
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
-| Startup fails immediately | Missing config or key material | Provide valid `--config` and signing key env vars |
+| Startup fails immediately | Missing required environment config | Set issuer/signing env vars, and gateway env vars when `--gateway` is enabled |
 | `address already in use` | Port conflict | Change `--port` or stop the other process |
 | `/healthz` unhealthy | Dependency or config issue | Run with `--verbose` and check startup logs |
 
@@ -263,7 +281,7 @@ Revoke all tokens for a given subject by publishing to the active Redis revocati
 
 ### Arguments & Configuration
 
-Requires the `OATHMESH_MINT_SECRET` and `OATHMESH_ISSUER` environment variables to authenticate the remote capability.
+Requires `OATHMESH_MINT_SECRET`. Issuer URL can be provided with `--issuer` or `OATHMESH_ISSUER`.
 
 | Arg | Required | Description |
 |-----|----------|-------------|
@@ -285,10 +303,20 @@ oathmesh revoke 'svc://compromised-agent'
 
 Revert a subject's revocation status from the Redis caching backend.
 
+### Arguments & Configuration
+
+Requires `OATHMESH_MINT_SECRET`. Issuer URL can be provided with `--issuer` or `OATHMESH_ISSUER`.
+
+| Arg | Required | Description |
+|-----|----------|-------------|
+| `<subject>` | ✓ | Subject URI string to unrevoke (e.g. `svc://bad-actor`) |
+| `--issuer` | | Issuer URL (can use `OATHMESH_ISSUER` instead) |
+
 ### Examples
 
 ```bash
 export OATHMESH_MINT_SECRET="development_secret"
+export OATHMESH_ISSUER="http://localhost:4000"
 oathmesh unrevoke 'svc://compromised-agent'
 ```
 
@@ -322,14 +350,9 @@ Validate a `.pkl` or `.json` policy file against the OathMesh policy schema.
 ### Examples
 
 ```bash
-# Validate JSON policy
-oathmesh policy validate policy/production.json
-
-# Validate Pkl policy (requires pkl binary in PATH)
-oathmesh policy validate policy/production.pkl
-
-# JSON output
-oathmesh policy validate --json policy/production.json
+oathmesh policy validate ./policy/production.json
+oathmesh policy validate ./policy/example.pkl
+oathmesh policy validate --json ./policy/production.json
 ```
 
 ### Common Policy Validation Errors

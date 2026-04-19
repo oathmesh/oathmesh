@@ -18,7 +18,7 @@
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.26.2+
 - Docker & Docker Compose (for Docker run option)
 - Running OathMesh issuer (see main README)
 

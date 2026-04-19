@@ -14,7 +14,7 @@ The gRPC server example implements a simple `UserService` with the following fea
 
 ## Prerequisites
 
-- Go 1.25+
+- Go 1.26.2+
 - Protocol Buffers compiler (protoc) with Go code generation plugins
 - OathMesh token issuer running (for token generation)
 

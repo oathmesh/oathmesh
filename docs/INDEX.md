@@ -1,38 +1,24 @@
 # 📚 OathMesh Documentation Index
 
-Welcome to OathMesh! Use this index to navigate the complete documentation. Quick links are below for your role.
+Welcome to OathMesh docs. Start with the canonical route, then jump to a category.
 
 ---
 
-## 🚀 Quick Links by Role
+## 🚦 Canonical Route (Start Here)
 
-**👤 First-Time User?**
-- [OathMesh Overview](overview.md) — What it is and why you need it
-- [Getting Started Tutorial](tutorials/getting-started.md) — Build your first issuer + receiver
-- [Docker Quick Start](quickstarts/local-demo-docker-compose.md) — Get running in 5 minutes
+Use this canonical Start Here flow referenced from README and GETTING_STARTED:
 
-**⚙️ Developer / API Owner?**
-- [Core Concepts](concepts.md) — Terminology and architecture
-- [Protect a Go API](quickstarts/protect-chi-api.md) | [Express](quickstarts/protect-express-api.md) | [Next.js](quickstarts/protect-nextjs-api.md) | [FastAPI](quickstarts/protect-fastapi.md)
-- [Token Format Reference](protocol/token-format.md) — What's inside a token
-- [Policy Overview](policies/overview.md) — How to configure access rules
-- [CLI Reference](cli-reference.md) — Terminal commands
-- [Troubleshooting Guide](TROUBLESHOOTING.md) — Fast diagnosis for common failures
+1. **Step 1 (commands):** [QUICKSTART.md](../QUICKSTART.md)
+2. **Step 2 (guided onboarding):** [GETTING_STARTED.md](GETTING_STARTED.md)
+3. **Step 3 (full docs index):** this page (pick a category below)
 
-**🏗️ DevOps / Platform Engineer?**
-- [Deployment Options](deployment/docker-compose.md) — Docker, VM, or Kubernetes
-- [Linux VM Setup](deployment/vm.md) — systemd-based production deployment
-- [Kubernetes Guide](deployment/kubernetes.md) — K8s manifests and scaling
-- [Operations Runbook](operations/on-call-runbook.md) — Troubleshooting and incidents
-- [Key Rotation](deployment/key-rotation.md) — Rolling keys safely
+## ⭐ High-Value Categories
 
-**🔒 Security Engineer / Auditor?**
-- [Threat Model](security/threat-model.md) — What OathMesh protects against
-- [Security Guide](security/key-management.md) — Key management and secrets handling
-- [Verification Rules](protocol/verification-rules.md) — The 14-step verification pipeline
-- [Replay Defense](security/replay-defense.md) — How replay attacks are prevented
-- [SOC2 Compliance Matrix](security/soc2-compliance.md) — Compliance mappings
-- [Logging Guidance](security/logging-guidance.md) — What to log and why
+- **API Integration:** [Quick Starts](quickstarts/) • [Concepts](concepts.md) • [CLI Reference](cli-reference.md)
+- **Protocol & Policy:** [Token Format](protocol/token-format.md) • [Verification Rules](protocol/verification-rules.md) • [Policies Overview](policies/overview.md)
+- **Deployment:** [Docker Compose](deployment/docker-compose.md) • [Linux VM](deployment/vm.md) • [Kubernetes](deployment/kubernetes.md)
+- **Operations:** [On-Call Runbook](operations/on-call-runbook.md) • [Troubleshooting](TROUBLESHOOTING.md)
+- **Security & Compliance:** [Threat Model](security/threat-model.md) • [Key Management](security/key-management.md) • [SOC2 Compliance](security/soc2-compliance.md)
 
 ---
 
@@ -72,7 +58,7 @@ Welcome to OathMesh! Use this index to navigate the complete documentation. Quic
 ### 🚀 Quick Starts (5-10 mins each)
 | Document | Description |
 |----------|-------------|
-| [Local Demo (Docker Compose)](quickstarts/local-demo-docker-compose.md) | Spin up issuer + receiver locally in <2 minutes |
+| [Canonical Quick Start](../QUICKSTART.md) | Clone → build → run → mint → protected API call using current compose ports |
 | [Protect a Go chi API](quickstarts/protect-chi-api.md) | Add OathMesh middleware to a Go web service |
 | [Protect an Express API](quickstarts/protect-express-api.md) | Express.js integration with full example |
 | [Protect a Next.js API](quickstarts/protect-nextjs-api.md) | Next.js App Router and Pages Router support |
@@ -141,7 +127,7 @@ Welcome to OathMesh! Use this index to navigate the complete documentation. Quic
 
 ## 🗺️ Navigation Tips
 
-- **New to OathMesh?** Start with [Overview](overview.md) → [Concepts](concepts.md) → [Getting Started Tutorial](tutorials/getting-started.md)
+- **New to OathMesh?** Start with [QUICKSTART.md](../QUICKSTART.md) → [GETTING_STARTED.md](GETTING_STARTED.md) → this index, then pick [Overview](overview.md) or a quickstart
 - **Want to deploy?** Jump to [Deployment](deployment/) based on your infrastructure (Docker, VM, or K8s)
 - **Need to operate it?** See [Operations](operations/) for monitoring, alerting, and incident response
 - **Securing your API?** Pick your framework: [Go](quickstarts/protect-chi-api.md), [Express](quickstarts/protect-express-api.md), [Next.js](quickstarts/protect-nextjs-api.md), [FastAPI](quickstarts/protect-fastapi.md)

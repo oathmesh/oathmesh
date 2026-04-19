@@ -14,16 +14,26 @@
 >
 > After this, explore the [Concepts](concepts.md) doc for deeper understanding, or jump to [Architecture](../ARCHITECTURE.md) for system design.
 
+## 🚦 Start Here (Canonical Flow)
+
+Follow this canonical Start Here flow used by the README and docs index:
+
+1. **Step 1 (commands):** [QUICKSTART.md](../QUICKSTART.md)
+2. **Step 2 (guided onboarding):** this page
+3. **Step 3 (full docs index):** [INDEX.md](INDEX.md)
+
+Before production rollout, complete the [operations checklist](operations/production-checklist.md) and review [SECURITY.md](../SECURITY.md).
+
 ## Prerequisites
 
 Before you start, make sure you have:
 
 - **Docker & Docker Compose** — for running the issuer and demo
-- **Go 1.22+** — for building the CLI (if running from source)
+- **Go toolchain that satisfies `go.mod`** (currently `go 1.26.2`) — for building the CLI from source
 - **curl** and **jq** — for testing API calls
 - **openssl** — for generating Ed25519 keys
 
-## What Do You Want to Do?
+## After Step 1, Choose Your Path
 
 Choose your path:
 
@@ -31,9 +41,13 @@ Choose your path:
 
 **Best for:** Understanding OathMesh by seeing it in action locally.
 
-You'll start an issuer + demo API, mint a token, call the API, and watch security features in action (replay detection, expiry, etc.).
+You'll start an issuer + protected demo API, mint a token, call the API, and validate replay/expiry behavior.
 
-👉 **[Start the Local Demo →](quickstarts/local-demo-docker-compose.md)**
+Use the canonical commands from Step 1 (`QUICKSTART.md`) for the current compose mapping:
+- issuer: `http://localhost:4000`
+- protected chi API: `http://localhost:8081/inventory`
+
+👉 **[Run the canonical local demo path →](../QUICKSTART.md)**
 
 ---
 
@@ -48,7 +62,7 @@ Choose your framework:
 | **Express.js** | ~5 min | Node 18+ | [Protect Express API →](quickstarts/protect-express-api.md) |
 | **Next.js** | ~5 min | Next.js 13+ | [Protect Next.js API →](quickstarts/protect-nextjs-api.md) |
 | **FastAPI / Flask** | ~5 min | Python 3.9+ | [Protect FastAPI →](quickstarts/protect-fastapi.md) |
-| **Go chi** | ~5 min | Go 1.22+ | [Protect Go chi API →](quickstarts/protect-chi-api.md) |
+| **Go chi** | ~5 min | Go toolchain matching `go.mod` | [Protect Go chi API →](quickstarts/protect-chi-api.md) |
 | **GitHub Actions** | ~15 min | GH OIDC | [GitHub Actions CI/CD →](quickstarts/github-actions-to-internal-api.md) |
 
 Each guide shows you:

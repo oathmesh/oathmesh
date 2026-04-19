@@ -6,7 +6,7 @@
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-⏱️ **Time**: ~10 minutes | 📋 **Prerequisites**: Docker, Docker Compose, Go 1.22+, curl, jq | 🎯 **Outcome**: Running issuer + demo API with working token verification and security tests
+⏱️ **Time**: ~10 minutes | 📋 **Prerequisites**: Docker, Docker Compose, Go 1.26.2+, curl, jq | 🎯 **Outcome**: Running issuer + demo API with working token verification and security tests
 
 ---
 
@@ -17,7 +17,7 @@ This guide gets you from zero to a fully working OathMesh demo using Docker Comp
 ## Prerequisites
 
 - Docker and Docker Compose
-- Go 1.22+ (for building the CLI)
+- Go 1.26.2+ (for building the CLI)
 
 ## Step 1: Clone and Build
 

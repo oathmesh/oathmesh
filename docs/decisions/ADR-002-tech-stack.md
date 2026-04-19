@@ -20,7 +20,7 @@ OathMesh requires a technology stack that:
 
 | Concern | Choice | Justification |
 |---------|--------|----------------|
-| Language | Go 1.22+ | stdlib crypto, fast binary, infra ecosystem |
+| Language | Go 1.26.2+ | stdlib crypto, fast binary, infra ecosystem |
 | Config DSL | Apple Pkl | Typed policies, IDE validation, pkl-gen-go |
 | HTTP framework | chi/v5 | Lightweight, idiomatic, stdlib-compatible |
 | Signing | crypto/ed25519 (stdlib) | No CVE surface from third-party JWT libs |

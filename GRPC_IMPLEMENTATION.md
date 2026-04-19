@@ -115,7 +115,7 @@ Complete production-ready example:
 
 #### `examples/grpc-server/Dockerfile` (25 lines)
 Multi-stage Docker build:
-- Go 1.25 builder stage with dependency caching
+- Go 1.26.2 builder stage with dependency caching
 - Alpine runtime stage with minimal footprint
 - Proper health check implementation
 - Environment variable configuration
@@ -229,5 +229,5 @@ The implementation follows OathMesh patterns:
 - Rate limiter uses simple in-memory storage (suitable for single-instance deployments)
 - For distributed deployments, wire in a Redis-based rate limiter
 - No external dependencies beyond existing (google.golang.org/grpc, prometheus)
-- All code follows Go 1.25+ patterns and idioms
+- All code follows Go 1.26.2+ patterns and idioms
 - Proper error handling with actionable error messages

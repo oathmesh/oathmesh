@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `NewFixedJWKS()` with hardcoded URL - user input completely ignored
   - Pre-computed JWKS URLs in config - no string concatenation
   - Rate limiting added to test suite
-- Updated Go toolchain to 1.26
+- Updated Go toolchain to 1.26.2
 
 ### Added
 - Cross-SDK conformance test suite with fixtures and runners

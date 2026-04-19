@@ -211,7 +211,7 @@ Caller          Gateway              Upstream
 
 | Concern | Choice | Rationale |
 |---|---|---|
-| Language | Go 1.22+ | Performance, stdlib crypto, single-binary deployment |
+| Language | Go 1.26.2+ | Performance, stdlib crypto, single-binary deployment |
 | HTTP framework | chi/v5 | Lightweight, stdlib-compatible, middleware-chain pattern |
 | Signing | `crypto/ed25519` or `AWS KMS` | Secure hardware isolation mapped natively out-of-band |
 | Config DSL | Apple Pkl | Schema validation at load time, type safety |

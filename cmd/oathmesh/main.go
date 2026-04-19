@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/oathmesh/oathmesh/internal/audit"
+	"github.com/oathmesh/oathmesh/internal/config"
 	"github.com/oathmesh/oathmesh/internal/core"
 	"github.com/oathmesh/oathmesh/internal/gateway"
 	"github.com/oathmesh/oathmesh/internal/issuer"
@@ -366,10 +367,16 @@ The server listens on the configured port (default: 4000) and serves:
   GET  /.well-known/oathmesh-issuer    — discovery
   GET  /healthz              — liveness check
 
+Gateway mode (--gateway) requires OATHMESH_GATEWAY_UPSTREAM,
+OATHMESH_GATEWAY_AUDIENCE, and OATHMESH_GATEWAY_ISSUERS.
+When OATHMESH_ENV is not "development", OATHMESH_GATEWAY_POLICY is required.
+
+Configuration is loaded from environment variables.
+(--config is currently reserved and does not override env values.)
+
 Examples:
   oathmesh serve
   oathmesh serve --port 8080
-  oathmesh serve --config issuer.pkl
 
 Exit codes:
   0 = clean shutdown
@@ -377,14 +384,22 @@ Exit codes:
 		RunE: serveRunE,
 	}
 	cmd.Flags().String("port", "4000", "Listen port")
-	cmd.Flags().String("config", "", "Pkl config file path")
-	cmd.Flags().Bool("gateway", false, "Enable reverse proxy / gateway mode")
+	cmd.Flags().String("config", "", "Reserved config file path (currently unused; use environment variables)")
+	cmd.Flags().Bool("gateway", false, "Enable reverse proxy / gateway mode (requires upstream/audience/issuers env vars; policy required outside development)")
 	return cmd
 }
 
 func serveRunE(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetString("port")
 	gatewayEnabled, _ := cmd.Flags().GetBool("gateway")
+
+	cfg := config.LoadFromEnv()
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid startup config: %w", err)
+	}
+	if err := validateGatewayPolicyRequirement(gatewayEnabled, cfg.Env, cfg.GatewayPolicy); err != nil {
+		return err
+	}
 
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
@@ -397,12 +412,9 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	defer func() { _ = shutdownTracer(context.Background()) }()
 
 	var signer sign.Signer
-	cfgIssuer := os.Getenv("OATHMESH_ISSUER")
-	if cfgIssuer == "" {
-		cfgIssuer = "https://issuer.oathmesh.tech"
-	}
+	cfgIssuer := cfg.Issuer
 
-	if kmsKeyID := os.Getenv("OATHMESH_KMS_KEY_ID"); kmsKeyID != "" {
+	if kmsKeyID := cfg.KMSKeyID; kmsKeyID != "" {
 		signer, err = sign.NewKMSSigner(context.Background(), kmsKeyID, cfgIssuer)
 		if err != nil {
 			return fmt.Errorf("failed to mount AWS KMS signer: %w", err)
@@ -417,10 +429,10 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	srv := issuer.NewServer(signer)
 
 	if gatewayEnabled {
-		upstream := os.Getenv("OATHMESH_GATEWAY_UPSTREAM")
-		audience := os.Getenv("OATHMESH_GATEWAY_AUDIENCE")
-		issuersStr := os.Getenv("OATHMESH_GATEWAY_ISSUERS")
-		policyFile := os.Getenv("OATHMESH_GATEWAY_POLICY")
+		upstream := strings.TrimSpace(cfg.GatewayUpstream)
+		audience := strings.TrimSpace(cfg.GatewayAudience)
+		issuersStr := strings.TrimSpace(cfg.GatewayIssuers)
+		policyFile := strings.TrimSpace(cfg.GatewayPolicy)
 
 		if upstream == "" || audience == "" || issuersStr == "" {
 			return fmt.Errorf("gateway mode requires OATHMESH_GATEWAY_UPSTREAM, OATHMESH_GATEWAY_AUDIENCE, OATHMESH_GATEWAY_ISSUERS env vars")
@@ -433,8 +445,7 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 
 		var evaluator verify.PolicyEvaluator
 		if policyFile != "" {
-			env := os.Getenv("OATHMESH_ENV")
-			if env == "development" {
+			if cfg.Env == "development" {
 				pe, err := policy.NewWatchedPolicyEngine(policyFile, slog.Default())
 				if err != nil {
 					return fmt.Errorf("failed to init policy engine: %w", err)
@@ -488,6 +499,16 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	return srv.Run()
+}
+
+func validateGatewayPolicyRequirement(gatewayEnabled bool, env, policyFile string) error {
+	if !gatewayEnabled || env == "development" {
+		return nil
+	}
+	if strings.TrimSpace(policyFile) == "" {
+		return fmt.Errorf("gateway mode requires OATHMESH_GATEWAY_POLICY in non-development environments (for example: OATHMESH_GATEWAY_POLICY=policy/production.json)")
+	}
+	return nil
 }
 
 // ── oathmesh keys ───────────────────────────────────────────────────────────
@@ -566,9 +587,9 @@ Checks:
   - last rule is { name: "default", allow: false }
 
 Examples:
-  oathmesh policy validate policy/production.pkl
-  oathmesh policy validate policy.json
-  oathmesh policy validate --json policy.json
+  oathmesh policy validate policy/production.json
+  oathmesh policy validate policy/example.pkl
+  oathmesh policy validate --json policy/production.json
 
 Exit codes:
   0 = valid policy
