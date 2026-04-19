@@ -1,0 +1,233 @@
+{
+  "version": "phase2-p2-conformance-framework",
+  "targets": [
+    "go",
+    "node",
+    "python"
+  ],
+  "cases": [
+    {
+      "id": "token_parsing_validation_failures",
+      "category": "verification",
+      "description": "Malformed token input is rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_token_parsing_validation_failures$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "token_parsing_validation_failures"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "token_parsing_validation_failures",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "issuer_check_untrusted",
+      "category": "verification",
+      "description": "Untrusted issuer is rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_issuer_check_untrusted$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "issuer_check_untrusted"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "issuer_check_untrusted",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "audience_check_mismatch",
+      "category": "verification",
+      "description": "Audience mismatch is rejected.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_audience_check_mismatch$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "audience_check_mismatch"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "audience_check_mismatch",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "replay_detection_semantics",
+      "category": "verification",
+      "description": "Second use of same token identity is rejected when replay cache is enabled.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_replay_detection_semantics$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "replay_detection_semantics"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "replay_detection_semantics",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    },
+    {
+      "id": "revocation_subject_revoked",
+      "category": "revocation",
+      "description": "Revoked subject tokens are rejected where revocation list support exists.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_revocation_subject_revoked$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "skip": "not_applicable_no_revocation_list_in_node_sdk"
+        },
+        "python": {
+          "skip": "not_applicable_no_revocation_list_in_python_sdk"
+        }
+      }
+    },
+    {
+      "id": "middleware_auth_header_handling_semantics",
+      "category": "middleware",
+      "description": "Missing/wrong auth header scheme is rejected as claim_missing:token.",
+      "checks": {
+        "go": {
+          "command": [
+            "go",
+            "test",
+            "./sdk/go/middleware",
+            "-run",
+            "^TestConformance_middleware_auth_header_handling_semantics$",
+            "-count=1"
+          ]
+        },
+        "node": {
+          "command": [
+            "npx",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "middleware_auth_header_handling_semantics"
+          ],
+          "cwd": "sdk/node"
+        },
+        "python": {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "middleware_auth_header_handling_semantics",
+            "-q"
+          ],
+          "cwd": "sdk/python"
+        }
+      }
+    }
+  ]
+}

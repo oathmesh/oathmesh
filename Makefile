@@ -53,9 +53,7 @@ demo: ## Run the golden-path end-to-end demo
 
 conformance: ## Run cross-SDK conformance tests (requires services running)
 	@echo "Running cross-SDK conformance suite..."
-	@echo "Ensure issuer, chi-api, express-api, and fastapi-api are running"
-	@echo "via: docker compose up -d issuer chi-api express-api fastapi-api"
-	@bash conformance/run_all.sh
+	@python tests/conformance/run_conformance.py
 
 # ── Benchmarks ─────────────────────────────────────────────────────────────────
 

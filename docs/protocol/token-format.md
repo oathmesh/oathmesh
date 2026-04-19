@@ -10,7 +10,78 @@
 
 ---
 
-> 📖 **New to OathMesh?** Start with [Concepts](../docs/concepts.md).
+> 📖 **New to OathMesh?** Start with [Concepts](../concepts.md).
+
+## Visual: Oath Token Structure
+
+```text
+Oath Token (Compact JWS Format)
+═══════════════════════════════════════════════════════════════
+
+  eyJ0eXAi...        .        eyJpc3Mi...        .        <signature>
+  └─ HEADER ─┘               └─ PAYLOAD ─┘                └─ SIG ─┘
+      (JSON)                     (JSON)                    (raw bytes
+      Base64url                  Base64url                  base64url)
+
+                            │ DECODED │
+
+┌─────────────────────────────────────────────────────────────┐
+│                        HEADER                               │
+├─────────────────────────────────────────────────────────────┤
+│ {                                                           │
+│   "typ": "om+jwt"          ← Token type (MUST be om+jwt)  │
+│   "alg": "EdDSA"           ← Signing algorithm             │
+│   "kid": "issuer-2026-04"  ← Key ID for JWKS lookup        │
+│ }                                                           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                       PAYLOAD (CLAIMS)                      │
+├─────────────────────────────────────────────────────────────┤
+│ {                                                           │
+│   "iss": "https://issuer.oathmesh.tech"    ← Issuer        │
+│   "sub": "agent://repo/acme/deploy-bot"   ← Subject        │
+│   "aud": "https://inventory.internal"     ← Audience       │
+│   "act": "inventory.write"                ← Action         │
+│   "iat": 1774911000                       ← Issued-at      │
+│   "exp": 1774911120                       ← Expiry (120s)  │
+│   "jti": "550e8400-e29b-41d4-a716..."     ← Unique ID      │
+│   "scope": ["inventory.read", "..."]      ← Permissions    │
+│   "src": {...}                            ← Source context │
+│   "env": "prod"                           ← Environment    │
+│   "rqh": "sha256:e3b0c4..."               ← Request hash   │
+│ }                                                           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                      SIGNATURE                              │
+├─────────────────────────────────────────────────────────────┤
+│ Ed25519(base64url(header) + "." + base64url(payload))      │
+│                                                             │
+│ Verified at Step 06 using issuer's public key (JWKS)       │
+│ Algorithm MUST match kid in JWKS (prevent algorithm        │
+│ confusion attacks)                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Visual: Decode + Verify Path
+
+```text
+Authorization: OathMesh <header.payload.signature>
+  |
+  +--> split by "." into 3 segments
+        |
+        +--> decode header (typ, alg, kid)
+        +--> decode payload (iss, sub, aud, act, iat, exp, jti, ...)
+        +--> keep signature bytes
+  |
+  +--> use iss + kid to load JWKS key
+  |
+  +--> verify signature over:
+        base64url(header) + "." + base64url(payload)
+  |
+  +--> continue with claim and policy checks
+```
 
 ## Overview
 
@@ -40,7 +111,7 @@ An Oath Token is a signed compact JWS consisting of three base64url-encoded segm
 
 ```json
 {
-  "iss": "https://issuer.oathmesh.dev",
+  "iss": "https://issuer.oathmesh.tech",
   "sub": "agent://repo/acme/deploy-bot",
   "aud": "https://inventory.internal",
   "act": "inventory.write",

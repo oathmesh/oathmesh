@@ -11,7 +11,7 @@
  *
  * app.use(verifyToken({
  *   audience: 'https://inventory.internal',
- *   trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *   trustedIssuers: ['https://issuer.oathmesh.tech'],
  * }));
  * ```
  *
@@ -21,7 +21,7 @@
  *
  * const oathmesh = withOathMesh({
  *   audience: 'https://inventory.internal',
- *   trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *   trustedIssuers: ['https://issuer.oathmesh.tech'],
  * });
  *
  * export async function GET(request: NextRequest) {

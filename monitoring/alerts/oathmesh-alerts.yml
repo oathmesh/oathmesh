@@ -1,0 +1,137 @@
+groups:
+  - name: oathmesh.production.rules
+    interval: 30s
+    rules:
+      # Availability
+      - alert: OathMeshIssuerDown
+        expr: up{job=~"oathmesh|oathmesh-issuer"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh issuer target is down"
+          description: "Prometheus cannot scrape an OathMesh issuer target for 2m. Issuance is unavailable and revocation freshness may degrade."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-issuer-service-down"
+
+      - alert: OathMeshVerificationErrorRateWarning
+        expr: (sum(rate(oathmesh_verification_errors[5m])) / clamp_min(sum(rate(oathmesh_verifications_total[5m])), 1)) > 0.05 and sum(rate(oathmesh_verifications_total[5m])) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OathMesh verification error rate elevated"
+          description: "Verification error ratio is above 5% for 10m while traffic is present. Investigate issuer reachability, key rotation drift, and client token quality."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#issue-4-high-verification-error-rate"
+
+      - alert: OathMeshVerificationErrorRateCritical
+        expr: (sum(rate(oathmesh_verification_errors[5m])) / clamp_min(sum(rate(oathmesh_verifications_total[5m])), 1)) > 0.15 and sum(rate(oathmesh_verifications_total[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh verification error rate critical"
+          description: "Verification error ratio is above 15% for 5m under active load. Authentication traffic is materially degraded."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#issue-4-high-verification-error-rate"
+
+      - alert: OathMeshRestartLoopDetected
+        expr: changes(process_start_time_seconds{job=~"oathmesh|oathmesh-issuer"}[15m]) > 2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh process restart loop detected"
+          description: "process_start_time_seconds changed more than twice in 15m, indicating a crash/restart loop."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-issuer-service-down"
+
+      # Security
+      - alert: OathMeshPolicyDenialAnomalyWarning
+        expr: (sum(rate(oathmesh_policy_denials[10m])) / clamp_min(sum(rate(oathmesh_verifications_total[10m])), 1)) > 0.20 and sum(rate(oathmesh_verifications_total[10m])) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OathMesh policy denials are elevated"
+          description: "Policy deny ratio is above 20% for 15m. Check policy rollout changes, tenant scope mismatches, and unexpected caller behavior."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#issue-4-high-verification-error-rate"
+
+      - alert: OathMeshPolicyDenialAnomalyCritical
+        expr: (sum(rate(oathmesh_policy_denials[10m])) / clamp_min(sum(rate(oathmesh_verifications_total[10m])), 1)) > 0.40 and sum(rate(oathmesh_verifications_total[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh policy denials are critically high"
+          description: "Policy deny ratio is above 40% for 10m. This may indicate an active authorization incident or a bad policy deployment."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md"
+
+      - alert: OathMeshReplayDetectionSpikeWarning
+        expr: sum(rate(oathmesh_replays_detected[5m])) > 0.08
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OathMesh replay detections elevated"
+          description: "Replay detections exceed 5/min for 10m. Investigate client retries, token reuse bugs, and potential replay probing."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-private-key-compromised"
+
+      - alert: OathMeshReplayDetectionSpikeCritical
+        expr: sum(rate(oathmesh_replays_detected[5m])) > 0.33
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh replay detections critical"
+          description: "Replay detections exceed 20/min for 5m, suggesting sustained token reuse or hostile replay attempts."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-private-key-compromised"
+
+      # Performance
+      - alert: OathMeshIssuanceLatencyP95Warning
+        expr: histogram_quantile(0.95, sum by (le) (rate(oathmesh_request_duration_seconds_bucket{method="POST", route="/v1/token"}[5m]))) > 0.4
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OathMesh token issuance latency p95 elevated"
+          description: "p95 latency for POST /v1/token is above 400ms for 10m."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#monitoring-dashboard-quick-reference"
+
+      - alert: OathMeshIssuanceLatencyP95Critical
+        expr: histogram_quantile(0.95, sum by (le) (rate(oathmesh_request_duration_seconds_bucket{method="POST", route="/v1/token"}[5m]))) > 1.0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh token issuance latency p95 critical"
+          description: "p95 latency for POST /v1/token is above 1s for 5m."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-issuer-service-down"
+
+      - alert: OathMeshVerificationLatencyP95Warning
+        expr: histogram_quantile(0.95, sum by (le) (rate(oathmesh_grpc_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OathMesh gRPC verification path latency p95 elevated"
+          description: "gRPC p95 request latency is above 500ms for 10m across authenticated methods."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#monitoring-dashboard-quick-reference"
+
+      - alert: OathMeshVerificationLatencyP95Critical
+        expr: histogram_quantile(0.95, sum by (le) (rate(oathmesh_grpc_request_duration_seconds_bucket[5m]))) > 1.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh gRPC verification path latency p95 critical"
+          description: "gRPC p95 request latency is above 1.2s for 5m and may impact auth-dependent services."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/incident-response.md#incident-issuer-service-down"
+
+      # Operations
+      - alert: OathMeshRevocationSyncFailure
+        expr: increase(oathmesh_revocation_sync_errors[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OathMesh revocation sync failing"
+          description: "Revocation list synchronization failed at least once in the last 5m. Revocation state may be stale."
+          runbook: "https://github.com/oathmesh/oathmesh/blob/main/docs/operations/on-call-runbook.md#issue-3-revocation-sync-failed"

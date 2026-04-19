@@ -54,6 +54,17 @@ var (
 		Name: "oathmesh_revocation_sync_errors",
 		Help: "Total number of revocation list sync failures",
 	})
+
+	GRPCRequestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "oathmesh_grpc_requests_total",
+		Help: "Total number of gRPC requests processed",
+	}, []string{"method", "status"})
+
+	GRPCRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "oathmesh_grpc_request_duration_seconds",
+		Help:    "gRPC request latency in seconds",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"method"})
 )
 
 // Handler serves metrics natively adhering to the Prometheus exposition guidelines.

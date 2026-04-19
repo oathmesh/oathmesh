@@ -28,7 +28,7 @@ import { extractToken, verifyOathToken } from './verify';
  *
  * const oathmesh = withOathMesh({
  *   audience: 'https://inventory.internal',
- *   trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *   trustedIssuers: ['https://issuer.oathmesh.tech'],
  * });
  *
  * export async function GET(request: NextRequest) {
@@ -114,7 +114,7 @@ type NextApiHandler = (req: NextApiRequest, res: NextApiResponse) => void | Prom
  * export default withOathMeshApi(
  *   {
  *     audience: 'https://inventory.internal',
- *     trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *     trustedIssuers: ['https://issuer.oathmesh.tech'],
  *   },
  *   (req, res) => {
  *     const caller = (req as any).oathmeshContext;
@@ -177,7 +177,7 @@ export function withOathMeshApi(
  *
  * const verify = createEdgeVerifier({
  *   audience: 'https://inventory.internal',
- *   trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *   trustedIssuers: ['https://issuer.oathmesh.tech'],
  * });
  *
  * export async function middleware(request: NextRequest) {

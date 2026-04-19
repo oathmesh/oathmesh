@@ -16,7 +16,7 @@
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with the [main README](../README.md) and the [Getting Started tutorial](tutorials/getting-started.md).
 
 ## Global Flags
 
@@ -81,7 +81,23 @@ oathmesh mint --sub "agent://repo/acme/bot" --aud "https://api.internal" --act "
 
 # JSON output
 oathmesh mint --json --sub "agent://repo/acme/bot" --aud "https://api.internal" --act "read"
+
+# Mint with environment defaults in shell scripts
+export OATHMESH_ISSUER="https://issuer.oathmesh.tech"
+oathmesh mint \
+  --sub "job://github/acme/deploy" \
+  --aud "https://inventory.internal" \
+  --act "inventory.write" \
+  --ttl 90 > token.txt
 ```
+
+### Common Mint Errors
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `config error` with exit `2` | Missing signing key config | Set `OATHMESH_PRIVATE_KEY` or `OATHMESH_PRIVATE_KEY_FILE` |
+| `invalid subject scheme` | `--sub` is not a supported URI scheme | Use `svc://`, `agent://`, `job://`, `tool://`, or `user://` |
+| Token TTL not what you requested | TTL hint > max allowed | Keep `--ttl` at 300s or below |
 
 ---
 
@@ -112,15 +128,28 @@ The token can be provided as a positional argument, via `--token` flag, or read 
 
 ```bash
 # Verify with explicit token and issuer
-oathmesh verify <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.dev"
+oathmesh verify <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.tech"
 
 # Pipe from mint (dev mode with local keys)
 oathmesh mint --sub "agent://repo/acme/bot" --aud "https://api.internal" --act "read" \
   | oathmesh verify --audience "https://api.internal" --local-keys
 
 # JSON output
-oathmesh verify --json <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.dev"
+oathmesh verify --json <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.tech"
+
+# Verify from stdin and read only exit code
+cat token.txt | oathmesh verify --audience "https://inventory.internal" --issuer "https://issuer.oathmesh.tech" --quiet
+echo $?  # 0 valid, 1 auth failure, 2 config error
 ```
+
+### Common Verify Errors
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `issuer_untrusted` | Issuer not passed or not configured | Add `--issuer "https://issuer..."` or fix verifier config |
+| `audience_mismatch` | `--audience` differs from token `aud` | Verify using the exact expected audience |
+| `token_expired` | Token lifetime elapsed | Mint a new token (tokens are intentionally short-lived) |
+| `replay_detected` | Same token used again | Mint per request/work unit; do not reuse tokens |
 
 ---
 
@@ -196,6 +225,14 @@ oathmesh serve
 oathmesh serve --port 8080
 oathmesh serve --config internal/config/issuer.pkl
 ```
+
+### Common Serve Errors
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| Startup fails immediately | Missing config or key material | Provide valid `--config` and signing key env vars |
+| `address already in use` | Port conflict | Change `--port` or stop the other process |
+| `/healthz` unhealthy | Dependency or config issue | Run with `--verbose` and check startup logs |
 
 ---
 
@@ -295,6 +332,14 @@ oathmesh policy validate policy/production.pkl
 oathmesh policy validate --json policy/production.json
 ```
 
+### Common Policy Validation Errors
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `version` error | Policy version not supported | Set `version = 1` |
+| `default deny` error | Last rule is not explicit deny | End with `{ name: "default", allow: false }` |
+| Pkl parse failure | Invalid Pkl syntax | Validate syntax and ensure `pkl` is installed/in PATH |
+
 ---
 
 ## Pipeline Example
@@ -303,7 +348,7 @@ The canonical mint → verify pipeline:
 
 ```bash
 export OATHMESH_PRIVATE_KEY="$(cat private.pem)"
-export OATHMESH_ISSUER="https://issuer.oathmesh.dev"
+export OATHMESH_ISSUER="https://issuer.oathmesh.tech"
 
 oathmesh mint \
   --sub "agent://repo/acme/deploy-bot" \
@@ -311,6 +356,15 @@ oathmesh mint \
   --act "inventory.write" \
 | oathmesh verify \
   --audience "https://inventory.internal" \
-  --issuer "https://issuer.oathmesh.dev" \
+  --issuer "https://issuer.oathmesh.tech" \
   --local-keys
 ```
+
+## Troubleshooting Workflow
+
+When a command fails:
+
+1. Re-run with `--verbose` to capture detailed logs.
+2. Re-run with `--json` for machine-readable error fields.
+3. Confirm expected exit code (`0`, `1`, or `2`) to separate auth failures from config failures.
+4. For verification failures, map `error.code` using [Error Taxonomy](protocol/error-taxonomy.md).

@@ -187,7 +187,7 @@ Output: VerifiedCallerContext as JSON on stdout (with --json) or
 human-readable summary.
 
 Examples:
-  oathmesh verify <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.dev"
+  oathmesh verify <token> --audience "https://api.internal" --issuer "https://issuer.oathmesh.tech"
   echo <token> | oathmesh verify --audience "https://api.internal"
   oathmesh mint --sub "..." --aud "..." --act "..." | oathmesh verify --audience "..." --local-keys
 
@@ -399,7 +399,7 @@ func serveRunE(cmd *cobra.Command, args []string) error {
 	var signer sign.Signer
 	cfgIssuer := os.Getenv("OATHMESH_ISSUER")
 	if cfgIssuer == "" {
-		cfgIssuer = "https://issuer.oathmesh.dev"
+		cfgIssuer = "https://issuer.oathmesh.tech"
 	}
 
 	if kmsKeyID := os.Getenv("OATHMESH_KMS_KEY_ID"); kmsKeyID != "" {

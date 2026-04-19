@@ -20,15 +20,15 @@ jobs:
         # In a real pipeline you use a custom action or native script, but here we capture it using curl viaACTIONS_ID_TOKEN_REQUEST_URL
         run: |
           TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                       "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://issuer.oathmesh.dev" | jq -r '.value')
+                       "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://issuer.oathmesh.tech" | jq -r '.value')
           echo "GH_TOKEN=$TOKEN" >> $GITHUB_ENV
 
       - name: Exchange OIDC for OathMesh Token
         id: exchange
         run: |
           # Exchange for OathMesh Token
-          # NOTE: https://issuer.oathmesh.dev must be live and reachable!
-          RESPONSE=$(curl -s -X POST "https://issuer.oathmesh.dev/v1/exchange/github" \
+          # NOTE: https://issuer.oathmesh.tech must be live and reachable!
+          RESPONSE=$(curl -s -X POST "https://issuer.oathmesh.tech/v1/exchange/github" \
               -H "Content-Type: application/json" \
               -d '{
                 "github_token": "'"$GH_TOKEN"'",

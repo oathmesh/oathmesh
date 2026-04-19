@@ -22,7 +22,7 @@
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](GETTING_STARTED.md) for a hands-on walkthrough. Then come back here to understand the big picture.
 
 ## What Is OathMesh
 
@@ -61,6 +61,20 @@ OathMesh proves *who* is making a call, *what action* they want to perform, and 
 5. **If verification passes**: the receiver gets a `VerifiedCallerContext` containing the caller's identity, action, source provenance, and environment—everything needed to make an authorization decision.
 6. **If verification fails**: the receiver gets a structured error with a machine-readable code, human-readable message, and a fix instruction.
 
+
+## Visual: Call Identity Flow
+
+```text
++---------+        +------------------+        +------------------+
+| Caller  | -----> | OathMesh Issuer  | -----> | Receiver/Gateway |
++---------+ token  +------------------+ token  +------------------+
+     ^                      |                        |
+     |                      v                        v
+     |                JWKS (.well-known)      14-step verify
+     |                                          + policy + audit
+     +-------------------- retry with fresh token on expiry --------+
+```
+
 ## Key Properties
 
 | Property | Guarantee |
@@ -71,3 +85,28 @@ OathMesh proves *who* is making a call, *what action* they want to perform, and 
 | **Auditable** | Every verification emits an NDJSON audit event—allow and deny. |
 | **Replay-safe** | Every token has a unique `jti`. Replay cache rejects duplicates within the TTL window. |
 | **Policy-driven** | Pkl-based policy rules evaluated at verification time. Default deny. |
+
+## Policy Documentation
+
+- [Policy Overview](policies/overview.md)
+- [Policy Examples](policies/examples.md)
+- [Policy Migration Guide](policies/migration.md)
+
+## Compliance Operations
+
+- [GDPR Data Retention Operations Guide](compliance/gdpr-data-retention.md)
+- [Privacy Operational Controls](compliance/privacy-operational-controls.md)
+
+## Tutorials
+
+- [Getting started: issuer + receiver + verify](tutorials/getting-started.md)
+- [gRPC integration](tutorials/grpc-integration.md)
+- [GraphQL integration (Node + Python)](tutorials/graphql-integration.md)
+- [CI/CD machine identity](tutorials/ci-cd-machine-identity.md)
+
+## Deployment
+
+- [Linux VM Deployment (systemd)](deployment/vm.md)
+- [Docker Compose Deployment](deployment/docker-compose.md)
+- [Kubernetes Deployment Guide](deployment/kubernetes.md)
+- [TLS Configuration Guide](deployment/tls.md)

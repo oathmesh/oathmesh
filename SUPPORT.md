@@ -51,7 +51,7 @@ If you've found a bug or have a feature request:
 
 Please follow our [Security Policy](SECURITY.md):
 
-1. Email: **security@oathmesh.dev**
+1. Email: **security@oathmesh.tech**
 2. Or use GitHub's **Private Vulnerability Reporting**
 
 We appreciate your responsible disclosure! 🛡️

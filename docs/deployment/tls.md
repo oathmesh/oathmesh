@@ -1,191 +1,210 @@
-# TLS Configuration Guide
+← [Back to Index](../INDEX.md)
 
-> Configuring TLS for OathMesh in production.
+# TLS Deployment Guide
 
-## Why TLS is Required
+> TLS for OathMesh issuer endpoints, aligned with current runtime/env configuration.
 
-OathMesh tokens are signed with Ed25519, but the **JWKS fetch** that receivers use to get public keys happens over HTTP. If an attacker can intercept this traffic, they can:
+## Why This Matters
 
-1. Perform a man-in-the-middle attack on JWKS fetch
-2. Inject their own public key into the response
-3. Sign tokens that receivers will trust
+Receivers fetch signing keys from `${OATHMESH_ISSUER}/.well-known/jwks.json`.  
+If that URL is intercepted, an attacker can swap keys and mint tokens that appear valid.
 
-**This is a critical threat.** Production deployments MUST use HTTPS for the issuer URL.
+Production rule: use `https://` issuer URLs and terminate TLS at a trusted edge (Ingress/LB/proxy).
 
-## Issuer URL Configuration
+## OathMesh Runtime Expectations
 
-Set `OATHMESH_ISSUER` to an HTTPS URL:
+- Issuer process serves HTTP on `OATHMESH_PORT` (default `4000`).
+- `OATHMESH_ISSUER` is the canonical external URL used in tokens/discovery/JWKS metadata.
+- In non-development environments (`OATHMESH_ENV != development`), startup validation requires `OATHMESH_ISSUER` to use `https://`.
+- Receiver trust values must match the same issuer URL:
+  - `OATHMESH_TRUSTED_ISSUERS` (receiver SDK apps)
+  - `OATHMESH_GATEWAY_ISSUERS` (gateway mode)
+
+Example (Kubernetes ConfigMap pattern in this repo):
+
+```yaml
+data:
+  OATHMESH_ISSUER: https://issuer.example.com
+  OATHMESH_ENV: production
+  OATHMESH_PORT: "4000"
+```
+
+## Local/Dev: Self-Signed TLS
+
+For local testing that mirrors production trust behavior, keep issuer on HTTP internally and put TLS in front.
+
+### 1) Generate a local cert
 
 ```bash
-# ✅ Correct - Production
-OATHMESH_ISSUER=https://issuer.oathmesh.internal
-
-# ❌ Wrong - Production (exposes JWKS to interception)
-OATHMESH_ISSUER=http://issuer.internal
+openssl req -x509 -nodes -newkey rsa:2048 \
+  -keyout issuer-local.key \
+  -out issuer-local.crt \
+  -days 365 \
+  -subj "/CN=issuer.localhost"
 ```
 
-## TLS Termination Options
+### 2) Run issuer normally
 
-### Option 1: Load Balancer / Cloud LB (Recommended)
-
-Most cloud providers (AWS ALB, GCP Cloud Load Balancer, Azure Load Balancer) provide TLS termination. Configure:
-
+```bash
+OATHMESH_ENV=development \
+OATHMESH_ISSUER=https://issuer.localhost \
+OATHMESH_PRIVATE_KEY_FILE=./private.pem \
+OATHMESH_MINT_SECRET=development_secret_do_not_use_in_prod \
+go run ./cmd/oathmesh serve --port 4000
 ```
-Client → [TLS] → Load Balancer → [HTTP] → OathMesh Issuer
-```
 
-The issuer still runs HTTP internally, but the public endpoint is TLS-protected.
-
-### Option 2: Nginx Sidecar
-
-If you need end-to-end encryption or the issuer is directly exposed:
+### 3) Front it with local TLS termination (nginx example)
 
 ```nginx
 server {
-    listen 443 ssl;
-    server_name issuer.oathmesh.internal;
+  listen 443 ssl;
+  server_name issuer.localhost;
 
-    ssl_certificate /etc/ssl/certs/server.crt;
-    ssl_certificate_key /etc/ssl/private/server.key;
+  ssl_certificate     /etc/nginx/certs/issuer-local.crt;
+  ssl_certificate_key /etc/nginx/certs/issuer-local.key;
+  ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Modern TLS settings
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    location / {
-        proxy_pass http://localhost:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location /.well-known/jwks.json {
-        proxy_pass http://localhost:4000;
-    }
+  location / {
+    proxy_pass http://host.docker.internal:4000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+  }
 }
 ```
 
-### Option 3: Traefik
-
-If using Traefik as your ingress:
-
-```yaml
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: oathmesh-issuer
-spec:
-  entryPoints:
-    - websecure
-  tls:
-    certResolver: letsencrypt
-  routes:
-  - match: PathPrefix(`/.well-known/jwks.json`)
-    kind: Rule
-    services:
-    - name: oathmesh-issuer
-      port: 4000
-```
-
-## Issuer Configuration for TLS
-
-Update your deployment:
-
-```yaml
-env:
-- name: OATHMESH_ISSUER
-  value: "https://issuer.oathmesh.internal"
-```
-
-The issuer will automatically serve JWKS at `https://issuer.oathmesh.internal/.well-known/jwks.json`.
-
-## Client-Side TLS (For Issuers Connecting to External Services)
-
-If your issuer needs to connect to external services over TLS (e.g., Redis with TLS, custom webhooks), configure:
+### 4) Point verifiers at HTTPS issuer
 
 ```bash
-# Custom CA bundle (optional)
-OATHMESH_CA_BUNDLE=/path/to/ca-bundle.pem
-
-# Skip TLS verification (ONLY for development)
-# OATHMESH_SKIP_TLS_VERIFY=false
+OATHMESH_TRUSTED_ISSUERS=https://issuer.localhost
+# or gateway mode:
+OATHMESH_GATEWAY_ISSUERS=https://issuer.localhost
 ```
 
-## Certificate Rotation
+## Production Certificate Management Options
 
-### Automatic (Recommended)
+### 1) ACME automation (cert-manager / Let’s Encrypt)
 
-Use cert-manager with Let's Encrypt:
+Best for internet-reachable DNS names. Common in Kubernetes with Ingress TLS secret rotation.
 
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: oathmesh-issuer-tls
+  namespace: oathmesh
 spec:
   secretName: oathmesh-issuer-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-  - issuer.oathmesh.internal
+    - issuer.example.com
 ```
 
-### Manual
+### 2) Ingress / Load Balancer termination
 
-For manual rotation:
+Recommended default for this repo’s deployment model:
 
-1. Get new certificate from your CA
-2. Update the Kubernetes secret:
-   ```bash
-   kubectl create secret tls oathmesh-issuer-tls \
-     --cert=new-cert.crt \
-     --key=new-cert.key \
-     --dry-run=client -o yaml | kubectl apply -f -
-   ```
-3. Rolling restart of issuer pods:
-   ```bash
-   kubectl rollout restart deployment/oathmesh-issuer -n oathmesh
-   ```
-
-## Minimum TLS Version
-
-Always use **TLS 1.2** or higher. Configure your load balancer/nginx to reject older protocols:
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
+```text
+Client -> TLS edge (Ingress/LB) -> HTTP :4000 issuer pod/service
 ```
 
-## Cipher Suites
+Use `examples/kubernetes/issuer-ingress.yaml` pattern:
+- `force-ssl-redirect: "true"`
+- `spec.tls[].secretName: oathmesh-issuer-tls`
 
-Use modern cipher suites only:
+### 3) Internal PKI
 
-```nginx
-ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
-```
+For private networks and enterprise CAs:
+- Issue certs from your internal CA (Vault PKI, AD CS, step-ca, etc.).
+- Install CA trust in all calling workloads/verifiers.
+- Keep `OATHMESH_ISSUER` as the exact HTTPS URL served by that cert.
 
-## Security Checklist
+## Issuer HTTPS Configuration Specifics
 
-- [ ] Issuer URL uses https:// in production
-- [ ] TLS 1.2 minimum (reject TLS 1.0/1.1)
-- [ ] Modern cipher suites configured
-- [ ] Certificate auto-rotation configured (cert-manager recommended)
-- [ ] Load balancer/ingress enforces HTTPS
-- [ ] HTTP to HTTPS redirect configured (if needed)
-- [ ] JWT fetch verified over TLS
-
-## Testing TLS Configuration
+1. Set canonical issuer URL:
 
 ```bash
-# Test JWKS endpoint
-curl -I https://issuer.oathmesh.internal/.well-known/jwks.json
-
-# Verify TLS version
-openssl s_client -connect issuer.oathmesh.internal:443 -tls1_2
-
-# Check certificate
-openssl s_client -showcerts -connect issuer.oathmesh.internal:443 | openssl x509 -noout -text
+OATHMESH_ISSUER=https://issuer.example.com
 ```
+
+2. Set production mode:
+
+```bash
+OATHMESH_ENV=production
+```
+
+3. Keep internal listen port as plain HTTP (default):
+
+```bash
+OATHMESH_PORT=4000
+```
+
+4. Keep receiver issuer trust in sync:
+
+```bash
+OATHMESH_TRUSTED_ISSUERS=https://issuer.example.com
+# or
+OATHMESH_GATEWAY_ISSUERS=https://issuer.example.com
+```
+
+5. Verify JWKS is reachable over TLS:
+
+```bash
+curl -fsS https://issuer.example.com/.well-known/jwks.json
+```
+
+## mTLS Guidance (Internal Service-to-Service)
+
+OathMesh token verification and mTLS solve different layers:
+- OathMesh: call identity + scoped authorization context.
+- mTLS: transport peer authentication + channel encryption.
+
+Where to apply mTLS:
+- Between internal services (east-west traffic).
+- Between ingress gateway and upstream services if required by policy.
+
+How to apply with current runtime:
+- Keep OathMesh issuer app config unchanged (`OATHMESH_PORT`, `OATHMESH_ISSUER`, etc.).
+- Enforce mTLS at your platform layer (service mesh, ingress controller, or sidecar proxy).
+- Continue using HTTPS issuer URL for JWKS trust; mTLS is additive, not a replacement.
+
+## Verification Checklist
+
+```bash
+# External TLS + cert chain
+curl -I https://issuer.example.com/.well-known/jwks.json
+openssl s_client -connect issuer.example.com:443 -servername issuer.example.com < /dev/null
+
+# Issuer URL values in cluster
+kubectl -n oathmesh get configmap oathmesh-issuer-config -o yaml
+
+# Ensure issuer app still healthy internally
+kubectl -n oathmesh port-forward svc/oathmesh-issuer 4000:4000
+curl -f http://127.0.0.1:4000/healthz
+```
+
+## Troubleshooting
+
+### `OATHMESH_ISSUER must use HTTPS in non-development environments`
+- Cause: `OATHMESH_ENV=production` with `http://` issuer URL.
+- Fix: set `OATHMESH_ISSUER=https://...` and ensure TLS is actually served there.
+
+### Receiver errors like `issuer_untrusted`
+- Cause: issuer mismatch (`iss` claim vs configured trusted issuers).
+- Fix: align `OATHMESH_TRUSTED_ISSUERS` / `OATHMESH_GATEWAY_ISSUERS` exactly with `OATHMESH_ISSUER`.
+
+### TLS handshake/certificate errors from clients
+- Cause: missing CA trust, wrong SAN/CN, expired cert, or host mismatch.
+- Fix: issue cert for the exact hostname in `OATHMESH_ISSUER`; install the correct CA chain.
+
+### JWKS reachable on HTTP but not HTTPS
+- Cause: edge TLS route/cert secret misconfigured.
+- Fix: verify ingress/LB listener on 443, certificate secret, and host rule mapping to issuer service.
+
+## Related
+
+- [Kubernetes Deployment Guide](kubernetes.md)
+- [Docker Compose Deployment](docker-compose.md)
+- [Issuer Configuration Reference](../config/issuer-config.md)
+- [Production Go-Live Checklist](../operations/production-checklist.md)

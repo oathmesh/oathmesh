@@ -64,6 +64,81 @@ cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign
 
 ## Data Flow
 
+### Token Lifecycle Flow
+
+```text
++--------+     1) POST /v1/token      +--------+     3) Authorization: OathMesh <token>     +----------+
+| Caller |--------------------------->| Issuer |---------------------------------------------->| Receiver |
++--------+   {sub,aud,act,ttl hint}   +--------+                                               +----------+
+    ^                                      |                                                         |
+    | 2) { token, exp, jti }               | Validate + clamp TTL (1-300s)                         |
+    +--------------------------------------+ Generate jti + sign JWS                                 |
+                                                                                                      |
+                                                                                                      v
+                                                                                           4) Verify 14 steps
+                                                                                                      |
+                                                                                       +--------------+---------------+
+                                                                                       |                              |
+                                                                                       v                              v
+                                                                              5a) allow + audit.allow       5b) deny + audit.deny
+                                                                                  (request continues)         (401 + error taxonomy)
+```
+
+### Verification Pipeline Overview (14 Steps)
+
+```text
+START: Authorization header present and token extracted
+  |
+  +--> [01] Parse 3 segments
+  +--> [02] Validate header (typ/alg, reject alg=none)
+  +--> [03] Decode payload, read iss
+  +--> [04] Check trusted issuer list
+  +--> [05] Load JWKS (cache with refresh)
+  +--> [06] Verify signature
+  +--> [07] Re-check iss after signature
+  +--> [08] Check exp (10s skew)
+  +--> [09] Check iat (not future, 10s skew)
+  +--> [10] Check aud (exact match)
+  +--> [11] Check required claims
+  +--> [12] Verify rqh binding (if present)
+  +--> [13] Check replay cache (jti)
+  +--> [13.5] Check revocation list (if enabled)
+  +--> [14] Evaluate policy (first match wins, default deny)
+            |
+            +--> ALLOW => 200 path + audit.allow
+            +--> DENY  => 401 path + audit.deny
+```
+
+### Policy Evaluation Flow
+
+```text
+Verification context ready
+  |
+  v
+Load policy rules (ordered)
+  |
+  v
++-------------------------------+
+| Rule 1 match?                 |-- yes --> apply effect (allow/deny) --> emit audit
++-------------------------------+
+  |
+  no
+  v
++-------------------------------+
+| Rule 2 match?                 |-- yes --> apply effect (allow/deny) --> emit audit
++-------------------------------+
+  |
+  no
+  v
+... continue through Rule N ...
+  |
+  v
+No rule matched
+  |
+  v
+Default deny -> 401 + audit.deny
+```
+
 ### Token Minting
 
 ```
@@ -157,7 +232,7 @@ Caller          Gateway              Upstream
 
 ### Scaling Considerations
 
-- **Issuer:** Primarily stateless for minting via shared keys, but acts as a control plane proxy bridging administrative revocation interactions dynamically securely to Redis.
+- **Issuer:** Primarily stateless for token minting, with optional Redis-backed revocation coordination.
 - **Verifier:** Stateless, scales with request volume
 - **Replay cache:** 
   - Dev: In-memory (single instance)

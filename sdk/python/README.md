@@ -1,29 +1,31 @@
+---
+title: Python SDK
+description: OathMesh token verification SDK for Python with FastAPI, Flask, and Django integration patterns.
+keywords: [oathmesh, python, fastapi, flask, django, jwt, machine-identity]
+audience: application-developers, platform-engineers, enterprise-teams
+---
+
+[Docs Index](../../docs/INDEX.md)
+
 # oathmesh
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>OathMesh token verification SDK for Python</b> — fully typed, framework-agnostic.
-</p>
+OathMesh token verification SDK for Python.
 
-<p align="center">
-  <a href="https://pypi.org/project/oathmesh/">
-    <img src="https://img.shields.io/pypi/v/oathmesh.svg" alt="PyPI version">
-  </a>
-  <a href="https://pypi.org/project/oathmesh/">
-    <img src="https://img.shields.io/pypi/dm/oathmesh" alt="PyPI downloads">
-  </a>
-  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
-    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
-  </a>
-  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
-  </a>
-</p>
+## Table of Contents
 
----
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Framework Integrations](#framework-integrations)
+- [Configuration](#configuration)
+- [Error Handling](#error-handling)
+- [Troubleshooting](#troubleshooting)
+- [Security Notes](#security-notes)
+- [Production Tips](#production-tips)
+- [Related Docs](#related-docs)
 
 ## Installation
 
@@ -31,235 +33,109 @@
 pip install oathmesh
 # or
 poetry add oathmesh
-# or
-pip install -e .[test]  # Development
 ```
 
-### Requirements
-
+Requirements:
 - Python 3.9+
 - PyJWT >= 2.8.0
 - cryptography >= 41.0.0
 
----
-
 ## Quick Start
 
 ```python
-from oathmesh import verify_token, VerifierConfig, OathMeshError
+from oathmesh import verify_token, VerifierConfig
 
 config = VerifierConfig(
     audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
+    trusted_issuers=["https://issuer.oathmesh.tech"],
 )
 
-# In your FastAPI/Flask route
-caller = verify_token(request.headers.get("authorization", ""), config)
-print(caller.principal.subject)  # "agent://repo/acme/deploy-bot"
+caller = verify_token("OathMesh <token>", config)
+print(caller.principal.subject)
 ```
 
----
+Canonical header:
 
-## Framework Support
+```http
+Authorization: OathMesh <token>
+```
 
-| Framework | Integration Method | Example |
-|-----------|-------------------|---------|
-| **FastAPI** | Dependency | `Depends(require_oathmesh)` |
-| **Flask** | Before request | `@app.before_request` |
-| **Django** | Decorator | `@require_oathmesh` |
-| **Any** | Core verifier | `verify_raw_token()` |
+## Framework Integrations
 
----
+### FastAPI
 
-## FastAPI
+Use a dependency that calls `verify_token(...)` and raises `HTTPException(401)` on `OathMeshError`.
+
+### Flask
+
+Use `@app.before_request` to verify `request.headers.get("Authorization", "")`.
+
+### Django
+
+Use a view decorator that verifies `request.META.get("HTTP_AUTHORIZATION", "")`.
+
+## Configuration
 
 ```python
-from fastapi import FastAPI, Request, Depends, HTTPException
-from oathmesh import verify_token, VerifierConfig, OathMeshError
-
-app = FastAPI()
+from oathmesh import VerifierConfig, verify_raw_token, extract_token
 
 config = VerifierConfig(
     audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
-)
-
-async def require_oathmesh(request: Request):
-    try:
-        return verify_token(request.headers.get("authorization", ""), config)
-    except OathMeshError as e:
-        raise HTTPException(status_code=401, detail=e.to_dict())
-
-@app.get("/inventory")
-async def get_inventory(caller=Depends(require_oathmesh)):
-    return {
-        "subject": caller.principal.subject,
-        "action": caller.action,
-    }
-```
-
-## Flask
-
-```python
-from flask import Flask, request, jsonify
-from oathmesh import verify_token, VerifierConfig, OathMeshError
-
-app = Flask(__name__)
-
-config = VerifierConfig(
-    audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
-)
-
-@app.before_request
-def check_oathmesh():
-    try:
-        request.oathmesh = verify_token(
-            request.headers.get("Authorization", ""), config
-        )
-    except OathMeshError as e:
-        return jsonify(e.to_dict()), 401
-
-@app.get("/inventory")
-def get_inventory():
-    return {"subject": request.oathmesh.principal.subject}
-```
-
-## Django (View Decorator)
-
-```python
-from functools import wraps
-from django.http import JsonResponse
-from oathmesh import verify_token, VerifierConfig, OathMeshError
-
-config = VerifierConfig(
-    audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
-)
-
-def require_oathmesh(view_func):
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        try:
-            request.oathmesh = verify_token(
-                request.META.get("HTTP_AUTHORIZATION", ""), config
-            )
-        except OathMeshError as e:
-            return JsonResponse(e.to_dict(), status=401)
-        return view_func(request, *args, **kwargs)
-    return wrapper
-```
-
-## OathMeshClient (Auto-Minting)
-
-If you need to construct signed tokens to make upstream requests as a service, use the `OathMeshClient`:
-
-```python
-from oathmesh import OathMeshClient
-import urllib.request
-
-client = OathMeshClient(
-    issuer="https://issuer.oathmesh.dev",
-    api_key="your_api_key"
-)
-
-# Auto-fetches and caches tokens efficiently until TTL
-token = client.mint(
-    sub="service://inventory/worker",
-    aud="https://financial.internal",
-    act="payment.process"
-)
-
-req = urllib.request.Request("https://financial.internal/pay")
-req.add_header("Authorization", f"OathMesh {token}")
-response = urllib.request.urlopen(req)
-```
-
----
-
-## Core Verifier (Framework-agnostic)
-
-```python
-from oathmesh import verify_raw_token, extract_token, VerifierConfig
-
-config = VerifierConfig(
-    audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
-)
-
-# Extract token from any header format
-token = extract_token(auth_header)       # extracting exactly from "OathMesh ..."
-
-# Verify
-caller = verify_raw_token(token, config)
-print(caller.principal.subject)          # "agent://repo/acme/deploy-bot"
-print(caller.action)                     # "inventory.write"
-print(caller.token_id)                   # UUID
-```
-
----
-
-## Lifecycle Hooks
-
-```python
-config = VerifierConfig(
-    audience="https://inventory.internal",
-    trusted_issuers=["https://issuer.oathmesh.dev"],
+    trusted_issuers=["https://issuer.oathmesh.tech"],
     on_verified=lambda ctx: logger.info("allowed", extra={"sub": ctx.principal.subject}),
-    on_denied=lambda err: logger.warning("denied", extra={"code": err.code}),
+    on_denied=lambda err: logger.warning("denied", extra={"code": err.code, "step": err.step}),
 )
+
+token = extract_token(auth_header)
+caller = verify_raw_token(token, config)
 ```
 
----
+Verifier semantics:
+- Canonical and required header for verification is `Authorization: OathMesh <token>`.
+- `extract_token` returns `None` for non-OathMesh schemes.
+- If upstream sends `Bearer`, translate it to `OathMesh` before calling verifier APIs.
 
-## API Reference
-
-### `verify_token(auth_header, config) → VerifiedCallerContext`
-
-Verify from a full Authorization header value.
-
-### `verify_raw_token(token, config) → VerifiedCallerContext`
-
-Verify from a raw token string (no prefix).
-
-### `extract_token(auth_header) → str | None`
-
-Extract token from exactly `OathMesh ` prefixed headers.
-
-### `VerifiedCallerContext`
-
-Frozen dataclass:
+## Error Handling
 
 ```python
-@dataclass(frozen=True)
-class VerifiedCallerContext:
-    principal: Principal        # .issuer, .subject
-    action: str
-    token_id: str
-    environment: str = ""
-    scope: list[str] = []
-    reason: str | None = None
-    source: Source | None = None
+from oathmesh import OathMeshError
+
+try:
+    # verify...
+    pass
+except OathMeshError as err:
+    print(err.code, err.message, err.fix, err.step)
 ```
 
-### `OathMeshError`
+Common codes: `claim_missing:token`, `issuer_untrusted`, `audience_mismatch`, `signature_invalid`, `token_expired`.
 
-```python
-class OathMeshError(Exception):
-    code: str       # e.g., "audience_mismatch"
-    message: str    # human-readable
-    fix: str | None # actionable instruction
-    step: int | None # execution step number (e.g. 11)
+## Troubleshooting
 
-    def to_dict(self) -> dict:
-        ...
-```
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `claim_missing:token` | Missing/invalid header | Send `Authorization: OathMesh <token>` |
+| `issuer_untrusted` | `iss` not in `trusted_issuers` | Add exact issuer URL |
+| `audience_mismatch` | Token `aud` differs from `audience` | Mint token with matching `aud` |
+| `token_expired` | TTL elapsed / clock skew | Mint fresh token and sync clocks |
+| `signature_invalid` | JWKS/issuer mismatch | Check issuer URL and JWKS reachability |
 
----
+## Security Notes
 
-## Development
+- Verify only tokens from trusted issuers you control.
+- Never log raw tokens or API keys.
+- Keep issuer TLS and JWKS endpoints reachable and authenticated.
+- Treat all claims as untrusted until verification succeeds.
 
-```bash
-pip install -e .[test]
-pytest tests/
-```
+## Production Tips
+
+- Reuse verifier config objects across requests.
+- Log `error code` and `step` for operational triage.
+- Use short TTLs and rotate issuer keys safely.
+- Monitor deny rates by error code.
+
+## Related Docs
+
+- [Getting Started](../../docs/GETTING_STARTED.md)
+- [Troubleshooting Guide](../../docs/TROUBLESHOOTING.md)
+- [Community](../../docs/COMMUNITY.md)
+- [Enterprise Guide](../../docs/enterprise/README.md)

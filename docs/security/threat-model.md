@@ -1,3 +1,11 @@
+---
+title: Threat Model
+description: Security threats, mitigations, residual risks, and invariants for OathMesh deployments.
+tags: [security, threat-model, mitigations, replay-defense, key-management]
+---
+
+← [Back to Index](../INDEX.md)
+
 # Threat Model
 
 <p align="center">

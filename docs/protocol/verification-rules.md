@@ -6,9 +6,59 @@
 
 ---
 
-> 📖 **New to OathMesh?** Start with [Concepts](../docs/concepts.md) and [Token Format](token-format.md).
+> 📖 **New to OathMesh?** Start with [Concepts](../concepts.md) and [Token Format](token-format.md).
 
 All receivers **must** perform all 14 verification steps in this exact order. No step may be skipped.
+
+## Visual: 14-Step Pipeline
+
+```text
+Authorization: OathMesh <token>
+  |
+  +--> [01] Parse structure (3 segments)
+  +--> [02] Validate header (typ/alg, reject alg=none)
+  +--> [03] Decode payload (extract iss)
+  +--> [04] Verify iss is trusted
+  +--> [05] Fetch/load JWKS ({iss}/.well-known/jwks.json)
+  +--> [06] Verify signature (kid + alg match key)
+  +--> [07] Re-check iss after signature
+  +--> [08] Check exp with 10s skew
+  +--> [09] Check iat with 10s skew
+  +--> [10] Check aud exact match
+  +--> [11] Check required claims
+  +--> [12] Check rqh hash binding (optional)
+  +--> [13] Check replay cache (jti)
+  +--> [13.5] Check revocation list (optional)
+  +--> [14] Evaluate policy
+            |
+            +--> allow => 200 + audit.allow
+            +--> deny  => 401 + audit.deny
+```
+
+## Visual: Verification Decision Gate
+
+```text
+Token + Request
+   |
+   v
+[Structural checks 01-04]
+   | pass
+   v
+[Cryptographic checks 05-07]
+   | pass
+   v
+[Temporal + audience + claims checks 08-11]
+   | pass
+   v
+[Binding + replay + revocation checks 12-13.5]
+   | pass
+   v
+[Policy step 14]
+   | allow                      | deny
+   v                            v
+200 (request proceeds)      401 (request blocked)
+audit.allow emitted         audit.deny emitted
+```
 
 ## Step 01 — Parse Structure
 Verify the token contains exactly three base64url-encoded segments separated by `.`. Any other structure is immediately rejected.

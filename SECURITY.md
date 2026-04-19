@@ -41,7 +41,7 @@
 
 **Responsible Disclosure:**
 
-1. **Email:** security@oathmesh.dev
+1. **Email:** security@oathmesh.tech
 2. **GitHub:** Use [Private Vulnerability Reporting](https://github.com/oathmesh/oathmesh/security/advisories/new)
 
 ### What to Include

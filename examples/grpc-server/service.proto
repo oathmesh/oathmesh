@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package grpcserver;
+
+option go_package = "github.com/oathmesh/oathmesh/examples/grpc-server/pb";
+
+// UserService provides simple user operations protected by OathMesh.
+service UserService {
+  // GetUser retrieves a user by ID
+  rpc GetUser(GetUserRequest) returns (User);
+  
+  // ListUsers returns all users (streaming response)
+  rpc ListUsers(ListUsersRequest) returns (stream User);
+  
+  // Health check endpoint
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message ListUsersRequest {
+  // Empty for now, can be extended with filtering
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}

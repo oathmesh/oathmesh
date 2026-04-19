@@ -6,7 +6,7 @@
 
 /** Authenticated identity of the caller. */
 export interface Principal {
-  /** Canonical issuer URL (e.g., "https://issuer.oathmesh.dev") */
+  /** Canonical issuer URL (e.g., "https://issuer.oathmesh.tech") */
   issuer: string;
   /** Subject URI — always a scheme: svc://, agent://, job://, tool://, user:// */
   subject: string;
@@ -50,7 +50,8 @@ export type ErrorCode =
   | 'binding_mismatch'
   | 'binding_required'
   | 'subject_revoked'
-  | 'verification_failed';
+  | 'verification_failed'
+  | 'rate_limit_exceeded';
 
 /** Structured error returned on verification failure. */
 export class OathMeshError extends Error {

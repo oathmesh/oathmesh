@@ -69,6 +69,10 @@ curl -H "Authorization: OathMesh $TOKEN" http://localhost:8000/inventory
 | `/healthz` | GET | ❌ | Health check |
 | `/inventory` | GET | ✅ | Protected inventory |
 
+## Troubleshooting
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for startup, token, and config mismatch fixes.
+
 ## Cleanup
 
 ```bash

@@ -31,7 +31,7 @@ declare global {
  * const app = express();
  * app.use(verifyToken({
  *   audience: 'https://inventory.internal',
- *   trustedIssuers: ['https://issuer.oathmesh.dev'],
+ *   trustedIssuers: ['https://issuer.oathmesh.tech'],
  * }));
  *
  * app.get('/inventory', (req, res) => {

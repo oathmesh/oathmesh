@@ -20,7 +20,7 @@ import (
 // ── Test helpers ────────────────────────────────────────────────────────────
 
 const (
-	testIssuer   = "https://issuer.test.oathmesh.dev"
+	testIssuer   = "https://issuer.test.oathmesh.tech"
 	testAudience = "https://api.test.internal"
 	testSubject  = "agent://repo/acme/deploy-bot"
 	testAction   = "inventory.write"

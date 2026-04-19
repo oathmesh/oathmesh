@@ -113,49 +113,30 @@ jobs:
         with:
           go-version: '1.26'
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      - name: Build Go CLI
-        run: CGO_ENABLED=0 go build -o bin/oathmesh ./cmd/oathmesh
+      - name: Install Node SDK deps
+        run: npm install
+        working-directory: sdk/node
 
-      - name: Generate test key
-        run: |
-          openssl genpkey -algorithm Ed25519 -out private.pem
-          chmod 644 private.pem
-
-      - name: Start Docker services
-        run: docker compose up -d --build issuer chi-api express-api fastapi-api redis || (docker compose logs issuer && exit 1)
-
-      - name: Wait for services
-        run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:4000/healthz && break || sleep 2
-          done
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:8081/healthz && break || sleep 2
-          done
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/healthz && break || sleep 2
-          done
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:8000/healthz && break || sleep 2
-          done
+      - name: Install Python SDK deps
+        run: pip install -e .[test]
+        working-directory: sdk/python
 
       - name: Run conformance tests
         run: make conformance
-        env:
-          OATHMESH_ISSUER: http://localhost:4000
 
       - name: Upload results
         uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: conformance-results
-          path: conformance/results_*.json
-
-      - name: Cleanup
-        if: always()
-        run: docker compose down
+          path: tests/conformance/results/conformance_matrix.json

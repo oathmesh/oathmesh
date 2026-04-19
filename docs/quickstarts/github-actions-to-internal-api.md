@@ -1,20 +1,16 @@
-# Quickstart: GitHub Actions to Internal API
+← [Back to Index](../INDEX.md)
+
+# Tutorial: GitHub Actions to Internal API
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>Authenticate GitHub Actions workflows against internal APIs — zero long-lived secrets.</b>
-</p>
-
-<p align="center">
-  <b>⏱️ Time:</b> ~15 minutes
-</p>
+⏱️ **Time**: ~15 minutes | 📋 **Prerequisites**: GitHub repo with OIDC enabled, running OathMesh issuer | 🎯 **Outcome**: GitHub Actions workflow exchanging OIDC token for Oath Token, zero long-lived secrets
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](../GETTING_STARTED.md) for a guided introduction.
 
 This guide shows how a GitHub Actions workflow can authenticate against an internal API protected by OathMesh — zero long-lived secrets.
 
@@ -48,13 +44,13 @@ jobs:
         id: oidc
         run: |
           TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://issuer.oathmesh.dev" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://issuer.oathmesh.tech" \
             | jq -r '.value')
           echo "GH_TOKEN=$TOKEN" >> $GITHUB_ENV
 
       - name: Exchange for Oath Token
         run: |
-          RESPONSE=$(curl -s -X POST "https://issuer.oathmesh.dev/v1/exchange/github" \
+          RESPONSE=$(curl -s -X POST "https://issuer.oathmesh.tech/v1/exchange/github" \
             -H "Content-Type: application/json" \
             -d '{"github_token": "'"$GH_TOKEN"'"}')
           
@@ -105,6 +101,14 @@ new {
 - The resulting Oath Token is short-lived (≤300s) — it cannot be stored and reused across workflow runs
 - Each workflow run gets a unique token with a unique `jti`
 
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|---|---|---|
+| OIDC token request fails | Missing workflow permission | Ensure `permissions: id-token: write` is set for the job |
+| Exchange endpoint returns 401/403 | Issuer trust policy rejects workflow identity | Verify repo/workflow mapping and issuer exchange config |
+| Internal API returns `audience_mismatch` | Minted token audience differs from API verifier | Configure exchange/mint audience to match API expectation |
+
 ## Next Steps
 
 - [Run the full demo locally](local-demo-docker-compose.md)
@@ -120,9 +124,9 @@ new {
 
 | Document | Description |
 |----------|-------------|
-| [Protocol: Token Exchange](link-to-be-added) | OIDC exchange flow details |
-| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
-| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes and meanings |
-| [Security: Threat Model](../docs/security/threat-model.md) | Security model |
+| [Protocol: Claim Reference](../protocol/claim-reference.md) | Exchange and source claim field details |
+| [Verification Rules](../protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../protocol/error-taxonomy.md) | All error codes and meanings |
+| [Security: Threat Model](../security/threat-model.md) | Security model |
 | [Config: Pkl Policy Guide](../config/pkl-policy-guide.md) | Policy DSL reference |
-| [Protocol: Source Provenance](../docs/protocol/claim-reference.md) | `src` claim details |
+| [Protocol: Source Provenance](../protocol/claim-reference.md) | `src` claim details |

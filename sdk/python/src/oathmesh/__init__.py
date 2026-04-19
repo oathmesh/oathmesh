@@ -7,7 +7,7 @@ Usage with FastAPI::
 
     config = VerifierConfig(
         audience="https://inventory.internal",
-        trusted_issuers=["https://issuer.oathmesh.dev"],
+        trusted_issuers=["https://issuer.oathmesh.tech"],
     )
 
     async def require_oathmesh(request: Request):

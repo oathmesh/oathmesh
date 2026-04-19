@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oathmesh-issuer-config
+  namespace: oathmesh
+  labels:
+    app.kubernetes.io/name: oathmesh
+    app.kubernetes.io/component: issuer
+data:
+  OATHMESH_ISSUER: https://issuer.example.com
+  OATHMESH_ENV: production
+  OATHMESH_PORT: "4000"
+  OATHMESH_TTL_DEFAULT: "120"
+  OATHMESH_TTL_MAX: "300"
+  OATHMESH_TTL_WRITE: "60"
+  OATHMESH_RATE_LIMIT_RPM: "100"
+  OATHMESH_RATE_LIMIT_BURST: "20"
+  OATHMESH_AUDIT_SINK: stdout
+  OATHMESH_JWKS_CACHE_TTL: "60"
+  OATHMESH_LOG_LEVEL: info
+  REDIS_URL: redis://oathmesh-redis:6379/0
+

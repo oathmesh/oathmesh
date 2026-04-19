@@ -15,7 +15,7 @@ Every token verification attempt emits a structured NDJSON audit event—whether
   "sub": "agent://repo/acme/deploy-bot",
   "aud": "https://inventory.internal",
   "act": "inventory.write",
-  "iss": "https://issuer.oathmesh.dev",
+  "iss": "https://issuer.oathmesh.tech",
   "env": "prod",
   "src": {
     "type": "github_actions",

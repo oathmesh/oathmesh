@@ -15,7 +15,7 @@ const (
 	EnvPrivateKeyB64  = "OATHMESH_PRIVATE_KEY_B64"
 	EnvPrivateKeyFile = "OATHMESH_PRIVATE_KEY_FILE"
 	EnvIssuer         = "OATHMESH_ISSUER"
-	DefaultIssuer     = "https://issuer.oathmesh.dev"
+	DefaultIssuer     = "https://issuer.oathmesh.tech"
 	EnvJWKS_TTL       = "OATHMESH_JWKS_CACHE_TTL"
 	DefaultJWKS_TTL   = 300
 )

@@ -1,20 +1,16 @@
-# Quickstart: Protect a Go chi API
+← [Back to Index](../INDEX.md)
+
+# Tutorial: Protect a Go chi API
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>Add OathMesh token verification to an existing Go chi API.</b>
-</p>
-
-<p align="center">
-  <b>⏱️ Time:</b> ~5 minutes
-</p>
+⏱️ **Time**: ~5 minutes | 📋 **Prerequisites**: Go 1.22+, running OathMesh issuer | 🎯 **Outcome**: Go chi API with OathMesh middleware protecting endpoints
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](../GETTING_STARTED.md) for a guided introduction.
 
 ## Prerequisites
 
@@ -36,7 +32,7 @@ import (
 ```go
 cfg := &verify.VerifierConfig{
     Audience:       "https://inventory.internal",
-    TrustedIssuers: []string{"https://issuer.oathmesh.dev"},
+    TrustedIssuers: []string{"https://issuer.oathmesh.tech"},
     JWKSProvider:   verify.NewJWKSCache(verify.DefaultJWKSCacheTTL),
     ReplayCache:    verify.NewMemoryReplayCache(),
 }
@@ -98,6 +94,14 @@ Expected output:
 | Expired token | `401 {"error":"token_expired"}` |
 | Replayed token | `401 {"error":"replay_detected"}` |
 
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|---|---|---|
+| `caller context missing` | Route not wrapped by middleware group | Ensure protected routes are inside `r.Group(... r.Use(OathMeshMiddleware))` |
+| `issuer_untrusted` | `TrustedIssuers` does not include token issuer | Add the exact issuer URL to verifier config |
+| First call works, second fails replay | Reusing same token in tests | Mint a fresh token per request |
+
 ## Next Steps
 
 - [Protect an Express API](protect-express-api.md)
@@ -112,7 +116,7 @@ Expected output:
 
 | Document | Description |
 |----------|-------------|
-| [Go SDK](../sdk/go/middleware/README.md) | Full middleware reference |
-| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
-| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes and meanings |
-| [Threat Model](../docs/security/threat-model.md) | Security model |
+| [Go SDK](../../sdk/go/middleware/README.md) | Full middleware reference |
+| [Verification Rules](../protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../protocol/error-taxonomy.md) | All error codes and meanings |
+| [Threat Model](../security/threat-model.md) | Security model |

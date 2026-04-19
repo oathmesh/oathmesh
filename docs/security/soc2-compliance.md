@@ -51,4 +51,4 @@ All assertions explicitly contain unique `JTI` tokens inherently rejecting ident
 - Core language vulnerabilities mapping directly tracking Go 1.25.0 vulnerabilities aggressively handled explicitly.
 
 ### Disclosure 
-External researchers verifying scopes exactly mappings to `security@oathmesh.dev` dynamically securely tracking reports aggressively responding under 48 hours natively.
+External researchers verifying scopes exactly mappings to `security@oathmesh.tech` dynamically securely tracking reports aggressively responding under 48 hours natively.

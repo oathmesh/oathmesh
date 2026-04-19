@@ -81,6 +81,10 @@ curl -H "Authorization: OathMesh $TOKEN" http://localhost:3001/api/legacy
 | `/api/legacy` | GET | ✅ | Pages Router |
 | `/*` | * | Edge middleware | Edge |
 
+## Troubleshooting
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for startup, token, and config mismatch fixes.
+
 ## Cleanup
 
 ```bash

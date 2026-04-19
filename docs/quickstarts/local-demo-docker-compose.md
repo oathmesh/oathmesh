@@ -1,20 +1,16 @@
-# Quickstart: Local Demo with Docker Compose
+← [Back to Index](../INDEX.md)
+
+# Tutorial: Local Demo with Docker Compose
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>Get from zero to a fully working OathMesh demo in ~10 minutes.</b>
-</p>
-
-<p align="center">
-  <b>⏱️ Time:</b> ~10 minutes
-</p>
+⏱️ **Time**: ~10 minutes | 📋 **Prerequisites**: Docker, Docker Compose, Go 1.22+, curl, jq | 🎯 **Outcome**: Running issuer + demo API with working token verification and security tests
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](../GETTING_STARTED.md) for a guided introduction.
 
 This guide gets you from zero to a fully working OathMesh demo using Docker Compose.
 
@@ -122,6 +118,14 @@ curl -s -H "Authorization: OathMesh $SHORT" http://localhost:8080/inventory
 
 This runs all of the above steps automatically and validates each outcome.
 
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|---|---|---|
+| `docker compose up` fails | Docker daemon not running or port conflict | Start Docker Desktop/engine and free ports 4000/8080 |
+| Mint command fails | Missing/invalid private key | Recreate key: `openssl genpkey -algorithm Ed25519 -out private.pem` |
+| Protected endpoint returns 401 | Token expired/replayed/wrong audience | Mint a new token with `--aud https://inventory.internal` and retry once |
+
 ## Cleanup
 
 ```bash
@@ -146,12 +150,12 @@ Now that you have a running demo, protect your own APIs:
 
 | Document | Description |
 |----------|-------------|
-| [Architecture](../ARCHITECTURE.md) | System design and package structure |
-| [CLI Reference](../docs/cli-reference.md) | Full CLI documentation |
-| [Protocol: Token Format](../docs/protocol/token-format.md) | Token structure |
-| [Protocol: Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline |
-| [Protocol: Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
-| [Security: Threat Model](../docs/security/threat-model.md) | Security model |
-| [Go SDK](../sdk/go/middleware/README.md) | Full middleware reference |
-| [Node SDK](../sdk/node/README.md) | Full SDK reference |
-| [Python SDK](../sdk/python/README.md) | Full SDK reference |
+| [Architecture](../../ARCHITECTURE.md) | System design and package structure |
+| [CLI Reference](../cli-reference.md) | Full CLI documentation |
+| [Protocol: Token Format](../protocol/token-format.md) | Token structure |
+| [Protocol: Verification Rules](../protocol/verification-rules.md) | 14-step pipeline |
+| [Protocol: Error Taxonomy](../protocol/error-taxonomy.md) | All error codes |
+| [Security: Threat Model](../security/threat-model.md) | Security model |
+| [Go SDK](../../sdk/go/middleware/README.md) | Full middleware reference |
+| [Node SDK](../../sdk/node/README.md) | Full SDK reference |
+| [Python SDK](../../sdk/python/README.md) | Full SDK reference |

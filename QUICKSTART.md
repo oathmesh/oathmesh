@@ -1,5 +1,7 @@
 # Quick Start
 
+> 📖 **For detailed, step-by-step guidance:** See [Getting Started](docs/GETTING_STARTED.md) in the docs folder. That guide will walk you through different paths (local demo, protecting your own API, or learning concepts first).
+
 Get from zero to a protected API call in 5 commands.
 
 ## Prerequisites

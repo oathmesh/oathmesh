@@ -1,0 +1,96 @@
+name: oathmesh-prod
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Require auth and persist append-only logs for safer crash recovery.
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+
+  issuer:
+    build:
+      context: .
+      dockerfile: Dockerfile.issuer
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${ISSUER_PORT:-4000}:4000"
+    environment:
+      OATHMESH_ENV: production
+      OATHMESH_ISSUER: ${OATHMESH_ISSUER:?set OATHMESH_ISSUER in .env}
+      OATHMESH_PRIVATE_KEY_FILE: /run/secrets/issuer_private_key
+      OATHMESH_MINT_SECRET: ${OATHMESH_MINT_SECRET:?set OATHMESH_MINT_SECRET in .env}
+      OATHMESH_AUDIT_SINK: ${OATHMESH_AUDIT_SINK:-stdout}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379/0
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "10001:10001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    secrets:
+      - issuer_private_key
+
+  # Optional receiver for end-to-end local verification.
+  sample-receiver:
+    profiles: ["sample-receiver"]
+    build:
+      context: .
+      dockerfile: examples/chi-api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      issuer:
+        condition: service_healthy
+    ports:
+      - "${SAMPLE_RECEIVER_PORT:-8081}:8080"
+    environment:
+      OATHMESH_AUDIENCE: ${SAMPLE_RECEIVER_AUDIENCE:-https://inventory.internal}
+      OATHMESH_TRUSTED_ISSUERS: ${SAMPLE_RECEIVER_TRUSTED_ISSUERS:-http://issuer:4000}
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+secrets:
+  issuer_private_key:
+    # Mount a local key file path from .env; never place PEM contents in compose.
+    file: ${OATHMESH_PRIVATE_KEY_PATH:?set OATHMESH_PRIVATE_KEY_PATH in .env}
+
+volumes:
+  redis_data:

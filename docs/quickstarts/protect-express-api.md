@@ -1,20 +1,16 @@
-# Quickstart: Protect an Express API
+← [Back to Index](../INDEX.md)
+
+# Tutorial: Protect an Express API
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>Add OathMesh token verification to an Express.js API.</b>
-</p>
-
-<p align="center">
-  <b>⏱️ Time:</b> ~5 minutes
-</p>
+⏱️ **Time**: ~5 minutes | 📋 **Prerequisites**: Node.js 18+, running OathMesh issuer | 🎯 **Outcome**: Express.js API with OathMesh token verification middleware
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](../GETTING_STARTED.md) for a guided introduction.
 
 ## Prerequisites
 
@@ -37,7 +33,7 @@ const app = express();
 
 app.use(verifyToken({
   audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
   onDenied: (err) => console.warn('denied:', err.code),
 }));
 
@@ -64,6 +60,14 @@ TOKEN=$(oathmesh mint \
 curl -H "Authorization: OathMesh $TOKEN" http://localhost:3000/inventory
 ```
 
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|---|---|---|
+| `401 issuer_untrusted` | `trustedIssuers` mismatch | Use the exact issuer URL used to mint tokens |
+| `401 audience_mismatch` | API audience differs from token | Align middleware `audience` with `--aud` used at mint |
+| TypeScript cannot find `req.oathmeshContext` | Missing SDK typing import/setup | Follow the Node SDK README type augmentation guidance |
+
 ## Next Steps
 
 - [Protect a Next.js API](protect-nextjs-api.md)
@@ -77,7 +81,7 @@ curl -H "Authorization: OathMesh $TOKEN" http://localhost:3000/inventory
 
 | Document | Description |
 |----------|-------------|
-| [Node SDK](../sdk/node/README.md) | Full SDK reference |
-| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
-| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
-| [Threat Model](../docs/security/threat-model.md) | Security model |
+| [Node SDK](../../sdk/node/README.md) | Full SDK reference |
+| [Verification Rules](../protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../protocol/error-taxonomy.md) | All error codes |
+| [Threat Model](../security/threat-model.md) | Security model |

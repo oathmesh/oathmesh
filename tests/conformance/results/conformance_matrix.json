@@ -1,0 +1,323 @@
+{
+  "generated_at_unix": 1776572800,
+  "spec_version": "phase2-p2-conformance-framework",
+  "targets": [
+    "go",
+    "node",
+    "python"
+  ],
+  "cases": [
+    {
+      "id": "token_parsing_validation_failures",
+      "category": "verification",
+      "description": "Malformed token input is rejected.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_token_parsing_validation_failures$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1493,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/internal/verify\t0.144s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "npx.cmd",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "token_parsing_validation_failures"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\node",
+          "elapsed_ms": 2325,
+          "stdout_tail": "\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mC:/FM/oathmesh/sdk/node\u001b[39m\n\n \u001b[32m\u00e2\u0153\u201c\u001b[39m test/conformance.test.ts \u001b[2m (\u001b[22m\u001b[2m5 tests\u001b[22m \u001b[2m|\u001b[22m \u001b[33m4 skipped\u001b[39m\u001b[2m)\u001b[22m\u001b[90m 4\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m4 skipped\u001b[39m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 06:26:16\n\u001b[2m   Duration \u001b[22m 803ms\u001b[2m (transform 100ms, setup 0ms, collect 117ms, tests 4ms, environment 0ms, prepare 305ms)\u001b[22m",
+          "stderr_tail": "\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m"
+        },
+        "python": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "token_parsing_validation_failures",
+            "-q"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\python",
+          "elapsed_ms": 1126,
+          "stdout_tail": ".                                                                        [100%]\n1 passed, 4 deselected in 0.31s",
+          "stderr_tail": ""
+        }
+      }
+    },
+    {
+      "id": "issuer_check_untrusted",
+      "category": "verification",
+      "description": "Untrusted issuer is rejected.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_issuer_check_untrusted$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1641,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/internal/verify\t0.129s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "npx.cmd",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "issuer_check_untrusted"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\node",
+          "elapsed_ms": 2161,
+          "stdout_tail": "\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mC:/FM/oathmesh/sdk/node\u001b[39m\n\n \u001b[32m\u00e2\u0153\u201c\u001b[39m test/conformance.test.ts \u001b[2m (\u001b[22m\u001b[2m5 tests\u001b[22m \u001b[2m|\u001b[22m \u001b[33m4 skipped\u001b[39m\u001b[2m)\u001b[22m\u001b[90m 4\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m4 skipped\u001b[39m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 06:26:21\n\u001b[2m   Duration \u001b[22m 742ms\u001b[2m (transform 82ms, setup 0ms, collect 96ms, tests 4ms, environment 0ms, prepare 200ms)\u001b[22m",
+          "stderr_tail": "\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m"
+        },
+        "python": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "issuer_check_untrusted",
+            "-q"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\python",
+          "elapsed_ms": 1020,
+          "stdout_tail": ".                                                                        [100%]\n1 passed, 4 deselected in 0.27s",
+          "stderr_tail": ""
+        }
+      }
+    },
+    {
+      "id": "audience_check_mismatch",
+      "category": "verification",
+      "description": "Audience mismatch is rejected.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_audience_check_mismatch$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1465,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/internal/verify\t0.141s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "npx.cmd",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "audience_check_mismatch"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\node",
+          "elapsed_ms": 2212,
+          "stdout_tail": "\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mC:/FM/oathmesh/sdk/node\u001b[39m\n\n \u001b[32m\u00e2\u0153\u201c\u001b[39m test/conformance.test.ts \u001b[2m (\u001b[22m\u001b[2m5 tests\u001b[22m \u001b[2m|\u001b[22m \u001b[33m4 skipped\u001b[39m\u001b[2m)\u001b[22m\u001b[90m 5\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m4 skipped\u001b[39m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 06:26:25\n\u001b[2m   Duration \u001b[22m 841ms\u001b[2m (transform 98ms, setup 0ms, collect 111ms, tests 5ms, environment 0ms, prepare 215ms)\u001b[22m",
+          "stderr_tail": "\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m"
+        },
+        "python": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "audience_check_mismatch",
+            "-q"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\python",
+          "elapsed_ms": 1122,
+          "stdout_tail": ".                                                                        [100%]\n1 passed, 4 deselected in 0.35s",
+          "stderr_tail": ""
+        }
+      }
+    },
+    {
+      "id": "replay_detection_semantics",
+      "category": "verification",
+      "description": "Second use of same token identity is rejected when replay cache is enabled.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_replay_detection_semantics$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1570,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/internal/verify\t0.145s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "npx.cmd",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "replay_detection_semantics"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\node",
+          "elapsed_ms": 2349,
+          "stdout_tail": "\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mC:/FM/oathmesh/sdk/node\u001b[39m\n\n \u001b[32m\u00e2\u0153\u201c\u001b[39m test/conformance.test.ts \u001b[2m (\u001b[22m\u001b[2m5 tests\u001b[22m \u001b[2m|\u001b[22m \u001b[33m4 skipped\u001b[39m\u001b[2m)\u001b[22m\u001b[90m 4\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m4 skipped\u001b[39m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 06:26:31\n\u001b[2m   Duration \u001b[22m 825ms\u001b[2m (transform 100ms, setup 0ms, collect 104ms, tests 4ms, environment 0ms, prepare 310ms)\u001b[22m",
+          "stderr_tail": "\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m"
+        },
+        "python": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "replay_detection_semantics",
+            "-q"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\python",
+          "elapsed_ms": 1164,
+          "stdout_tail": ".                                                                        [100%]\n1 passed, 4 deselected in 0.31s",
+          "stderr_tail": ""
+        }
+      }
+    },
+    {
+      "id": "revocation_subject_revoked",
+      "category": "revocation",
+      "description": "Revoked subject tokens are rejected where revocation list support exists.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./internal/verify",
+            "-run",
+            "^TestConformance_revocation_subject_revoked$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1545,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/internal/verify\t0.131s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "skipped",
+          "reason": "not_applicable_no_revocation_list_in_node_sdk"
+        },
+        "python": {
+          "status": "skipped",
+          "reason": "not_applicable_no_revocation_list_in_python_sdk"
+        }
+      }
+    },
+    {
+      "id": "middleware_auth_header_handling_semantics",
+      "category": "middleware",
+      "description": "Missing/wrong auth header scheme is rejected as claim_missing:token.",
+      "targets": {
+        "go": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "go",
+            "test",
+            "./sdk/go/middleware",
+            "-run",
+            "^TestConformance_middleware_auth_header_handling_semantics$",
+            "-count=1"
+          ],
+          "cwd": "C:\\FM\\oathmesh",
+          "elapsed_ms": 1622,
+          "stdout_tail": "ok  \tgithub.com/oathmesh/oathmesh/sdk/go/middleware\t0.118s",
+          "stderr_tail": ""
+        },
+        "node": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "npx.cmd",
+            "vitest",
+            "run",
+            "test/conformance.test.ts",
+            "-t",
+            "middleware_auth_header_handling_semantics"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\node",
+          "elapsed_ms": 2501,
+          "stdout_tail": "\u001b[7m\u001b[1m\u001b[36m RUN \u001b[39m\u001b[22m\u001b[27m \u001b[36mv1.6.1\u001b[39m \u001b[90mC:/FM/oathmesh/sdk/node\u001b[39m\n\n \u001b[32m\u00e2\u0153\u201c\u001b[39m test/conformance.test.ts \u001b[2m (\u001b[22m\u001b[2m5 tests\u001b[22m \u001b[2m|\u001b[22m \u001b[33m4 skipped\u001b[39m\u001b[2m)\u001b[22m\u001b[90m 4\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m4 skipped\u001b[39m\u001b[90m (5)\u001b[39m\n\u001b[2m   Start at \u001b[22m 06:26:37\n\u001b[2m   Duration \u001b[22m 923ms\u001b[2m (transform 116ms, setup 0ms, collect 129ms, tests 4ms, environment 0ms, prepare 318ms)\u001b[22m",
+          "stderr_tail": "\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m"
+        },
+        "python": {
+          "status": "pass",
+          "returncode": 0,
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_conformance.py",
+            "-k",
+            "middleware_auth_header_handling_semantics",
+            "-q"
+          ],
+          "cwd": "C:\\FM\\oathmesh\\sdk\\python",
+          "elapsed_ms": 1149,
+          "stdout_tail": ".                                                                        [100%]\n1 passed, 4 deselected in 0.31s",
+          "stderr_tail": ""
+        }
+      }
+    }
+  ],
+  "failed_checks": 0
+}

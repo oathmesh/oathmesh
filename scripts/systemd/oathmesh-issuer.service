@@ -1,0 +1,30 @@
+[Unit]
+Description=OathMesh Issuer Service
+Documentation=https://github.com/oathmesh/oathmesh/blob/main/docs/deployment/vm.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oathmesh
+Group=oathmesh
+WorkingDirectory=/opt/oathmesh
+EnvironmentFile=/etc/oathmesh/issuer.env
+ExecStart=/opt/oathmesh/bin/oathmesh serve --port ${OATHMESH_PORT}
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ReadWritePaths=/var/log/oathmesh
+LimitNOFILE=65536
+UMask=0027
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

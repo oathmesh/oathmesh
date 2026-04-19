@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "issuers": ["https://issuer.oathmesh.dev"],
+  "issuers": ["https://issuer.oathmesh.tech"],
   "audiences": ["https://inventory.internal"],
   "rules": [
     {"name": "storefront-read", "match": {"sub": "agent://repo/acme/*", "act": "inventory.read"}, "allow": true},

@@ -23,7 +23,7 @@ func testEvent() *core.AuditEvent {
 		Sub:       "agent://repo/acme/deploy-bot",
 		Aud:       "https://inventory.internal",
 		Act:       "inventory.write",
-		Iss:       "https://issuer.oathmesh.dev",
+		Iss:       "https://issuer.oathmesh.tech",
 		Env:       "prod",
 		Timestamp: time.Date(2026, 4, 12, 14, 30, 0, 0, time.UTC),
 		Source: &core.Source{

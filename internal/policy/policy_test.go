@@ -66,7 +66,7 @@ func testPolicy() *Policy {
 
 	return &Policy{
 		Version:   1,
-		Issuers:   []string{"https://issuer.oathmesh.dev"},
+		Issuers:   []string{"https://issuer.oathmesh.tech"},
 		Audiences: []string{"https://inventory.internal"},
 		Rules: []Rule{
 			{
@@ -257,7 +257,7 @@ func TestEvaluate_ScopeMatch(t *testing.T) {
 func TestLoadPolicy_ValidJSON(t *testing.T) {
 	policyJSON := `{
 		"version": 1,
-		"issuers": ["https://issuer.oathmesh.dev"],
+		"issuers": ["https://issuer.oathmesh.tech"],
 		"audiences": ["https://inventory.internal"],
 		"rules": [
 			{

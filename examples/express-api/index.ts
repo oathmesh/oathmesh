@@ -4,7 +4,7 @@
 //   cd examples/express-api
 //   npm install
 //   OATHMESH_AUDIENCE=https://inventory.internal \
-//   OATHMESH_TRUSTED_ISSUERS=https://issuer.oathmesh.dev \
+//   OATHMESH_TRUSTED_ISSUERS=https://issuer.oathmesh.tech \
 //   npx ts-node index.ts
 
 import express from 'express';

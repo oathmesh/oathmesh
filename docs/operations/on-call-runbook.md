@@ -1,6 +1,14 @@
+---
+title: On-Call Runbook
+description: First-response and troubleshooting procedures for common OathMesh production incidents.
+tags: [operations, on-call, incident-response, sre, troubleshooting]
+---
+
+← [Back to Index](../INDEX.md)
+
 # On-Call Runbook
 
-**Last Updated:** 2024 | **Status:** Active  
+**Last Updated:** 2024 | **Status:** Active
 **Owner:** SRE Team | **Response Time Targets:** See below
 
 ---
@@ -9,12 +17,11 @@
 
 ### Step 1: Acknowledge the Alert
 
-```bash
-# In your alert system (PagerDuty, Opsgenie, etc.):
-1. Click "Acknowledge" to let team know you're handling it
-2. Read the alert title and description
-3. Note the severity (🔴 Critical / 🟠 High / 🟡 Medium)
-```
+In your alert system (PagerDuty, Opsgenie, etc.):
+
+1. Click **Acknowledge** so the team knows ownership is clear.
+2. Read the alert title and description.
+3. Note the severity (🔴 Critical / 🟠 High / 🟡 Medium).
 
 ### Step 2: Gather Status Information
 
@@ -390,10 +397,13 @@ curl -s http://localhost:9090/metrics | grep oathmesh | head -10
 
 ### Quick Links
 
-- **Incident Response Playbook:** `docs/operations/incident-response.md`
-- **Architecture Docs:** `docs/ARCHITECTURE.md`
-- **Configuration Guide:** `docs/operations/configuration.md`
-- **Troubleshooting Guide:** `docs/operations/troubleshooting.md`
+- [Incident Response Playbook](./incident-response.md)
+- [Alerting Rules](./alerting-rules.md)
+- [Production Best Practices](./best-practices.md)
+- [Production Go-Live Checklist](./production-checklist.md)
+- [OathMesh Overview](../overview.md)
+- [Issuer Configuration Reference](../config/issuer-config.md)
+- [Deployment: Kubernetes](../deployment/kubernetes.md)
 
 ### Emergency Contacts
 

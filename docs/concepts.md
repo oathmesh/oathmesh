@@ -1,3 +1,5 @@
+← [Back to Index](INDEX.md)
+
 # OathMesh Concepts
 
 <p align="center">
@@ -10,7 +12,7 @@
 
 ---
 
-> 📖 **Start here** if you're new to OathMesh. See [Overview](overview.md) for the big picture.
+> 📖 **Start here** if you're learning OathMesh. See [Getting Started](GETTING_STARTED.md) for hands-on examples, or [Overview](overview.md) for the big picture.
 
 ## Oath Token
 
@@ -62,7 +64,7 @@ The `VerifiedCallerContext` is the structured output of a successful token verif
 
 ```
 Principal:
-  Issuer:   https://issuer.oathmesh.dev
+  Issuer:   https://issuer.oathmesh.tech
   Subject:  agent://repo/acme/deploy-bot
 
 Action:     inventory.write
@@ -122,7 +124,7 @@ The upstream service never sees the raw token. It receives verified identity thr
 X-OathMesh-Subject:  agent://repo/acme/deploy-bot
 X-OathMesh-Action:   inventory.write
 X-OathMesh-Token-Id: <jti>
-X-OathMesh-Issuer:   https://issuer.oathmesh.dev
+X-OathMesh-Issuer:   https://issuer.oathmesh.tech
 X-OathMesh-Env:      prod
 ```
 
@@ -145,7 +147,7 @@ Every verification attempt—whether allowed or denied—emits a structured NDJS
 
 | Document | Description |
 |----------|-------------|
-| [Token Format](../docs/protocol/token-format.md) | Detailed token structure, headers, claims |
-| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step verification pipeline |
-| [Threat Model](../docs/security/threat-model.md) | Security model and attack mitigation |
+| [Token Format](protocol/token-format.md) | Detailed token structure, headers, claims |
+| [Verification Rules](protocol/verification-rules.md) | 14-step verification pipeline |
+| [Threat Model](security/threat-model.md) | Security model and attack mitigation |
 | [Architecture](../ARCHITECTURE.md) | System diagrams and package structure |

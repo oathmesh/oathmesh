@@ -1,0 +1,30 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oathmesh-issuer-pdb
+  namespace: oathmesh
+  labels:
+    app.kubernetes.io/name: oathmesh
+    app.kubernetes.io/component: issuer
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oathmesh
+      app.kubernetes.io/component: issuer
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oathmesh-receiver-pdb
+  namespace: oathmesh
+  labels:
+    app.kubernetes.io/name: oathmesh
+    app.kubernetes.io/component: receiver
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oathmesh
+      app.kubernetes.io/component: receiver
+

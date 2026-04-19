@@ -1,20 +1,16 @@
-# Quickstart: Protect a Next.js API
+← [Back to Index](../INDEX.md)
+
+# Tutorial: Protect a Next.js API
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>Add OathMesh token verification to Next.js APIs (App Router, Pages Router, or Edge).</b>
-</p>
-
-<p align="center">
-  <b>⏱️ Time:</b> ~5 minutes
-</p>
+⏱️ **Time**: ~5 minutes | 📋 **Prerequisites**: Node.js 18+, Next.js 13+, running OathMesh issuer | 🎯 **Outcome**: Next.js API routes (App Router, Pages Router, or Edge) with OathMesh protection
 
 ---
 
-> 🆕 **New here?** Start with the [Quick Start](../README.md#-quick-start) in the main README.
+> 🆕 **New here?** Start with [Getting Started](../GETTING_STARTED.md) for a guided introduction.
 
 ## Prerequisites
 
@@ -30,7 +26,7 @@ import { withOathMesh } from '@oathmesh/sdk/next';
 
 const oathmesh = withOathMesh({
   audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
 });
 
 export async function GET(request: NextRequest) {
@@ -62,7 +58,7 @@ import { withOathMeshApi } from '@oathmesh/sdk/next';
 export default withOathMeshApi(
   {
     audience: 'https://inventory.internal',
-    trustedIssuers: ['https://issuer.oathmesh.dev'],
+    trustedIssuers: ['https://issuer.oathmesh.tech'],
   },
   (req, res) => {
     const caller = (req as any).oathmeshContext;
@@ -80,7 +76,7 @@ import { createEdgeVerifier } from '@oathmesh/sdk/next';
 
 const verify = createEdgeVerifier({
   audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
 });
 
 export async function middleware(request: NextRequest) {
@@ -102,6 +98,14 @@ export const config = {
 | **Pages Router (`withOathMeshApi`)** | Existing projects with `pages/api/` routes |
 | **Edge Middleware (`createEdgeVerifier`)** | Protect all routes at the edge without per-route wiring |
 
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|---|---|---|
+| Route always returns `401` | Middleware protects route but token missing | Send `Authorization: OathMesh <token>` from client/caller |
+| `issuer_untrusted` in API routes | `trustedIssuers` mismatch | Match configured issuer to token `iss` exactly |
+| Edge runtime errors | Using unsupported Node APIs in edge path | Keep verification logic in supported edge-safe APIs only |
+
 ## Next Steps
 
 - [Protect a FastAPI service](protect-fastapi.md)
@@ -115,7 +119,7 @@ export const config = {
 
 | Document | Description |
 |----------|-------------|
-| [Node SDK](../sdk/node/README.md) | Full SDK reference for Express/Next.js |
-| [Verification Rules](../docs/protocol/verification-rules.md) | 14-step pipeline details |
-| [Error Taxonomy](../docs/protocol/error-taxonomy.md) | All error codes |
-| [Threat Model](../docs/security/threat-model.md) | Security model |
+| [Node SDK](../../sdk/node/README.md) | Full SDK reference for Express/Next.js |
+| [Verification Rules](../protocol/verification-rules.md) | 14-step pipeline details |
+| [Error Taxonomy](../protocol/error-taxonomy.md) | All error codes |
+| [Threat Model](../security/threat-model.md) | Security model |

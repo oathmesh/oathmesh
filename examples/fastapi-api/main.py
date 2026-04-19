@@ -5,7 +5,7 @@ Usage:
     cd examples/fastapi-api
     pip install -r requirements.txt
     OATHMESH_AUDIENCE=https://inventory.internal \
-    OATHMESH_TRUSTED_ISSUERS=https://issuer.oathmesh.dev \
+    OATHMESH_TRUSTED_ISSUERS=https://issuer.oathmesh.tech \
     uvicorn main:app --host 0.0.0.0 --port 8000
 """
 

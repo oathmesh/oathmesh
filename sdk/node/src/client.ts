@@ -19,7 +19,7 @@ export interface MintResponse {
 }
 
 export interface OathMeshClientConfig {
-  /** The issuer URL (e.g. https://issuer.oathmesh.dev) */
+  /** The issuer URL (e.g. https://issuer.oathmesh.tech) */
   issuer: string;
   /** API key for authenticating with the issuer */
   apiKey: string;

@@ -6,7 +6,7 @@ amends "schema.pkl"
 version = 1
 
 issuers {
-  "https://issuer.oathmesh.dev"
+  "https://issuer.oathmesh.tech"
 }
 
 audiences {

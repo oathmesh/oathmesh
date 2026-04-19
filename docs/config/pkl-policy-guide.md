@@ -20,7 +20,7 @@ amends "schema.pkl"
 version = 1
 
 issuers {
-  "https://issuer.oathmesh.dev"
+  "https://issuer.oathmesh.tech"
 }
 
 audiences {
@@ -113,3 +113,9 @@ All specified fields must match (AND logic). Unspecified fields are wildcards.
 ## Scope Matching
 
 Scope matching requires the token's scope to be a **superset** of the rule's scope. If a rule specifies `scope: ["inventory.read", "inventory.write"]`, the token must contain **both** values.
+
+## See Also
+
+- [Policy Overview](../policies/overview.md)
+- [Policy Examples](../policies/examples.md)
+- [Policy Migration Guide](../policies/migration.md)

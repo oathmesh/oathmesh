@@ -1,6 +1,8 @@
+← [Back to Index](../INDEX.md)
+
 # Incident Response Playbook
 
-**Last Updated:** 2024 | **Status:** Active  
+**Last Updated:** 2024 | **Status:** Active
 **Owner:** Security & SRE Teams | **Review Cadence:** Quarterly
 
 ---
@@ -538,7 +540,9 @@ docker inspect oathmesh-redis | grep -A5 '"State"'
 
 ## Reference Materials
 
-- [OathMesh Architecture](../ARCHITECTURE.md)
-- [Monitoring & Observability](./monitoring.md)
+- [OathMesh Overview](../overview.md)
+- [Monitoring & Alerting Rules](./alerting-rules.md)
 - [On-Call Runbook](./on-call-runbook.md)
-- [Troubleshooting Guide](./troubleshooting.md)
+- [Production Best Practices](./best-practices.md)
+- [Production Go-Live Checklist](./production-checklist.md)
+- [Deployment: Kubernetes](../deployment/kubernetes.md)

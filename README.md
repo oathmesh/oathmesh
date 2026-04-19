@@ -57,7 +57,7 @@
 - 🌐 **Gateway Mode** — Reverse proxy that injects verified context headers
 - 🛠️ **CLI Native** — Terminal-driven management for robust GitOps integration
 - 🛑 **Stateful Revocation** — Redis-backed O(1) revocation lists directly synced
-- 🤖 **CI Native Auto-Sign** — Automagical native OIDC exchange mappings for GitHub Actions and GitLab CI
+- 🤖 **CI Native Auto-Sign** — Built-in OIDC exchange mappings for GitHub Actions and GitLab CI
 
 ---
 
@@ -298,11 +298,31 @@ If OathMesh helps you build safer systems, please:
 - [Protect a FastAPI service](docs/quickstarts/protect-fastapi.md)
 - [GitHub Actions to internal API](docs/quickstarts/github-actions-to-internal-api.md)
 
+### Tutorials
+- [Getting started: issuer + receiver + verify](docs/tutorials/getting-started.md)
+- [gRPC integration](docs/tutorials/grpc-integration.md)
+- [GraphQL integration (Node + Python)](docs/tutorials/graphql-integration.md)
+- [CI/CD machine identity](docs/tutorials/ci-cd-machine-identity.md)
+
+### Deployment
+- [Linux VM Deployment (systemd)](docs/deployment/vm.md)
+- [Docker Compose Deployment](docs/deployment/docker-compose.md)
+- [Kubernetes Deployment Guide](docs/deployment/kubernetes.md)
+- [TLS Configuration Guide](docs/deployment/tls.md)
+
 ### Protocol & Security
 - [Token Format](docs/protocol/token-format.md) · [Claim Reference](docs/protocol/claim-reference.md)
 - [Verification Rules](docs/protocol/verification-rules.md) · [Threat Model](docs/security/threat-model.md)
 - [Replay Defense](docs/security/replay-defense.md) · [Key Management](docs/security/key-management.md)
 - [SOC2 Compliance Matrix](docs/security/soc2-compliance.md)
+
+### Policy
+- [Policy Overview](docs/policies/overview.md)
+- [Policy Examples](docs/policies/examples.md)
+- [Policy Migration Guide](docs/policies/migration.md)
+
+### Documentation Hub
+- [Full Documentation Index](docs/INDEX.md)
 
 ---
 

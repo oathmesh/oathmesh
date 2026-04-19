@@ -1,29 +1,31 @@
+---
+title: Node SDK
+description: OathMesh token verification SDK for Node.js and TypeScript with Express and Next.js integrations.
+keywords: [oathmesh, nodejs, typescript, express, nextjs, jwt, machine-identity]
+audience: application-developers, platform-engineers, enterprise-teams
+---
+
+[Docs Index](../../docs/INDEX.md)
+
 # @oathmesh/sdk
 
 <p align="center">
   <img src="../../assets/logo.png" width="80" alt="OathMesh Logo">
 </p>
 
-<p align="center">
-  <b>OathMesh token verification for Node.js</b> — TypeScript-first, Express & Next.js.
-</p>
+OathMesh token verification for Node.js and TypeScript.
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@oathmesh/sdk">
-    <img src="https://img.shields.io/npm/v/@oathmesh/sdk.svg" alt="npm version">
-  </a>
-  <a href="https://www.npmjs.com/package/@oathmesh/sdk">
-    <img src="https://img.shields.io/npm/dm/@oathmesh/sdk" alt="npm downloads">
-  </a>
-  <a href="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml">
-    <img src="https://github.com/oathmesh/oathmesh/actions/workflows/ci.yml/badge.svg" alt="CI Status">
-  </a>
-  <a href="https://github.com/oathmesh/oathmesh/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/oathmesh/oathmesh" alt="License">
-  </a>
-</p>
+## Table of Contents
 
----
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Framework Integrations](#framework-integrations)
+- [Configuration](#configuration)
+- [Error Handling](#error-handling)
+- [Troubleshooting](#troubleshooting)
+- [Security Notes](#security-notes)
+- [Production Tips](#production-tips)
+- [Related Docs](#related-docs)
 
 ## Installation
 
@@ -35,45 +37,12 @@ yarn add @oathmesh/sdk
 pnpm add @oathmesh/sdk
 ```
 
-### Requirements
-
+Requirements:
 - Node.js 18+
-- Express 4+ (optional, middleware works with any framework)
-- Next.js 13+ (optional, for Next.js integrations)
-
----
+- Express 4+ (optional)
+- Next.js 13+ (optional, for Next.js adapters)
 
 ## Quick Start
-
-```typescript
-import { verifyToken } from '@oathmesh/sdk';
-
-app.use(verifyToken({
-  audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
-}));
-
-app.get('/inventory', (req, res) => {
-  const caller = req.oathmeshContext!;
-  res.json({ subject: caller.principal.subject });
-});
-```
-
----
-
-## Framework Support
-
-| Framework | Integration | Export |
-|-----------|-------------|--------|
-| **Express** | Middleware | `@oathmesh/sdk` |
-| **Next.js App** | Route handler | `@oathmesh/sdk/next` |
-| **Next.js Pages** | API wrapper | `@oathmesh/sdk/next` |
-| **Next.js Edge** | Edge middleware | `@oathmesh/sdk/next` |
-| **Any** | Core verifier/Client | `@oathmesh/sdk` |
-
----
-
-## Express.js
 
 ```typescript
 import express from 'express';
@@ -83,186 +52,109 @@ const app = express();
 
 app.use(verifyToken({
   audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
 }));
 
 app.get('/inventory', (req, res) => {
-  const caller = req.oathmeshContext!;
-  res.json({ subject: caller.principal.subject, action: caller.action });
+  res.json({ subject: req.oathmeshContext?.principal.subject });
 });
 ```
 
----
+Send tokens as:
 
-## Next.js — App Router (Route Handlers)
+```http
+Authorization: OathMesh <token>
+```
+
+## Framework Integrations
+
+### Express
+
+Use `verifyToken(...)` middleware from `@oathmesh/sdk`.
+
+### Next.js App Router
 
 ```typescript
-// app/api/inventory/route.ts
-import { NextRequest, NextResponse } from 'next/server';
 import { withOathMesh } from '@oathmesh/sdk/next';
 
 const oathmesh = withOathMesh({
   audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
-});
-
-export async function GET(request: NextRequest) {
-  const { caller, error } = await oathmesh(request);
-  if (error) return error;     // 401 with structured error body
-
-  return NextResponse.json({
-    subject: caller.principal.subject,
-    action: caller.action,
-  });
-}
-```
-
-## Next.js — Pages Router (API Routes)
-
-```typescript
-// pages/api/inventory.ts
-import { withOathMeshApi } from '@oathmesh/sdk/next';
-
-export default withOathMeshApi(
-  {
-    audience: 'https://inventory.internal',
-    trustedIssuers: ['https://issuer.oathmesh.dev'],
-  },
-  (req, res) => {
-    const caller = (req as any).oathmeshContext;
-    res.json({ subject: caller.principal.subject });
-  }
-);
-```
-
-## Next.js — Edge Middleware
-
-```typescript
-// middleware.ts (project root)
-import { NextRequest, NextResponse } from 'next/server';
-import { createEdgeVerifier } from '@oathmesh/sdk/next';
-
-const verify = createEdgeVerifier({
-  audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
-});
-
-export async function middleware(request: NextRequest) {
-  const denied = await verify(request);
-  if (denied) return denied;     // 401 — stops the request
-
-  return NextResponse.next();    // Continue to the route handler
-}
-
-export const config = {
-  matcher: '/api/:path*',
-};
-```
-
----
-
-## OathMeshClient (Auto-Minting)
-
-If you need to construct signed tokens to make upstream requests as a service, use the `OathMeshClient`:
-
-```typescript
-import { OathMeshClient } from '@oathmesh/sdk';
-
-const client = new OathMeshClient({
-  issuer: 'https://issuer.oathmesh.dev',
-  apiKey: process.env.API_KEY
-});
-
-// Auto-fetches and caches tokens efficiently until TTL
-const token = await client.mint({
-  sub: 'service://inventory/worker',
-  aud: 'https://financial.internal',
-  act: 'payment.process'
-});
-
-const response = await fetch('https://financial.internal/pay', {
-  headers: {
-    'Authorization': `OathMesh ${token}`
-  }
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
 });
 ```
 
----
+### Next.js Pages Router
 
-## Core Verifier (Framework-agnostic)
+Use `withOathMeshApi(...)` from `@oathmesh/sdk/next`.
 
-Use `verifyOathToken` directly in any runtime — Hono, Fastify, or raw Node.
-**Note:** Only Authorization headers starting strictly with `OathMesh ` are verified. Legacy `Bearer` headers are invalid.
+### Next.js Edge
+
+Use `createEdgeVerifier(...)` from `@oathmesh/sdk/next`.
+
+## Configuration
 
 ```typescript
-import { verifyOathToken, extractToken, OathMeshError } from '@oathmesh/sdk';
+import { verifyOathToken, extractToken } from '@oathmesh/sdk';
 
 const token = extractToken(headers.authorization);
+const caller = await verifyOathToken(token!, {
+  audience: 'https://inventory.internal',
+  trustedIssuers: ['https://issuer.oathmesh.tech'],
+  onVerified: (ctx) => metrics.increment('oathmesh.allow', { sub: ctx.principal.subject }),
+  onDenied: (err) => logger.warn('oathmesh.denied', { code: err.code, step: err.step }),
+});
+```
+
+Verifier semantics:
+- Canonical and required header for verification is `Authorization: OathMesh <token>`.
+- `extractToken` returns `null` for non-OathMesh schemes.
+- If upstream sends `Bearer`, translate it to `OathMesh` before calling verifier APIs.
+
+## Error Handling
+
+Verification failures use `OathMeshError` and map to a stable 401 payload shape.
+
+```typescript
+import { OathMeshError } from '@oathmesh/sdk';
 
 try {
-  const caller = await verifyOathToken(token!, {
-    audience: 'https://inventory.internal',
-    trustedIssuers: ['https://issuer.oathmesh.dev'],
-  });
-  console.log(caller.principal.subject);
+  // verify...
 } catch (err) {
   if (err instanceof OathMeshError) {
-    console.error(`Step ${err.step} Failed:`, err.code, err.fix);
+    console.error(err.code, err.message, err.fix, err.step);
   }
 }
 ```
 
----
+Common codes: `claim_missing:token`, `issuer_untrusted`, `audience_mismatch`, `signature_invalid`, `token_expired`.
 
-## Lifecycle Hooks
+## Troubleshooting
 
-Monitor verification events with `onVerified` and `onDenied`:
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `claim_missing:token` | Missing/invalid header | Send `Authorization: OathMesh <token>` |
+| `issuer_untrusted` | `iss` not in `trustedIssuers` | Add exact issuer URL |
+| `audience_mismatch` | Token `aud` differs from `audience` | Mint token with matching `aud` |
+| `token_expired` | TTL elapsed / clock skew | Mint fresh token and sync clocks |
+| `signature_invalid` | JWKS/issuer mismatch | Check issuer URL and JWKS reachability |
 
-```typescript
-verifyToken({
-  audience: 'https://inventory.internal',
-  trustedIssuers: ['https://issuer.oathmesh.dev'],
-  onVerified: (caller) => {
-    metrics.increment('oathmesh.allow', { sub: caller.principal.subject });
-  },
-  onDenied: (err) => {
-    logger.warn('oathmesh denied', { code: err.code, message: err.message });
-  },
-});
-```
+## Security Notes
 
----
+- Verify only tokens from trusted issuers you control.
+- Never log raw tokens or API keys.
+- Keep issuer TLS and JWKS endpoints reachable and authenticated.
+- Treat all caller claims as untrusted until verification succeeds.
 
-## Error Responses
+## Production Tips
 
-All verification failures return HTTP 401 with a stable JSON shape containing the core `error` taxonomy, human message, and granular `step` ID:
+- Reuse verifier config and HTTP/JWKS clients to reduce latency.
+- Record `error code` and `step` in logs for fast triage.
+- Use short token TTLs and one token per operation where possible.
+- Add metrics for allow/deny rates and failure categories.
 
-```json
-{
-  "error": "audience_mismatch",
-  "message": "token audience does not match",
-  "fix": "mint with --aud https://inventory.internal",
-  "step": 11
-}
-```
+## Related Docs
 
-| Code | Trigger |
-|---|---|
-| `claim_missing:token` | Missing/invalid Authorization header |
-| `algorithm_not_allowed` | `typ` ≠ `om+jwt` or `alg` = `none`/unsupported |
-| `issuer_untrusted` | Issuer not in trusted list |
-| `signature_invalid` | JWKS signature verification failed |
-| `token_expired` | Past expiry + 10s clock skew |
-| `audience_mismatch` | `aud` doesn't match configured audience |
-| `claim_missing:{sub,act,jti}` | Missing required claim |
-| `verification_failed` | Catch-all for malformed tokens |
-
----
-
-## Development
-
-```bash
-npm install
-npm test          # vitest — 12 tests
-npm run build     # tsc → dist/
-```
+- [Getting Started](../../docs/GETTING_STARTED.md)
+- [Troubleshooting Guide](../../docs/TROUBLESHOOTING.md)
+- [Community](../../docs/COMMUNITY.md)
+- [Enterprise Guide](../../docs/enterprise/README.md)

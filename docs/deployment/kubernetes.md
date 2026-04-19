@@ -1,360 +1,109 @@
+← [Back to Index](../INDEX.md)
+
 # Kubernetes Deployment Guide
 
-> Deploying OathMesh in a Kubernetes production environment.
+> Production-oriented Kubernetes deployment for OathMesh issuer + Redis replay cache and a protected receiver.
 
 ## Overview
 
-This guide covers deploying the OathMesh issuer and gateway in Kubernetes with proper security, scalability, and operational best practices.
+Use the manifests in [`examples/kubernetes`](../../examples/kubernetes) as a hardened baseline:
 
-## Architecture
+- Kubernetes 1.24+ compatible APIs
+- Non-root containers and restricted security context
+- Readiness/liveness probes and resource requests/limits
+- NetworkPolicy and PodDisruptionBudget
+- Explicit OathMesh environment variable wiring
+
+## Reference Topology
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Kubernetes Cluster                      │
-│                                                                  │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐      │
-│  │   Gateway   │     │   Issuer    │     │   Redis     │      │
-│  │ Deployment  │ ──▶ │ Deployment │     │   Stateful  │      │
-│  │  (2 replicas)│     │ (2 replicas)│     │   Set       │      │
-│  └─────────────┘     └─────────────┘     └─────────────┘      │
-│         │                   │                   │              │
-│         └───────────────────┴───────────────────┘              │
-│                         NetworkPolicy                           │
-└─────────────────────────────────────────────────────────────────┘
+Internet
+   │
+   ▼
+Ingress (TLS)
+   │
+   ▼
+oathmesh-issuer (StatefulSet) ─────► Redis (StatefulSet)
+        │
+        └──── JWKS consumed by receiver service(s)
 ```
 
-## Prerequisites
+## What to Customize Before Deploying
 
-- Kubernetes 1.24+
-- Helm 3.x (optional, but recommended)
-- Redis for replay cache backend
+1. **Images**
+   - `oathmesh/oathmesh:latest` for issuer (or your pinned digest)
+   - `ghcr.io/acme/oathmesh-receiver:latest` placeholder in receiver deployment
+2. **DNS/TLS**
+   - Set Ingress host in `issuer-ingress.yaml`
+   - Use your real TLS secret name
+3. **Secrets**
+   - Copy `issuer-secret.example.yaml` to your private ops repo and fill real values
+4. **Storage class**
+   - Update Redis PVC `storageClassName` if needed
 
-## Issuer Deployment
+## OathMesh Environment Wiring
 
-### Deployment Configuration
+Issuer settings are split so non-sensitive values stay in ConfigMap and secrets stay in Secret:
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: oathmesh-issuer
-  namespace: oathmesh
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: oathmesh-issuer
-  template:
-    metadata:
-      labels:
-        app: oathmesh-issuer
-    spec:
-      containers:
-      - name: issuer
-        image: oathmesh/oathmesh:latest
-        ports:
-        - containerPort: 4000
-        env:
-        - name: OATHMESH_ISSUER
-          value: "https://issuer.oathmesh.internal"
-        - name: OATHMESH_PRIVATE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: oathmesh-private-key
-              key: private-key
-        - name: OATHMESH_TTL_DEFAULT
-          value: "120"
-        - name: OATHMESH_TTL_MAX
-          value: "300"
-        - name: OATHMESH_AUDIT_SINK
-          value: "stdout"
-        - name: REDIS_URL
-          value: "redis://oathmesh-redis:6379/0"
-        - name: OATHMESH_JWKS_CACHE_TTL
-          value: "300"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 256Mi
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 4000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 4000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-```
+- `issuer-configmap.yaml`
+  - `OATHMESH_ISSUER` (must be `https://...` in production)
+  - `OATHMESH_ENV=production`
+  - TTL/rate-limit defaults
+  - `REDIS_URL=redis://oathmesh-redis:6379/0`
+- `issuer-secret.example.yaml`
+  - `OATHMESH_PRIVATE_KEY` (PEM)
+  - `OATHMESH_MINT_SECRET`
 
-### Service
+Receiver wiring (example):
 
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: oathmesh-issuer
-  namespace: oathmesh
-spec:
-  selector:
-    app: oathmesh-issuer
-  ports:
-  - port: 4000
-    targetPort: 4000
-  # Issuer should NOT be exposed publicly
-  # Only accessible within the cluster
-```
+- `OATHMESH_AUDIENCE=https://inventory.internal`
+- `OATHMESH_TRUSTED_ISSUERS=https://issuer.example.com`
 
-## Gateway Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: oathmesh-gateway
-  namespace: oathmesh
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: oathmesh-gateway
-  template:
-    metadata:
-      labels:
-        app: oathmesh-gateway
-    spec:
-      containers:
-      - name: gateway
-        image: oathmesh/oathmesh:latest
-        command: ["./bin/oathmesh", "serve", "--gateway"]
-        ports:
-        - containerPort: 4000
-        env:
-        - name: OATHMESH_GATEWAY_UPSTREAM
-          value: "http://your-upstream-service:8080"
-        - name: OATHMESH_GATEWAY_AUDIENCE
-          value: "https://api.internal"
-        - name: OATHMESH_GATEWAY_ISSUERS
-          value: "https://issuer.oathmesh.internal"
-        - name: OATHMESH_GATEWAY_POLICY
-          value: "/policy/production.json"
-        - name: OATHMESH_JWKS_CACHE_TTL
-          value: "300"
-        volumeMounts:
-        - name: policy
-          mountPath: /policy
-          readOnly: true
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 256Mi
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 4000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 4000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-      volumes:
-      - name: policy
-        configMap:
-          name: oathmesh-policy
-```
-
-## Redis for Replay Cache
-
-```yaml
-apiVersion: v1
-kind: StatefulSet
-metadata:
-  name: oathmesh-redis
-  namespace: oathmesh
-spec:
-  serviceName: oathmesh-redis
-  replicas: 1
-  selector:
-    matchLabels:
-      app: oathmesh-redis
-  template:
-    metadata:
-      labels:
-        app: oathmesh-redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:7-alpine
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: data
-          mountPath: /data
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 200m
-            memory: 128Mi
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: standard
-      resources:
-        requests:
-          storage: 1Gi
-```
-
-## NetworkPolicy
-
-Restrict access so only the gateway can reach the issuer:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: oathmesh-issuer-policy
-  namespace: oathmesh
-spec:
-  podSelector:
-    matchLabels:
-      app: oathmesh-issuer
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: oathmesh-gateway
-    ports:
-    - protocol: TCP
-      port: 4000
-  egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: oathmesh-redis
-    ports:
-    - protocol: TCP
-      port: 6379
-  - to:
-    - namespaceSelector: {}
-      # Allow DNS
-    ports:
-    - protocol: TCP
-      port: 53
-    - protocol: UDP
-      port: 53
-```
-
-## Horizontal Pod Autoscaler
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: oathmesh-issuer-hpa
-  namespace: oathmesh
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: oathmesh-issuer
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-    scaleUp:
-      stabilizationWindowSeconds: 0
-```
-
-## Secrets Management
-
-Create the private key secret:
+## Deployment Order
 
 ```bash
-kubectl create secret generic oathmesh-private-key \
-  --from-file=private-key=/path/to/private.pem \
-  -n oathmesh
+kubectl apply -f examples/kubernetes/namespace.yaml
+kubectl apply -f examples/kubernetes/issuer-configmap.yaml
+kubectl -n oathmesh create secret generic oathmesh-issuer-secrets \
+  --from-literal=OATHMESH_MINT_SECRET='<strong-random-secret>' \
+  --from-file=OATHMESH_PRIVATE_KEY=./private.pem \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -f examples/kubernetes/redis-statefulset.yaml
+kubectl apply -f examples/kubernetes/issuer-service.yaml
+kubectl apply -f examples/kubernetes/issuer-statefulset.yaml
+kubectl apply -f examples/kubernetes/receiver-deployment.yaml
+kubectl apply -f examples/kubernetes/issuer-ingress.yaml
+kubectl apply -f examples/kubernetes/network-policy.yaml
+kubectl apply -f examples/kubernetes/pod-disruption-budget.yaml
 ```
 
-Or use external secrets operator with your KMS (AWS Secrets Manager, GCP Secret Manager, Azure Key Vault).
+## Verification
 
-## Policy ConfigMap
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: oathmesh-policy
-  namespace: oathmesh
-data:
-  production.json: |
-    {
-      "rules": [
-        {
-          "match": { "sub": "agent:*", "act": "read" },
-          "allow": true
-        },
-        {
-          "match": { "sub": "agent:*", "act": "write" },
-          "allow": true
-        },
-        {
-          "match": { "sub": "job:*" },
-          "allow": true
-        }
-      ]
-    }
+```bash
+kubectl -n oathmesh get pods
+kubectl -n oathmesh get svc
+kubectl -n oathmesh get ingress
+kubectl -n oathmesh logs statefulset/oathmesh-issuer --tail=100
 ```
 
-## Deployment Checklist
+Quick health checks:
 
-- [ ] Create namespace: `kubectl create namespace oathmesh`
-- [ ] Create private key secret
-- [ ] Deploy Redis StatefulSet
-- [ ] Deploy Issuer with 2 replicas
-- [ ] Deploy Gateway with 2 replicas
-- [ ] Apply NetworkPolicy
-- [ ] Configure HPA
-- [ ] Verify health endpoints: `kubectl get pods -n oathmesh`
-- [ ] Test token minting: `./bin/oathmesh mint ...`
-- [ ] Test gateway proxy: `curl http://gateway/inventory`
+```bash
+kubectl -n oathmesh port-forward svc/oathmesh-issuer 4000:4000
+curl http://127.0.0.1:4000/healthz
+curl http://127.0.0.1:4000/.well-known/jwks.json
+```
 
 ## Security Notes
 
-1. **Never commit private keys** — Use Kubernetes Secrets or external KMS
-2. **Issuer not publicly exposed** — Only gateway can reach it via NetworkPolicy
-3. **Redis for replay cache** — Required for multi-instance deployments
-4. **TLS required** — Issuer URL must be https:// in production
-5. **Audit logging** — Set `OATHMESH_AUDIT_SINK=stdout` for cloud logging integration
+- Never commit real secrets or private keys.
+- Keep issuer ingress locked down to trusted callers (WAF/IP allowlist, authn at edge, or private ingress).
+- Use Redis persistence + backups for revocation continuity.
+- Pin image digests for production change control.
+- Keep `OATHMESH_ISSUER` and receiver `OATHMESH_TRUSTED_ISSUERS` aligned.
+
+## Related
+
+- [TLS Configuration Guide](tls.md)
+- [Issuer Configuration Reference](../config/issuer-config.md)
+- [Examples: Kubernetes manifests](../../examples/kubernetes/README.md)
