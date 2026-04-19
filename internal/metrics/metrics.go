@@ -49,6 +49,11 @@ var (
 		Help:    "Latency distributions bound strictly mapping across the runtime.",
 		Buckets: prometheus.DefBuckets,
 	}, []string{"method", "route"})
+
+	RevocationSyncErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oathmesh_revocation_sync_errors",
+		Help: "Total number of revocation list sync failures",
+	})
 )
 
 // Handler serves metrics natively adhering to the Prometheus exposition guidelines.

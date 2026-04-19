@@ -29,26 +29,22 @@ func NewRedisRevocationList(redisURL string) (*RedisRevocationList, error) {
 	}, nil
 }
 
-// IsRevoked checks if a subject exists in the revocation list.
-func (rl *RedisRevocationList) IsRevoked(ctx context.Context, subject string, issuedAt time.Time) (bool, error) {
+// IsRevoked checks if a subject has been revoked.
+// OathMesh revocation policy: if a subject is revoked, ALL tokens for that subject
+// are invalid regardless of when they were issued (iat). Revocation invalidates
+// all existing tokens and prevents any future tokens for that subject.
+func (rl *RedisRevocationList) IsRevoked(ctx context.Context, subject string) (bool, error) {
 	// Fast path check using HGET
 	val, err := rl.client.HGet(ctx, rl.key, subject).Result()
 	if err == redis.Nil {
 		return false, nil // Not revoked
 	}
 	if err != nil {
-		return true, fmt.Errorf("redis check failed: %w", err) // Fail-closed
+		return false, fmt.Errorf("redis check failed: %w", err)
 	}
 
-	revokedAt, err := time.Parse(time.RFC3339, val)
-	if err != nil {
-		return true, nil // Malformed date => default to true/revoked for safety
-	}
-
-	// OathMesh Semantics: if a subject is revoked, ALL tokens for it are revoked,
-	// regardless of issuedAt.
-	_ = revokedAt
-
+	// Subject exists in revocation list
+	_ = val // Parse result but don't use it; subject existence is what matters
 	return true, nil
 }
 

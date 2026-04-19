@@ -83,8 +83,10 @@ type JWKSProvider interface {
 
 // RevocationList abstracts subject revocation checks before policy evaluation.
 type RevocationList interface {
-	// IsRevoked returns true if the subject was revoked before the token was issued.
-	IsRevoked(ctx context.Context, subject string, issuedAt time.Time) (bool, error)
+	// IsRevoked returns true if the subject has been revoked.
+	// OathMesh revocation policy: revocation invalidates ALL tokens for a subject,
+	// regardless of when they were issued.
+	IsRevoked(ctx context.Context, subject string) (bool, error)
 }
 
 // PolicyEvaluator evaluates OathMesh policy rules against token claims.

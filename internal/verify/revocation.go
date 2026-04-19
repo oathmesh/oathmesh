@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/oathmesh/oathmesh/internal/metrics"
 )
 
 // Revocation models a revoked subject.
@@ -33,7 +36,10 @@ func NewMemoryRevocationList(issuerURL string, pollInterval time.Duration) *Memo
 		done:        make(chan struct{}),
 	}
 	// Initial synchronous fetch
-	_ = rl.sync()
+	if err := rl.sync(); err != nil {
+		log.Printf("ERROR: revocation list sync failed: %v", err)
+		metrics.RevocationSyncErrors.Inc()
+	}
 
 	go rl.poll(pollInterval)
 	return rl
@@ -45,7 +51,10 @@ func (rl *MemoryRevocationList) poll(interval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			_ = rl.sync()
+			if err := rl.sync(); err != nil {
+				log.Printf("ERROR: revocation list sync failed: %v", err)
+				metrics.RevocationSyncErrors.Inc()
+			}
 		case <-rl.done:
 			return
 		}
@@ -86,25 +95,19 @@ func (rl *MemoryRevocationList) sync() error {
 	return nil
 }
 
-// IsRevoked checks if a subject was revoked before the given issuance time.
-func (rl *MemoryRevocationList) IsRevoked(ctx context.Context, subject string, issuedAt time.Time) (bool, error) {
+// IsRevoked checks if a subject has been revoked.
+// OathMesh revocation policy: if a subject is revoked, ALL tokens for that subject
+// are invalid regardless of when they were issued (iat). Revocation invalidates
+// all existing tokens and prevents any future tokens for that subject.
+func (rl *MemoryRevocationList) IsRevoked(ctx context.Context, subject string) (bool, error) {
 	rl.mu.RLock()
-	revokedAt, exists := rl.revocations[subject]
+	_, exists := rl.revocations[subject]
 	rl.mu.RUnlock()
 
-	if !exists {
-		return false, nil
-	}
-	// If revoked_at is <= issued_at, the token was issued after the revocation
-	// wait, if token IAT > revokedAt, it should be DENIED? Yes, subject implies revocation forever.
-	// But the user might "re-enable" a subject by issuing a new token? The audit says "rejecting if iat > revoked_since" or similar.
-	// Actually, if it's revoked, all tokens for it are invalid.
-	if issuedAt.After(revokedAt) || issuedAt.Equal(revokedAt) {
+	if exists {
 		return true, nil
 	}
-	// Token was issued before it was revoked? Wait, if it was issued before revocation, it must ALSO be invalid!
-	// If it was revoked, EVERYTHING is bad, because they might be holding a stolen token.
-	return true, nil
+	return false, nil
 }
 
 // Close stops the polling goroutine.

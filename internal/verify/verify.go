@@ -334,14 +334,14 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 
 	// ── Step 13.5: Check revocation list ────────────────────────────────
 	if cfg.RevocationList != nil {
-		revoked, err := cfg.RevocationList.IsRevoked(ctx, claims.Sub, iatTime)
+		revoked, err := cfg.RevocationList.IsRevoked(ctx, claims.Sub)
 		if err != nil {
 			// Fail open on fetch errors (network partition tolerance)
 			// A robust implementation might log this, but we prioritize availability.
 		} else if revoked {
 			return nil, emitAndReturn(ctx, cfg, &claims, core.NewOathMeshError(
 				core.ErrSubjectRevoked,
-				fmt.Sprintf("subject %s has been revoked before token issuance", claims.Sub),
+				fmt.Sprintf("subject %s has been revoked", claims.Sub),
 				"mint a token for a valid, active subject",
 			))
 		}
