@@ -94,6 +94,49 @@ func NewJWKSCache(ttl time.Duration, endpoints map[string]string) *JWKSCache {
 	}
 }
 
+// PreWarm fetches JWKS from all registered trusted issuers, populating the cache
+// before the first verification request. Call this during service startup to
+// eliminate cold-start latency.
+//
+// Errors are logged but not fatal — on failure, the cache will fetch on first miss
+// as usual. Returns the number of issuers successfully pre-warmed.
+func (c *JWKSCache) PreWarm(ctx context.Context) (warmed int) {
+	c.mu.RLock()
+	endpoints := make(map[string]string, len(c.jwksEndpoints))
+	for k, v := range c.jwksEndpoints {
+		endpoints[k] = v
+	}
+	c.mu.RUnlock()
+
+	for issuer, jwksURL := range endpoints {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURL, nil)
+		if err != nil {
+			continue
+		}
+		resp, err := c.client.Do(req)
+		if err != nil {
+			continue
+		}
+
+		var jwks sign.JWKS
+		err = json.NewDecoder(io.LimitReader(resp.Body, 64*1024)).Decode(&jwks)
+		resp.Body.Close()
+		if err != nil {
+			continue
+		}
+
+		c.mu.Lock()
+		c.entries[issuer] = &jwksCacheEntry{
+			jwks:   &jwks,
+			until:  time.Now().Add(c.ttl),
+			issuer: issuer,
+		}
+		c.mu.Unlock()
+		warmed++
+	}
+	return warmed
+}
+
 // RegisterTrustedIssuers precomputes and stores trusted issuer->JWKS mappings.
 // This keeps request targets server-controlled instead of deriving URLs from runtime token values.
 func (c *JWKSCache) RegisterTrustedIssuers(issuers []string) error {

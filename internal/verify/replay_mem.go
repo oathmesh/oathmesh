@@ -115,13 +115,23 @@ func (rc *MemoryReplayCache) cleanup() {
 	ticker := time.NewTicker(cleanupInterval)
 	defer ticker.Stop()
 
+	// Process shardsPerTick shards per cleanup cycle instead of all 256.
+	// This distributes lock contention across multiple ticks, avoiding a
+	// momentary latency spike every 60s when all 256 shards are scanned.
+	const shardsPerTick = 16
+	cursor := 0
+
 	for {
 		select {
 		case <-rc.done:
 			return
 		case <-ticker.C:
 			now := time.Now()
-			for i := 0; i < numShards; i++ {
+			end := cursor + shardsPerTick
+			if end > numShards {
+				end = numShards
+			}
+			for i := cursor; i < end; i++ {
 				shard := rc.shards[i]
 				shard.Lock()
 				evicted := 0
@@ -136,6 +146,7 @@ func (rc *MemoryReplayCache) cleanup() {
 					metrics.ReplayCacheSize.Sub(float64(evicted))
 				}
 			}
+			cursor = end % numShards
 		}
 	}
 }

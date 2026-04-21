@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -122,23 +120,17 @@ func (s *KMSSigner) SignToken(req MintRequest) (string, error) {
 		Kid: s.kid,
 	}
 
-	hBytes, _ := json.Marshal(header)
-	cBytes, _ := json.Marshal(claims)
-
-	headerB64 := base64.RawURLEncoding.EncodeToString(hBytes)
-	claimsB64 := base64.RawURLEncoding.EncodeToString(cBytes)
-	signingInput := headerB64 + "." + claimsB64
-
-	out, err := s.client.Sign(context.TODO(), &kms.SignInput{
-		KeyId:            aws.String(s.keyID),
-		Message:          []byte(signingInput),
-		MessageType:      types.MessageTypeRaw,
-		SigningAlgorithm: types.SigningAlgorithmSpecEd25519Sha512,
+	// Use the shared JWS assembly path with KMS as the signing primitive.
+	return BuildJWSWithSignFunc(header, claims, func(signingInput []byte) ([]byte, error) {
+		out, err := s.client.Sign(context.TODO(), &kms.SignInput{
+			KeyId:            aws.String(s.keyID),
+			Message:          signingInput,
+			MessageType:      types.MessageTypeRaw,
+			SigningAlgorithm: types.SigningAlgorithmSpecEd25519Sha512,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("aws kms sign: %w", err)
+		}
+		return out.Signature, nil
 	})
-	if err != nil {
-		return "", fmt.Errorf("aws kms sign token: %w", err)
-	}
-
-	signatureB64 := base64.RawURLEncoding.EncodeToString(out.Signature)
-	return signingInput + "." + signatureB64, nil
 }

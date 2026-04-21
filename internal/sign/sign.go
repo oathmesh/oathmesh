@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/oathmesh/oathmesh/internal/jwk"
 )
 
 const (
@@ -77,7 +78,15 @@ type MintRequest struct {
 	Src    *Source  `json:"src,omitempty"`
 }
 
-func BuildJWS(header Header, claims Claims, privateKey ed25519.PrivateKey) (string, error) {
+// SignFunc is the cryptographic signing primitive. Accepts the signing input
+// (header.payload as bytes) and returns the raw signature bytes.
+// This abstraction decouples JWS construction from the specific signing algorithm,
+// enabling Ed25519, KMS, HSM, and any future signer to share the same JWS assembly path.
+type SignFunc func(signingInput []byte) (signature []byte, err error)
+
+// BuildJWSWithSignFunc constructs a compact JWS token using an arbitrary signing function.
+// This is the canonical JWS assembly path — all signers should use this.
+func BuildJWSWithSignFunc(header Header, claims Claims, signFn SignFunc) (string, error) {
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
 		return "", fmt.Errorf("marshal header: %w", err)
@@ -93,11 +102,23 @@ func BuildJWS(header Header, claims Claims, privateKey ed25519.PrivateKey) (stri
 
 	signingInput := headerB64 + "." + claimsB64
 
-	signature := ed25519.Sign(privateKey, []byte(signingInput))
+	signature, err := signFn([]byte(signingInput))
+	if err != nil {
+		return "", fmt.Errorf("sign token: %w", err)
+	}
 
 	token := signingInput + "." + base64.RawURLEncoding.EncodeToString(signature)
 
 	return token, nil
+}
+
+// BuildJWS constructs a compact JWS token using Ed25519 directly.
+// Retained for backward compatibility (tests, simple usage).
+// Production code should use BuildJWSWithSignFunc via the Signer interface.
+func BuildJWS(header Header, claims Claims, privateKey ed25519.PrivateKey) (string, error) {
+	return BuildJWSWithSignFunc(header, claims, func(input []byte) ([]byte, error) {
+		return ed25519.Sign(privateKey, input), nil
+	})
 }
 
 func SignToken(req MintRequest, issuer string, privateKey ed25519.PrivateKey, kid string) (string, error) {
@@ -264,70 +285,27 @@ func VerifyJWSCompact(token string, publicKey ed25519.PublicKey) ([]byte, []byte
 	return header, payload, nil
 }
 
-type JWKS struct {
-	Keys []JWK `json:"keys"`
-}
+// JWKS is a type alias for jwk.JWKS — preserved for backward compatibility.
+// New code should import internal/jwk directly.
+type JWKS = jwk.JWKS
 
-type JWK struct {
-	Kty string `json:"kty"`
-	Alg string `json:"alg"`
-	Kid string `json:"kid"`
-	Use string `json:"use"`
-	Crv string `json:"crv"`
-	X   string `json:"x"`
-}
+// JWK is a type alias for jwk.JWK — preserved for backward compatibility.
+// New code should import internal/jwk directly.
+type JWK = jwk.JWK
 
+// BuildJWKS delegates to jwk.BuildJWKS for backward compatibility.
 func BuildJWKS(keys map[string]ed25519.PublicKey) (*JWKS, error) {
-	jwks := JWKS{
-		Keys: make([]JWK, 0, len(keys)),
-	}
-
-	for kid, pubKey := range keys {
-		x := make([]byte, base64.RawURLEncoding.EncodedLen(len(pubKey)))
-		base64.RawURLEncoding.Encode(x, pubKey)
-
-		jwks.Keys = append(jwks.Keys, JWK{
-			Kty: "OKP",
-			Alg: "EdDSA",
-			Kid: kid,
-			Use: "sig",
-			Crv: "Ed25519",
-			X:   string(x),
-		})
-	}
-
-	return &jwks, nil
+	return jwk.BuildJWKS(keys)
 }
 
-func (j *JWKS) ToJSON() ([]byte, error) {
-	return json.Marshal(j)
-}
-
+// ParseJWKS delegates to jwk.ParseJWKS for backward compatibility.
 func ParseJWKS(data []byte) (*JWKS, error) {
-	var jwks JWKS
-	err := json.Unmarshal(data, &jwks)
-	return &jwks, err
+	return jwk.ParseJWKS(data)
 }
 
+// GetKeyFromJWKS delegates to jwk.GetKeyFromJWKS for backward compatibility.
 func GetKeyFromJWKS(jwks *JWKS, kid string) (ed25519.PublicKey, error) {
-	for _, key := range jwks.Keys {
-		if key.Kid == kid {
-			if key.Kty != "OKP" || key.Crv != "Ed25519" {
-				return nil, fmt.Errorf("key is not Ed25519")
-			}
-
-			x, err := base64.RawURLEncoding.DecodeString(key.X)
-			if err != nil {
-				return nil, fmt.Errorf("decode x: %w", err)
-			}
-
-			pubKey := make(ed25519.PublicKey, len(x))
-			copy(pubKey, x)
-			return pubKey, nil
-		}
-	}
-
-	return nil, fmt.Errorf("key not found: %s", kid)
+	return jwk.GetKeyFromJWKS(jwks, kid)
 }
 
 type HeaderPayload struct {

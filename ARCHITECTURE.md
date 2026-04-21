@@ -33,10 +33,18 @@
 cmd/oathmesh/           → CLI entry point (cobra)
 internal/
   core/                 → Protocol types, zero external deps
-  sign/                 → Ed25519 signing, JWS construction
-  verify/               → 14-step verification pipeline
+  jwk/                  → JWK/JWKS types and operations (zero external deps)
+  sign/                 → Ed25519 signing, JWS construction (delegates JWK types to internal/jwk)
+  verify/               → 14-step verification pipeline (func-slice architecture)
+    steps.go            → Individual step functions + pipeline definition
+    verify.go           → Pipeline orchestrator (~40 lines)
+    jwks.go             → JWKS cache with pre-warm support
+    replay_mem.go       → In-memory sharded replay cache (batch cleanup, 16 shards/tick)
+    replay_redis.go     → Redis-backed replay cache
+    replay_circuitbreaker.go → Circuit-breaker: Redis → MemoryReplayCache failover
   policy/               → Pkl policy engine + hot-reload
-  audit/                → NDJSON audit event pipeline
+  audit/                → NDJSON audit event pipeline + FanOutAuditSink
+  metrics/              → Prometheus metrics (incl. oathmesh_clock_skew_rejections_total)
   issuer/               → HTTP issuer service (chi)
   gateway/              → Reverse proxy mode
   config/               → Configuration schema + env loading
@@ -49,18 +57,22 @@ sdk/
 ## Dependency Graph
 
 ```
-cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign
+cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign ──▶ internal/jwk
                                   ──▶ internal/verify ──▶ internal/core
                                   ──▶ internal/audit   ──▶ internal/core
                                   ──▶ internal/config
                  internal/gateway ──▶ internal/verify
                                   ──▶ internal/core
                  internal/policy  ──▶ internal/core
+                 internal/sign    ──▶ internal/jwk
                  sdk/go/middleware ──▶ internal/verify
                                   ──▶ internal/core
 ```
 
-**Invariant:** `internal/core` has zero external dependencies. It defines protocol types only. If it imported anything external, every downstream package would transitively depend on it.
+**Invariants:**
+- `internal/core` has zero external dependencies. It defines protocol types only.
+- `internal/jwk` has zero external dependencies. JWK/JWKS types are stdlib-only.
+- `internal/sign` re-exports `jwk.JWK`/`jwk.JWKS` as type aliases for backward compatibility.
 
 ## Data Flow
 
@@ -86,6 +98,13 @@ cmd/oathmesh ──▶ internal/issuer ──▶ internal/sign
 
 ### Verification Pipeline Overview (14 Steps)
 
+The pipeline is implemented as a **func slice** (`[]pipelineStep` in `steps.go`).
+Each step is an individually testable function operating on a shared `vctx` struct.
+The orchestrator in `verify.go` is a ~40-line loop that stops on first error.
+
+Every error includes a `Step` field (1-14) so operators can immediately identify
+which pipeline stage rejected a token.
+
 ```text
 START: Authorization header present and token extracted
   |
@@ -93,16 +112,16 @@ START: Authorization header present and token extracted
   +--> [02] Validate header (typ/alg, reject alg=none)
   +--> [03] Decode payload, read iss
   +--> [04] Check trusted issuer list
+  +--> [11] Check required claims (moved before JWKS to fail fast)
+  +--> [11.5] Verify subject format (svc://, agent://, etc.)
   +--> [05] Load JWKS (cache; mapped endpoint or {iss}/.well-known/jwks.json)
-  +--> [06] Verify signature
+  +--> [06] Verify signature + alg confusion check
   +--> [07] Re-check iss after signature
-  +--> [08] Check exp (10s skew)
-  +--> [09] Check iat (not future, 10s skew)
+  +--> [08] Check exp (10s skew) — emits oathmesh_clock_skew_rejections_total
+  +--> [09] Check iat/nbf (not future, 10s skew) — emits oathmesh_clock_skew_rejections_total
   +--> [10] Check aud (exact match)
-  +--> [11] Check required claims
   +--> [12] Verify rqh binding (if present)
-  +--> [13] Check replay cache (jti)
-  +--> [13.5] Check revocation list (if enabled)
+  +--> [13] Check replay cache (jti) + revocation list
   +--> [14] Evaluate policy (first match wins, default deny)
             |
             +--> ALLOW => 200 path + audit.allow
@@ -235,8 +254,10 @@ Caller          Gateway              Upstream
 - **Issuer:** Primarily stateless for token minting, with optional Redis-backed revocation coordination.
 - **Verifier:** Stateless, scales with request volume
 - **Replay cache:** 
-  - Dev: In-memory (single instance)
-  - Prod: Redis (multi-instance, shared)
+  - Dev: In-memory (256-shard, batch cleanup 16 shards/tick)
+  - Prod: Redis via `CircuitBreakerReplayCache` — automatic failover to in-process `MemoryReplayCache` during Redis outages (never fails open)
+- **JWKS cache:** Pre-warmable at startup via `JWKSCache.PreWarm(ctx)` to eliminate cold-start latency
+- **Audit:** Composable via `FanOutAuditSink` (dispatches to N sinks: file, stdout, metrics, tracing)
 - **Policy:** Hot-reload from filesystem, no external dependency
 
 ## Decision Matrix

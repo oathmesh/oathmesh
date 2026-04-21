@@ -49,15 +49,17 @@
 - 🔑 **Zero API Keys** — No more long-lived secrets in environment variables
 - ⏱️ **Short-Lived Tokens** — Maximum 300 seconds TTL, auto-expiring credentials
 - 🛡️ **Zero-Trust Security** — Every request must prove its identity
-- 🔒 **Ed25519 Signatures** — Modern elliptic curve cryptography
-- 📋 **14-Step Verification** — Fail-closed pipeline rejects malformed/expired/replayed tokens
-- 🌍 **Polyglot SDKs** — Go, Node.js (TypeScript), and Python supported
-- 📊 **Full Audit Trail** — Every allow and deny logged as NDJSON
+- 🔒 **Ed25519 Signatures** — Modern elliptic curve cryptography (KMS-backed via `SignFunc` abstraction)
+- 📋 **14-Step Verification** — Func-slice pipeline with step-annotated errors for instant diagnosis
+- 🌐 **Polyglot SDKs** — Go, Node.js (TypeScript), and Python supported
+- 📊 **Full Audit Trail** — Every allow and deny logged via composable `FanOutAuditSink`
 - 🔄 **Policy-Driven** — Apple Pkl-based rules, hot-reload, default deny
 - 🌐 **Gateway Mode** — Reverse proxy that injects verified context headers
 - 🛠️ **CLI Native** — Terminal-driven management for robust GitOps integration
 - 🛑 **Stateful Revocation** — Redis-backed O(1) revocation lists directly synced
 - 🤖 **CI Native Auto-Sign** — Built-in OIDC exchange mappings for GitHub Actions and GitLab CI
+- ⚡ **Circuit-Breaker Replay Defense** — Redis failover to in-process cache (never fails open)
+- 🚀 **JWKS Pre-Warming** — Eliminate cold-start latency with `JWKSCache.PreWarm(ctx)`
 
 ---
 

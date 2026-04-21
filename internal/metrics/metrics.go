@@ -65,6 +65,11 @@ var (
 		Help:    "gRPC request latency in seconds",
 		Buckets: prometheus.DefBuckets,
 	}, []string{"method"})
+
+	ClockSkewRejections = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "oathmesh_clock_skew_rejections_total",
+		Help: "Total number of token rejections caused by clock skew between issuer and verifier.",
+	}, []string{"reason"})
 )
 
 // Handler serves metrics natively adhering to the Prometheus exposition guidelines.

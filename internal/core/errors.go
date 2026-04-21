@@ -21,6 +21,7 @@ type OathMeshError struct {
 	Message string    `json:"message"`
 	Fix     string    `json:"fix"`
 	ReqID   string    `json:"request_id,omitempty"`
+	Step    int       `json:"step,omitempty"`
 }
 
 func (e *OathMeshError) Error() string {
@@ -32,5 +33,17 @@ func NewOathMeshError(code ErrorCode, message, fix string) *OathMeshError {
 		Code:    code,
 		Message: message,
 		Fix:     fix,
+	}
+}
+
+// NewOathMeshErrorAt creates an OathMeshError annotated with the verification
+// step number that triggered the failure. This enables operators to immediately
+// identify where in the 14-step pipeline a token was rejected.
+func NewOathMeshErrorAt(step int, code ErrorCode, message, fix string) *OathMeshError {
+	return &OathMeshError{
+		Code:    code,
+		Message: message,
+		Fix:     fix,
+		Step:    step,
 	}
 }
