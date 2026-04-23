@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - JWKS cache now properly respects TTL with emergency override capability
 
-## [Unreleased]
+## [0.1.0] - 2026-04-23
 
 ### Added
 - Demo script health polling loop fixed

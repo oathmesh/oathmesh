@@ -81,7 +81,11 @@ jobs:
       - name: Publish to GitHub Package Registry
         run: |
           cd sdk/node
-          npm publish --access public || echo "Version already exists, continuing..."
+          if [[ "${TAG}" == *"-alpha"* || "${TAG}" == *"-beta"* ]]; then
+            npm publish --access public --tag beta || echo "Version already exists, continuing..."
+          else
+            npm publish --access public || echo "Version already exists, continuing..."
+          fi
 
       - name: Publish to npmjs.org
         run: |
@@ -89,7 +93,11 @@ jobs:
           npm logout || true
           echo "registry=https://registry.npmjs.org/" > .npmrc
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
-          npm publish --access public
+          if [[ "${TAG}" == *"-alpha"* || "${TAG}" == *"-beta"* ]]; then
+            npm publish --access public --tag beta
+          else
+            npm publish --access public
+          fi
 
 
   # ── Python SDK Build ────────────────────────────────────────────────────────

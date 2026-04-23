@@ -1,0 +1,24 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Optional: To ensure this action can trigger the 'release.yml' when it pushes a tag,
+          # you should create a Personal Access Token (PAT) with repo write permissions and save it as RELEASE_PLEASE_TOKEN.
+          # If you don't care about triggering another action automatically and want to trigger it manually,
+          # you can use secrets.GITHUB_TOKEN.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
