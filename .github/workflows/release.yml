@@ -69,7 +69,7 @@ jobs:
       - name: Install & Build
         run: |
           cd sdk/node
-          npm install
+          npm ci
           npm run build
 
       - name: Configure npm for GitHub Package Registry
