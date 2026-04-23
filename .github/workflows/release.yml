@@ -176,8 +176,26 @@ jobs:
     needs: [build-binaries, publish-node, build-python, publish-docker, publish-pypi]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
+      - name: Download Linux Binary
         uses: actions/download-artifact@v8
+        with:
+          name: oathmesh-linux-amd64
+          path: oathmesh-linux-amd64
+      - name: Download Mac ARM64 Binary
+        uses: actions/download-artifact@v8
+        with:
+          name: oathmesh-darwin-arm64
+          path: oathmesh-darwin-arm64
+      - name: Download Mac AMD64 Binary
+        uses: actions/download-artifact@v8
+        with:
+          name: oathmesh-darwin-amd64
+          path: oathmesh-darwin-amd64
+      - name: Download Python Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: python-dist
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
