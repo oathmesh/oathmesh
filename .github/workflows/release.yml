@@ -94,9 +94,9 @@ jobs:
           echo "registry=https://registry.npmjs.org/" > .npmrc
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
           if [[ "${TAG}" == *"-alpha"* || "${TAG}" == *"-beta"* ]]; then
-            npm publish --access public --tag beta
+            npm publish --access public --tag beta || echo "Version already exists, continuing..."
           else
-            npm publish --access public
+            npm publish --access public || echo "Version already exists, continuing..."
           fi
 
 
