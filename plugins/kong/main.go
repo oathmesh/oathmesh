@@ -53,11 +53,12 @@ func (conf *Config) Access(kong *pdk.PDK) {
 
 	// 3. Parse Token
 	token := authHeader
-	if strings.HasPrefix(token, "Bearer ") {
+	switch {
+	case strings.HasPrefix(token, "Bearer "):
 		token = strings.TrimPrefix(token, "Bearer ")
-	} else if strings.HasPrefix(token, "OathMesh ") {
+	case strings.HasPrefix(token, "OathMesh "):
 		token = strings.TrimPrefix(token, "OathMesh ")
-	} else {
+	default:
 		kong.Response.Exit(401, []byte("invalid authorization header format"), map[string][]string{})
 		return
 	}
@@ -76,9 +77,9 @@ func (conf *Config) Access(kong *pdk.PDK) {
 	}
 
 	// 5. Inject verified context to Upstream
-	kong.ServiceRequest.SetHeader("x-oathmesh-subject", vcc.Principal.Subject)
-	kong.ServiceRequest.SetHeader("x-oathmesh-action", vcc.Action)
-	kong.ServiceRequest.SetHeader("x-oathmesh-issuer", vcc.Principal.Issuer)
+	_ = kong.ServiceRequest.SetHeader("x-oathmesh-subject", vcc.Principal.Subject)
+	_ = kong.ServiceRequest.SetHeader("x-oathmesh-action", vcc.Action)
+	_ = kong.ServiceRequest.SetHeader("x-oathmesh-issuer", vcc.Principal.Issuer)
 
 	// Allow request to proceed to upstream
 }
@@ -92,5 +93,5 @@ func main() {
 	// Initialize default configuration
 	_ = config.LoadFromEnv()
 
-	server.StartServer(New, Version, Priority)
+	_ = server.StartServer(New, Version, Priority)
 }

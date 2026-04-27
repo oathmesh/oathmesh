@@ -41,11 +41,12 @@ func (s *envoyExtAuthzServer) Check(ctx context.Context, req *authv3.CheckReques
 
 	// Support both "Bearer" and "OathMesh" prefixes
 	token := authHeader
-	if strings.HasPrefix(token, "Bearer ") {
+	switch {
+	case strings.HasPrefix(token, "Bearer "):
 		token = strings.TrimPrefix(token, "Bearer ")
-	} else if strings.HasPrefix(token, "OathMesh ") {
+	case strings.HasPrefix(token, "OathMesh "):
 		token = strings.TrimPrefix(token, "OathMesh ")
-	} else {
+	default:
 		return s.deny(codes.Unauthenticated, "invalid authorization header format"), nil
 	}
 

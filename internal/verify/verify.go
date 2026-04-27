@@ -196,7 +196,9 @@ func emitAndReturn(ctx context.Context, cfg *VerifierConfig, claims *sign.Claims
 		core.ErrClaimMissing,
 		core.ErrBindingMismatch,
 		core.ErrBindingRequired,
-		core.ErrSubjectRevoked:
+		core.ErrSubjectRevoked,
+		core.ErrTokenMalformed,
+		core.ErrVerificationFailed:
 		// counted by VerificationErrors.Add(1) above
 	}
 

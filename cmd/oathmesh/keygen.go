@@ -64,7 +64,7 @@ func keygenRunE(cmd *cobra.Command, args []string) error {
 	})
 
 	// Save public key
-	if err := os.WriteFile(pubPath, pubPEM, 0644); err != nil {
+	if err := os.WriteFile(pubPath, pubPEM, 0600); err != nil {
 		return fmt.Errorf("write public key: %w", err)
 	}
 
