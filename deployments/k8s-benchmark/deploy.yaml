@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oathmesh-benchmark
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oathmesh-prometheus
+  namespace: oathmesh-benchmark
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oathmesh-prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oathmesh-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oathmesh-prometheus
+subjects:
+- kind: ServiceAccount
+  name: oathmesh-prometheus
+  namespace: oathmesh-benchmark
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: oathmesh-benchmark
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+    scrape_configs:
+      - job_name: 'oathmesh-gateway'
+        static_configs:
+          - targets: ['oathmesh-gateway:2112']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: oathmesh-benchmark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: oathmesh-prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: oathmesh-benchmark
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+---
+# Mock Upstream Service (echo server)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upstream-service
+  namespace: oathmesh-benchmark
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: upstream-service
+  template:
+    metadata:
+      labels:
+        app: upstream-service
+    spec:
+      containers:
+      - name: echo
+        image: jmalloc/echo-server:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upstream-service
+  namespace: oathmesh-benchmark
+spec:
+  selector:
+    app: upstream-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# OathMesh Gateway
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oathmesh-gateway
+  namespace: oathmesh-benchmark
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oathmesh-gateway
+  template:
+    metadata:
+      labels:
+        app: oathmesh-gateway
+    spec:
+      containers:
+      - name: gateway
+        image: oathmesh/gateway:latest # Assuming this is built or pushed
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: OATHMESH_ISSUER
+          value: "http://oathmesh-issuer:4000"
+        - name: OATHMESH_GATEWAY_UPSTREAM
+          value: "http://upstream-service:8080"
+        - name: OATHMESH_GATEWAY_AUDIENCE
+          value: "http://upstream-service.local"
+        - name: OATHMESH_GATEWAY_ISSUERS
+          value: "http://oathmesh-issuer:4000"
+        ports:
+        - containerPort: 8080 # Proxy port
+        - containerPort: 2112 # Metrics port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oathmesh-gateway
+  namespace: oathmesh-benchmark
+spec:
+  selector:
+    app: oathmesh-gateway
+  ports:
+    - name: proxy
+      port: 8080
+      targetPort: 8080
+    - name: metrics
+      port: 2112
+      targetPort: 2112
+---
+# OathMesh Issuer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oathmesh-issuer
+  namespace: oathmesh-benchmark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oathmesh-issuer
+  template:
+    metadata:
+      labels:
+        app: oathmesh-issuer
+    spec:
+      containers:
+      - name: issuer
+        image: oathmesh/issuer:latest # Assuming this is built or pushed
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: OATHMESH_ISSUER
+          value: "http://oathmesh-issuer:4000"
+        - name: OATHMESH_PRIVATE_KEY_B64
+          # Random test key for benchmarking
+          value: "MC4CAQAwBQYDK2VwBCIEIPz5Gz3y5rL2kU2D6F7QxO2Hj1c8b/FzT/7R8y3b4a2a"
+        ports:
+        - containerPort: 4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oathmesh-issuer
+  namespace: oathmesh-benchmark
+spec:
+  selector:
+    app: oathmesh-issuer
+  ports:
+    - port: 4000
+      targetPort: 4000

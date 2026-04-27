@@ -54,7 +54,8 @@
 - 🌐 **Polyglot SDKs** — Go, Node.js (TypeScript), and Python supported
 - 📊 **Full Audit Trail** — Every allow and deny logged via composable `FanOutAuditSink`
 - 🔄 **Policy-Driven** — Apple Pkl-based rules, hot-reload, default deny
-- 🌐 **Gateway Mode** — Reverse proxy that injects verified context headers
+- 🌐 **Gateway Integrations** — Native Envoy `ext_authz` and Kong Go PDK plugins
+- ⚡ **Performance Proven** — Sub-millisecond p99 latency overhead mathematically verified
 - 🛠️ **CLI Native** — Terminal-driven management for robust GitOps integration
 - 🛑 **Stateful Revocation** — Redis-backed O(1) revocation lists directly synced
 - 🤖 **CI Native Auto-Sign** — Built-in OIDC exchange mappings for GitHub Actions and GitLab CI
@@ -305,6 +306,13 @@ If OathMesh helps you build safer systems, please:
 - [Policy Overview](docs/policies/overview.md)
 - [Policy Examples](docs/policies/examples.md)
 - [Policy Migration Guide](docs/policies/migration.md)
+
+### Integrations
+- [Envoy `ext_authz` Integration](docs/integrations/envoy.md)
+- [Kong Go PDK Plugin](docs/integrations/kong.md)
+
+### Performance
+- [Kubernetes Zero-Trust Benchmarks](docs/PERFORMANCE.md)
 
 ### Documentation Hub
 - [Full Documentation Index](docs/INDEX.md)
