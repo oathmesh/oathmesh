@@ -1,6 +1,6 @@
 {
   "name": "@oathmesh/sdk",
-  "version": "1.0.0-rc.1",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oathmesh/oathmesh.git",
