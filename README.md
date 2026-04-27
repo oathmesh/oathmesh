@@ -84,12 +84,11 @@
 | **Binding-required mode (`rqh`)** | ✅ | ✅ | ✅ |
 | **Future `iat` rejection** | ✅ | ✅ | ✅ |
 | **Replay cache** | ✅ Built-in | ✅ Built-in (InMemoryReplayCache) | ✅ Built-in (InMemoryReplayCache) |
-| **Revocation list (step 13.5)** | ✅ Conformance-covered | ⚠️ Optional API (conformance N/A) | ⚠️ Optional API (conformance N/A) |
+| **Revocation list (step 13.5)** | ✅ Conformance-covered | ✅ Conformance-covered (InMemory/Redis) | ✅ Conformance-covered (InMemory/Redis) |
+| **Fail-closed Caching** | ✅ | ✅ | ✅ |
 | **Policy evaluation** | ✅ Built-in (Pkl) | ✅ Built-in (JSON) | ✅ Built-in (JSON) |
 
-> **Conformance note:** Node.js and Python verifiers were tightened toward the canonical Go step semantics (for example: `alg=none` rejection, subject format validation, required request binding semantics, and future-`iat` rejection). This is behavioral parity, not byte-level implementation equivalence across languages.
->
-> **Revocation note:** Go conformance covers revocation-list behavior. Node.js and Python expose optional revocation list hooks, but revocation is currently marked N/A in cross-SDK conformance for those targets.
+> **Conformance note:** Node.js and Python verifiers were tightened toward the canonical Go step semantics (for example: `alg=none` rejection, subject format validation, required request binding semantics, future-`iat` rejection, and fail-closed cache behaviors). This establishes exact behavioral parity.
 
 ---
 
