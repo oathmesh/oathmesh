@@ -16,7 +16,7 @@ func TestConformance_token_parsing_validation_failures(t *testing.T) {
 	cfg := testConfig(publicKey)
 
 	_, err := Verify(context.Background(), "not-a-token", cfg)
-	assertOathMeshError(t, err, core.ErrClaimMissing)
+	assertOathMeshError(t, err, core.ErrTokenMalformed)
 }
 
 func TestConformance_issuer_check_untrusted(t *testing.T) {

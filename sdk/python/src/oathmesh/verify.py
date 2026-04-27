@@ -122,7 +122,7 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
     if len(parts) != 3:
         _deny(
             config,
-            "claim_missing",
+            "token_malformed",
             f"invalid token format: expected 3 segments, got {len(parts)}",
             "provide a valid OathMesh token in compact JWS format (header.payload.signature)",
         )
@@ -264,8 +264,18 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
             config.replay_cache.add(jti)
 
     # Step 13.5: optional revocation list.
-    if config.revocation_list and config.revocation_list.is_revoked(str(data["sub"])):
-        _deny(config, "subject_revoked", f'subject {data["sub"]} has been revoked', "mint a token for an active subject")
+    if config.revocation_list:
+        try:
+            revoked = config.revocation_list.is_revoked(str(data["sub"]))
+        except Exception as e:
+            _deny(
+                config,
+                "verification_failed",
+                f"revocation check failed: {e}",
+                "check revocation list backend connectivity"
+            )
+        if revoked:
+            _deny(config, "subject_revoked", f'subject {data["sub"]} has been revoked', "mint a token for an active subject")
 
     # Step 14: Evaluate policy (if configured)
     if config.policy_evaluator:

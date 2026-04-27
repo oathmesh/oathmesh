@@ -42,7 +42,7 @@ def test_token_parsing_validation_failures(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(verify_module.jwt, "get_unverified_header", bad_header)
 
     with pytest.raises(OathMeshError) as exc:
-        verify_raw_token("not-a-token", CONFIG)
+        verify_raw_token("header.payload.signature", CONFIG)
     assert exc.value.code == "claim_missing"
 
 

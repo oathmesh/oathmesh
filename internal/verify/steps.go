@@ -71,7 +71,7 @@ func stepParseStructure(v *vctx) *core.OathMeshError {
 	v.parts = strings.Split(v.token, ".")
 	if len(v.parts) != 3 {
 		return core.NewOathMeshErrorAt(1,
-			core.ErrClaimMissing,
+			core.ErrTokenMalformed,
 			fmt.Sprintf("invalid token format: expected 3 segments, got %d", len(v.parts)),
 			"provide a valid OathMesh token in compact JWS format (header.payload.signature)",
 		)
@@ -370,7 +370,11 @@ func stepCheckReplay(v *vctx) *core.OathMeshError {
 	if v.cfg.RevocationList != nil {
 		revoked, err := v.cfg.RevocationList.IsRevoked(v.ctx, v.claims.Sub)
 		if err != nil {
-			// Fail open on fetch errors (network partition tolerance)
+			return core.NewOathMeshErrorAt(13,
+				core.ErrVerificationFailed,
+				fmt.Sprintf("revocation check failed: %v", err),
+				"check revocation list backend connectivity",
+			)
 		} else if revoked {
 			return core.NewOathMeshErrorAt(13,
 				core.ErrSubjectRevoked,

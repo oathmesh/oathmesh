@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -40,11 +41,15 @@ func main() {
 		evaluator = pe
 	}
 
+	revCache := verify.NewMemoryRevocationList("http://localhost:4000", time.Hour)
+	revCache.Revoke("agent://test/revoked-svc")
+
 	cfg := &verify.VerifierConfig{
 		Audience:        audience,
 		TrustedIssuers:  issuers,
 		JWKSProvider:    verify.NewJWKSCache(verify.DefaultJWKSCacheTTL, nil),
 		ReplayCache:     verify.NewMemoryReplayCache(),
+		RevocationList:  revCache,
 		PolicyEvaluator: evaluator,
 		AuditSink:       audit.NewStdoutAuditSink(),
 	}

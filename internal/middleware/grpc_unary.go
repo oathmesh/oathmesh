@@ -100,7 +100,7 @@ func extractTokenFromMetadata(ctx context.Context) (string, error) {
 func mapErrorToGRPCCode(err error) (codes.Code, string) {
 	if oe, ok := err.(*core.OathMeshError); ok {
 		switch oe.Code {
-		case core.ErrClaimMissing, core.ErrSignatureInvalid, core.ErrIssuerUntrusted, core.ErrTokenExpired:
+		case core.ErrClaimMissing, core.ErrTokenMalformed, core.ErrVerificationFailed, core.ErrSignatureInvalid, core.ErrIssuerUntrusted, core.ErrTokenExpired:
 			return codes.Unauthenticated, oe.Message
 		case core.ErrAudienceMismatch:
 			return codes.Unauthenticated, oe.Message

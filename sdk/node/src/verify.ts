@@ -67,7 +67,7 @@ export async function verifyOathToken(
   const parts = token.split('.');
   if (parts.length !== 3) {
     throw new OathMeshError(
-      'claim_missing',
+      'token_malformed',
       `invalid token format: expected 3 segments, got ${parts.length}`,
       'provide a valid OathMesh token in compact JWS format (header.payload.signature)'
     );
@@ -231,7 +231,16 @@ export async function verifyOathToken(
 
   // Step 13.5: optional revocation list.
   if (config.revocationList) {
-    const revoked = await config.revocationList.isRevoked(payload.sub as string);
+    let revoked = false;
+    try {
+      revoked = await config.revocationList.isRevoked(payload.sub as string);
+    } catch (err) {
+      throw new OathMeshError(
+        'verification_failed',
+        `revocation check failed: ${err instanceof Error ? err.message : String(err)}`,
+        'check revocation list backend connectivity'
+      );
+    }
     if (revoked) {
       throw new OathMeshError(
         'subject_revoked',

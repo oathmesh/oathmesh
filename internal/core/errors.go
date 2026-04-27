@@ -8,12 +8,14 @@ const (
 	ErrTokenExpired        ErrorCode = "token_expired"
 	ErrAudienceMismatch    ErrorCode = "audience_mismatch"
 	ErrAlgorithmNotAllowed ErrorCode = "algorithm_not_allowed"
+	ErrTokenMalformed      ErrorCode = "token_malformed"
 	ErrClaimMissing        ErrorCode = "claim_missing"
 	ErrReplayDetected      ErrorCode = "replay_detected"
 	ErrPolicyDenied        ErrorCode = "policy_denied"
 	ErrBindingMismatch     ErrorCode = "binding_mismatch"
 	ErrBindingRequired     ErrorCode = "binding_required"
 	ErrSubjectRevoked      ErrorCode = "subject_revoked"
+	ErrVerificationFailed  ErrorCode = "verification_failed"
 )
 
 type OathMeshError struct {

@@ -321,9 +321,9 @@ func TestVerify_ClockSkewAccepted(t *testing.T) {
 func TestVerify_ClockSkewRejected(t *testing.T) {
 	privateKey, publicKey := generateTestKeys(t)
 	token := mintTestToken(t, privateKey, func(c *sign.Claims) {
-		// Token issued 15 seconds in the future — outside 10s tolerance
-		c.Iat = time.Now().Add(15 * time.Second).Unix()
-		c.Exp = time.Now().Add(135 * time.Second).Unix()
+		// Token issued 35 seconds in the future — outside 30s tolerance
+		c.Iat = time.Now().Add(35 * time.Second).Unix()
+		c.Exp = time.Now().Add(155 * time.Second).Unix()
 	})
 
 	cfg := testConfig(publicKey)
@@ -845,22 +845,22 @@ func TestVerify_AudienceAsArray(t *testing.T) {
 func TestVerify_ClockSkewBoundaries(t *testing.T) {
 	privateKey, publicKey := generateTestKeys(t)
 
-	// Exactly at tolerance boundary for iat (+10s)
+	// Exactly at tolerance boundary for iat (+30s)
 	tokenAtTolerance := mintTestToken(t, privateKey, func(c *sign.Claims) {
-		c.Iat = time.Now().Add(10 * time.Second).Unix()
-		c.Exp = time.Now().Add(130 * time.Second).Unix()
+		c.Iat = time.Now().Add(30 * time.Second).Unix()
+		c.Exp = time.Now().Add(150 * time.Second).Unix()
 	})
 
 	cfg := testConfig(publicKey)
 	_, err := Verify(context.Background(), tokenAtTolerance, cfg)
 	if err != nil {
-		t.Fatalf("expected exactly +10s iat to be accepted, got: %v", err)
+		t.Fatalf("expected exactly +30s iat to be accepted, got: %v", err)
 	}
 
-	// Just past tolerance boundary for iat (+11s)
+	// Just past tolerance boundary for iat (+31s)
 	tokenPastTolerance := mintTestToken(t, privateKey, func(c *sign.Claims) {
-		c.Iat = time.Now().Add(11 * time.Second).Unix()
-		c.Exp = time.Now().Add(131 * time.Second).Unix()
+		c.Iat = time.Now().Add(31 * time.Second).Unix()
+		c.Exp = time.Now().Add(151 * time.Second).Unix()
 	})
 	_, err = Verify(context.Background(), tokenPastTolerance, cfg)
 	assertOathMeshError(t, err, core.ErrTokenExpired)

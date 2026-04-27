@@ -9,12 +9,15 @@
 
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { verifyToken } from '@oathmesh/sdk';
+import { verifyToken, InMemoryRevocationCache } from '@oathmesh/sdk';
 
 const app = express();
 
 const audience = process.env.OATHMESH_AUDIENCE || 'https://inventory.internal';
 const issuers = (process.env.OATHMESH_TRUSTED_ISSUERS || 'http://localhost:4000').split(',');
+
+const revocationCache = new InMemoryRevocationCache();
+revocationCache.revoke('agent://test/revoked-svc');
 
 // Rate limiter: 100 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -29,6 +32,7 @@ app.use(limiter);
 app.use(verifyToken({
   audience,
   trustedIssuers: issuers,
+  revocationList: revocationCache,
   onDenied: (err) => {
     console.warn(`[oathmesh] denied: ${err.code} — ${err.message}`);
   },

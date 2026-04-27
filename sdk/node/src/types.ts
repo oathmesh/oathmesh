@@ -35,6 +35,7 @@ export interface VerifiedCallerContext {
 
 /** Machine-readable error code from the OathMesh error taxonomy. */
 export type ErrorCode =
+  | 'token_malformed'
   | 'claim_missing'
   | 'claim_missing:token'
   | 'claim_missing:iss'
@@ -163,6 +164,25 @@ export interface ReplayCache {
 
 export interface RevocationList {
   isRevoked(subject: string): boolean | Promise<boolean>;
+}
+
+/**
+ * In-memory revocation cache implementation for development/single-instance.
+ */
+export class InMemoryRevocationCache implements RevocationList {
+  private cache: Set<string> = new Set();
+
+  isRevoked(subject: string): boolean {
+    return this.cache.has(subject);
+  }
+
+  revoke(subject: string): void {
+    this.cache.add(subject);
+  }
+
+  unrevoke(subject: string): void {
+    this.cache.delete(subject);
+  }
 }
 
 /**

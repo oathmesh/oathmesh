@@ -110,6 +110,14 @@ func (rl *MemoryRevocationList) IsRevoked(ctx context.Context, subject string) (
 	return false, nil
 }
 
+// Revoke manually adds a subject to the revocation list.
+// Primarily used for testing or when bypassing the background sync.
+func (rl *MemoryRevocationList) Revoke(subject string) {
+	rl.mu.Lock()
+	rl.revocations[subject] = time.Now()
+	rl.mu.Unlock()
+}
+
 // Close stops the polling goroutine.
 func (rl *MemoryRevocationList) Close() {
 	close(rl.done)

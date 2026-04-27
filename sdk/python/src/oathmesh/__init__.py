@@ -22,7 +22,7 @@ Usage with FastAPI::
 """
 
 from .errors import OathMeshError
-from .types import VerifiedCallerContext, Principal, Source
+from .types import VerifiedCallerContext, Principal, Source, InMemoryRevocationCache, InMemoryReplayCache, JsonPolicyEvaluator
 from .verify import VerifierConfig, verify_token, verify_raw_token, extract_token
 from .client import OathMeshClient
 
@@ -36,6 +36,9 @@ __all__ = [
     "verify_raw_token",
     "extract_token",
     "OathMeshClient",
+    "InMemoryRevocationCache",
+    "InMemoryReplayCache",
+    "JsonPolicyEvaluator",
 ]
 
 __version__ = "1.0.0"

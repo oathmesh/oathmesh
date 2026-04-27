@@ -50,4 +50,7 @@ export {
   type Source,
   type ErrorCode,
   type OathMeshErrorBody,
+  InMemoryRevocationCache,
+  InMemoryReplayCache,
+  JsonPolicyEvaluator,
 } from './types';

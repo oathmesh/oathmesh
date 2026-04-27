@@ -59,13 +59,22 @@ class RevocationList:
 
     def is_revoked(self, subject: str) -> bool:
         raise NotImplementedError
+
+
+class InMemoryRevocationCache(RevocationList):
+    """In-memory revocation cache implementation for development/single-instance."""
     
-    def add(self, jti: str) -> None:
-        """Record a token JTI as seen.
+    def __init__(self):
+        self._cache = set()
+    
+    def is_revoked(self, subject: str) -> bool:
+        return subject in self._cache
+    
+    def revoke(self, subject: str) -> None:
+        self._cache.add(subject)
         
-        Should be called after successful verification.
-        """
-        raise NotImplementedError
+    def unrevoke(self, subject: str) -> None:
+        self._cache.discard(subject)
 
 
 class InMemoryReplayCache(ReplayCache):

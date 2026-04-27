@@ -13,7 +13,7 @@ import os
 import logging
 
 from fastapi import FastAPI, Request, Depends, HTTPException
-from oathmesh import verify_token, VerifierConfig, OathMeshError
+from oathmesh import verify_token, VerifierConfig, OathMeshError, InMemoryRevocationCache
 from oathmesh.types import VerifiedCallerContext
 
 logger = logging.getLogger("oathmesh.example")
@@ -27,9 +27,13 @@ app = FastAPI(
 audience = os.environ.get("OATHMESH_AUDIENCE", "https://inventory.internal")
 issuers = os.environ.get("OATHMESH_TRUSTED_ISSUERS", "http://localhost:4000").split(",")
 
+revocation_cache = InMemoryRevocationCache()
+revocation_cache.revoke("agent://test/revoked-svc")
+
 config = VerifierConfig(
     audience=audience,
     trusted_issuers=[i.strip() for i in issuers],
+    revocation_list=revocation_cache,
     on_denied=lambda err: logger.warning("denied: %s — %s", err.code, err.message),
     on_verified=lambda ctx: logger.info("allowed: %s → %s", ctx.principal.subject, ctx.action),
 )

@@ -112,8 +112,50 @@ if [ -n "$EXPIRED_TOKEN" ]; then
     results="$results,$result"
 fi
 
-# Dynamic test: not_yet_valid_iat - now static fixture in fixtures.json
-echo "Testing static fixture: not_yet_valid_iat"
+# Dynamic tests: ClockSkewLeeway boundaries
+echo "Testing dynamic fixtures: ClockSkew boundaries"
+cd "$SCRIPT_DIR"
+go build -o gen_edge_tokens gen_edge_tokens.go
+tokens=$(./gen_edge_tokens)
+t29=$(echo "$tokens" | sed -n '1p')
+t30=$(echo "$tokens" | sed -n '2p')
+t31=$(echo "$tokens" | sed -n '3p')
+
+if [ -n "$t29" ]; then
+    response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+        -H "Authorization: OathMesh $t29" \
+        "$API_URL/inventory" 2>/dev/null) || true
+    http_status=$(echo "$response" | grep "HTTP_STATUS" | awk -F: '{print $2}')
+    body=$(echo "$response" | sed 's/HTTP_STATUS:.*//')
+    actual_error=$(echo "$body" | grep -o '"error":"[^"]*"' | cut -d'"' -f4 || echo "")
+    
+    result="{\"id\":\"expired_29s\",\"expected_status\":200,\"actual_status\":$http_status,\"expected_error\":null,\"actual_error\":\"$actual_error\"}"
+    results="$results,$result"
+fi
+
+if [ -n "$t30" ]; then
+    response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+        -H "Authorization: OathMesh $t30" \
+        "$API_URL/inventory" 2>/dev/null) || true
+    http_status=$(echo "$response" | grep "HTTP_STATUS" | awk -F: '{print $2}')
+    body=$(echo "$response" | sed 's/HTTP_STATUS:.*//')
+    actual_error=$(echo "$body" | grep -o '"error":"[^"]*"' | cut -d'"' -f4 || echo "")
+    
+    result="{\"id\":\"expired_30s\",\"expected_status\":200,\"actual_status\":$http_status,\"expected_error\":null,\"actual_error\":\"$actual_error\"}"
+    results="$results,$result"
+fi
+
+if [ -n "$t31" ]; then
+    response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+        -H "Authorization: OathMesh $t31" \
+        "$API_URL/inventory" 2>/dev/null) || true
+    http_status=$(echo "$response" | grep "HTTP_STATUS" | awk -F: '{print $2}')
+    body=$(echo "$response" | sed 's/HTTP_STATUS:.*//')
+    actual_error=$(echo "$body" | grep -o '"error":"[^"]*"' | cut -d'"' -f4 || echo "")
+    
+    result="{\"id\":\"expired_31s\",\"expected_status\":401,\"actual_status\":$http_status,\"expected_error\":\"token_expired\",\"actual_error\":\"$actual_error\"}"
+    results="$results,$result"
+fi
 
 # Dynamic test: replayed_token
 echo "Testing dynamic fixture: replayed_token"
@@ -175,6 +217,27 @@ if [ -n "$TTL_TOKEN" ]; then
         fi
         results="$results,$result"
     fi
+fi
+
+# Dynamic test: revoked_token
+echo "Testing dynamic fixture: revoked_token"
+REVOKED_TOKEN=$("$SCRIPT_DIR/../../bin/oathmesh" mint \
+    --sub "agent://test/revoked-svc" \
+    --aud "https://inventory.internal" \
+    --act "read" \
+    --ttl 120 \
+    --quiet 2>/dev/null) || REVOKED_TOKEN=""
+
+if [ -n "$REVOKED_TOKEN" ]; then
+    response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+        -H "Authorization: OathMesh $REVOKED_TOKEN" \
+        "$API_URL/inventory" 2>/dev/null) || true
+    http_status=$(echo "$response" | grep "HTTP_STATUS" | awk -F: '{print $2}')
+    body=$(echo "$response" | sed 's/HTTP_STATUS:.*//')
+    actual_error=$(echo "$body" | grep -o '"error":"[^"]*"' | cut -d'"' -f4 || echo "")
+    
+    result="{\"id\":\"revoked_token\",\"expected_status\":401,\"actual_status\":$http_status,\"expected_error\":\"subject_revoked\",\"actual_error\":\"$actual_error\"}"
+    results="$results,$result"
 fi
 
 results="$results]"
