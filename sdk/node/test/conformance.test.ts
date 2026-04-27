@@ -44,7 +44,7 @@ describe('conformance parity cases', () => {
     });
 
     await expect(verifyOathToken('not-a-token', config)).rejects.toMatchObject({
-      code: 'claim_missing',
+      code: 'token_malformed',
     });
   });
 
