@@ -33,17 +33,17 @@ func Verify(ctx context.Context, token string, cfg *VerifierConfig) (*core.Verif
 		nowFn = time.Now
 	}
 
-	clockSkew := cfg.ClockSkew
-	if clockSkew == 0 {
-		clockSkew = 10 * time.Second
+	clockSkewLeeway := cfg.ClockSkewLeeway
+	if clockSkewLeeway == 0 {
+		clockSkewLeeway = 30 * time.Second
 	}
 
 	v := &vctx{
-		ctx:       ctx,
-		token:     token,
-		cfg:       cfg,
-		nowFn:     nowFn,
-		clockSkew: clockSkew,
+		ctx:             ctx,
+		token:           token,
+		cfg:             cfg,
+		nowFn:           nowFn,
+		clockSkewLeeway: clockSkewLeeway,
 	}
 
 	// Execute the pipeline — stop on first error.

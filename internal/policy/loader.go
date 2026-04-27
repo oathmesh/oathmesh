@@ -63,8 +63,18 @@ func loadFromPkl(path string) (*Policy, error) {
 		return nil, fmt.Errorf("pkl binary not found in PATH — install pkl or convert policy to JSON with: pkl eval --format json %s > policy.json", path)
 	}
 
+	policyAbsPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path of policy: %w", err)
+	}
+	policyDir := filepath.Dir(policyAbsPath)
+	allowedFileURI := "file://" + filepath.ToSlash(policyDir) + "/"
+
 	// Shell out to pkl eval --format json
-	cmd := exec.Command(pklPath, "eval", "--format", "json", path)
+	cmd := exec.Command(pklPath, "eval",
+		"--allowed-modules", "pkl:*",
+		"--allowed-resources", "env:*,prop:*,"+allowedFileURI,
+		"--format", "json", path)
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

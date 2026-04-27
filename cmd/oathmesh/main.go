@@ -63,6 +63,7 @@ OathMesh authenticates the caller. The receiver authorizes the request.`,
 	rootCmd.AddCommand(buildInspectCmd())
 	rootCmd.AddCommand(buildServeCmd())
 	rootCmd.AddCommand(buildKeysCmd())
+	rootCmd.AddCommand(buildKeygenCmd())
 	rootCmd.AddCommand(buildPolicyCmd())
 	rootCmd.AddCommand(buildRevokeCmd())
 	rootCmd.AddCommand(buildUnrevokeCmd())

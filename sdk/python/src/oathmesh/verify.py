@@ -21,7 +21,7 @@ _jwks_clients: dict[str, PyJWKClient] = {}
 
 ALLOWED_ALGORITHMS = ["EdDSA", "ES256"]
 SUBJECT_RE = re.compile(r"^(agent|svc|job|tool|user)://[a-zA-Z0-9/_.-]{1,256}$")
-CLOCK_SKEW_SECONDS = 10
+DEFAULT_CLOCK_SKEW_LEEWAY = 30
 MAX_EXP_UNIX = 4102444800
 
 
@@ -51,6 +51,7 @@ class VerifierConfig:
         trusted_issuers: List[str],
         require_request_binding: bool = False,
         request_hash: Optional[str] = None,
+        clock_skew_leeway: int = DEFAULT_CLOCK_SKEW_LEEWAY,
         replay_cache: Optional[ReplayCache] = None,
         revocation_list: Optional[RevocationList] = None,
         policy_evaluator: Optional[PolicyEvaluator] = None,
@@ -61,6 +62,7 @@ class VerifierConfig:
         self.trusted_issuers = trusted_issuers
         self.require_request_binding = require_request_binding
         self.request_hash = request_hash
+        self.clock_skew_leeway = clock_skew_leeway
         self.replay_cache = replay_cache
         self.revocation_list = revocation_list
         self.policy_evaluator = policy_evaluator
@@ -185,7 +187,7 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
             algorithms=ALLOWED_ALGORITHMS,
             audience=config.audience,
             issuer=iss,
-            leeway=CLOCK_SKEW_SECONDS,
+            leeway=config.clock_skew_leeway,
         )
     except jwt.ExpiredSignatureError:
         _deny(config, "token_expired", "token has expired", "mint a new token")
@@ -215,14 +217,14 @@ def verify_raw_token(token: str, config: VerifierConfig) -> VerifiedCallerContex
     exp = int(data["exp"])
     if exp > MAX_EXP_UNIX:
         _deny(config, "token_expired", "token expiry is invalid or too far in the future", "mint a token with sane exp")
-    if now > exp + CLOCK_SKEW_SECONDS:
+    if now > exp + config.clock_skew_leeway:
         _deny(config, "token_expired", "token has expired", "mint a new token")
 
     iat = int(data["iat"])
-    if iat > now + CLOCK_SKEW_SECONDS:
+    if iat > now + config.clock_skew_leeway:
         _deny(config, "token_expired", "token issued-at is in the future", "check clock synchronization between issuer and receiver")
 
-    if data.get("nbf") is not None and int(data["nbf"]) > now + CLOCK_SKEW_SECONDS:
+    if data.get("nbf") is not None and int(data["nbf"]) > now + config.clock_skew_leeway:
         _deny(config, "token_expired", "token not-before is in the future", "token cannot be used yet")
 
     if data.get("aud") != config.audience:

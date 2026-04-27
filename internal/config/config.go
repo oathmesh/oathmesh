@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"strconv"
@@ -14,7 +15,7 @@ type Config struct {
 	KMSKeyID       string
 	PrivateKey     string
 	PrivateKeyB64  string
-	PrivateKeyFile string
+	PrivateKeyPath string
 	ConfigFile     string
 	Env            string
 
@@ -54,13 +55,17 @@ type Config struct {
 // LoadFromEnv populates a Config from environment variables.
 // Values not set in the environment use defaults matching the canonical .env.example.
 func LoadFromEnv() *Config {
+	if os.Getenv("OATHMESH_PRIVATE_KEY_FILE") != "" {
+		log.Println("WARN: OATHMESH_PRIVATE_KEY_FILE is deprecated and will be removed in v0.3.0. Use OATHMESH_PRIVATE_KEY_PATH instead.")
+	}
+
 	return &Config{
 		Issuer:         getEnv("OATHMESH_ISSUER", "http://localhost:4000"),
 		Port:           getEnvInt("OATHMESH_PORT", 4000),
 		KMSKeyID:       os.Getenv("OATHMESH_KMS_KEY_ID"),
 		PrivateKey:     os.Getenv("OATHMESH_PRIVATE_KEY"),
 		PrivateKeyB64:  os.Getenv("OATHMESH_PRIVATE_KEY_B64"),
-		PrivateKeyFile: os.Getenv("OATHMESH_PRIVATE_KEY_FILE"),
+		PrivateKeyPath: getEnv("OATHMESH_PRIVATE_KEY_PATH", os.Getenv("OATHMESH_PRIVATE_KEY_FILE")),
 		ConfigFile:     os.Getenv("OATHMESH_CONFIG_FILE"),
 		Env:            getEnv("OATHMESH_ENV", "development"),
 
@@ -103,8 +108,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("OATHMESH_ISSUER must use HTTPS in non-development environments (got %q). Set OATHMESH_ENV=development to suppress this check", c.Issuer)
 	}
 
-	if c.KMSKeyID == "" && c.PrivateKey == "" && c.PrivateKeyFile == "" && c.PrivateKeyB64 == "" {
-		return fmt.Errorf("OATHMESH_PRIVATE_KEY, OATHMESH_PRIVATE_KEY_B64, or OATHMESH_PRIVATE_KEY_FILE is required")
+	if c.KMSKeyID == "" && c.PrivateKey == "" && c.PrivateKeyPath == "" && c.PrivateKeyB64 == "" {
+		return fmt.Errorf("OATHMESH_PRIVATE_KEY, OATHMESH_PRIVATE_KEY_B64, or OATHMESH_PRIVATE_KEY_PATH is required")
 	}
 	if c.TTLMax < 1 || c.TTLMax > 300 {
 		return fmt.Errorf("OATHMESH_TTL_MAX must be between 1 and 300")

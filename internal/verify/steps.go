@@ -29,9 +29,9 @@ type vctx struct {
 	claims    sign.Claims
 	publicKey ed25519.PublicKey
 	jwksAlg   string
-	now       time.Time
-	clockSkew time.Duration
-	expTime   time.Time
+	now             time.Time
+	clockSkewLeeway time.Duration
+	expTime         time.Time
 	iatTime   time.Time
 	cfg       *VerifierConfig
 	nowFn     func() time.Time
@@ -267,12 +267,12 @@ func stepCheckExpiry(v *vctx) *core.OathMeshError {
 		)
 	}
 	v.expTime = time.Unix(v.claims.Exp, 0)
-	if v.now.After(v.expTime.Add(v.clockSkew)) {
+	if v.expTime.Before(v.now.Add(-v.clockSkewLeeway)) {
 		metrics.ClockSkewRejections.WithLabelValues("expired").Inc()
 		return core.NewOathMeshErrorAt(8,
 			core.ErrTokenExpired,
 			fmt.Sprintf("token expired at %s (current time: %s, skew tolerance: %s)",
-				v.expTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkew),
+				v.expTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkewLeeway),
 			"mint a new token — Oath Tokens are intentionally short-lived",
 		)
 	}
@@ -282,24 +282,24 @@ func stepCheckExpiry(v *vctx) *core.OathMeshError {
 // ── Step 09: Verify timing (iat, nbf) ───────────────────────────────
 func stepCheckTiming(v *vctx) *core.OathMeshError {
 	v.iatTime = time.Unix(v.claims.Iat, 0)
-	if v.iatTime.After(v.now.Add(v.clockSkew)) {
+	if v.iatTime.After(v.now.Add(v.clockSkewLeeway)) {
 		metrics.ClockSkewRejections.WithLabelValues("future_iat").Inc()
 		return core.NewOathMeshErrorAt(9,
 			core.ErrTokenExpired,
 			fmt.Sprintf("token issued-at %s is too far in the future (current time: %s, skew tolerance: %s)",
-				v.iatTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkew),
+				v.iatTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkewLeeway),
 			"check clock synchronization between issuer and receiver",
 		)
 	}
 
 	if v.claims.Nbf != 0 {
 		nbfTime := time.Unix(v.claims.Nbf, 0)
-		if nbfTime.After(v.now.Add(v.clockSkew)) {
+		if nbfTime.After(v.now.Add(v.clockSkewLeeway)) {
 			metrics.ClockSkewRejections.WithLabelValues("future_nbf").Inc()
 			return core.NewOathMeshErrorAt(9,
 				core.ErrTokenExpired,
 				fmt.Sprintf("token not-before %s is in the future (current time: %s, skew tolerance: %s)",
-					nbfTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkew),
+					nbfTime.Format(time.RFC3339), v.now.Format(time.RFC3339), v.clockSkewLeeway),
 				"token cannot be used yet",
 			)
 		}

@@ -18,7 +18,7 @@ import { OathMeshError, type VerifierConfig, type VerifiedCallerContext, type Po
  */
 const globalJWKSCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 const SUBJECT_REGEX = /^(agent|svc|job|tool|user):\/\/[a-zA-Z0-9/_.-]{1,256}$/;
-const CLOCK_SKEW_SECONDS = 10;
+const DEFAULT_CLOCK_SKEW_LEEWAY = 30;
 const MAX_EXP_UNIX = 4102444800; // 2100-01-01
 type RequiredStringClaimName = 'iss' | 'sub' | 'aud' | 'act' | 'jti';
 type RequiredNumberClaimName = 'iat' | 'exp';
@@ -63,6 +63,7 @@ export async function verifyOathToken(
   config: VerifierConfig
 ): Promise<VerifiedCallerContext> {
   const { audience, trustedIssuers } = config;
+  const clockSkewLeeway = config.clockSkewLeeway ?? DEFAULT_CLOCK_SKEW_LEEWAY;
   const parts = token.split('.');
   if (parts.length !== 3) {
     throw new OathMeshError(
@@ -147,7 +148,7 @@ export async function verifyOathToken(
     const result = await jwtVerify(token, jwks, {
       audience,
       issuer: iss,
-      clockTolerance: CLOCK_SKEW_SECONDS,
+      clockTolerance: clockSkewLeeway,
     });
     payload = result.payload as Record<string, unknown>;
   } catch (err) {
@@ -165,18 +166,18 @@ export async function verifyOathToken(
   if (!Number.isFinite(exp) || exp > MAX_EXP_UNIX) {
     throw new OathMeshError('token_expired', 'token expiry is invalid or too far in the future', 'mint a token with sane exp');
   }
-  if (now > exp + CLOCK_SKEW_SECONDS) {
+  if (now > exp + clockSkewLeeway) {
     throw new OathMeshError('token_expired', 'token has expired', 'mint a new token — Oath Tokens are short-lived');
   }
 
   const iat = Number(payload.iat);
-  if (!Number.isFinite(iat) || iat > now + CLOCK_SKEW_SECONDS) {
+  if (!Number.isFinite(iat) || iat > now + clockSkewLeeway) {
     throw new OathMeshError('token_expired', 'token issued-at is in the future', 'check clock synchronization between issuer and receiver');
   }
 
   if (payload.nbf !== undefined) {
     const nbf = Number(payload.nbf);
-    if (Number.isFinite(nbf) && nbf > now + CLOCK_SKEW_SECONDS) {
+    if (Number.isFinite(nbf) && nbf > now + clockSkewLeeway) {
       throw new OathMeshError('token_expired', 'token not-before is in the future', 'token cannot be used yet');
     }
   }

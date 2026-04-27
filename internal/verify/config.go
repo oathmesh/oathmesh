@@ -48,9 +48,9 @@ type VerifierConfig struct {
 	// Wire this to a policy.PolicyEngine for production use.
 	PolicyEvaluator PolicyEvaluator
 
-	// ClockSkew is the maximum allowed clock difference between issuer and receiver.
-	// Default: 10 seconds.
-	ClockSkew time.Duration
+	// ClockSkewLeeway is the maximum allowed clock difference between issuer and receiver.
+	// Default: 30 seconds.
+	ClockSkewLeeway time.Duration
 
 	// RequestHash is the canonical request string to verify against the rqh claim.
 	// If empty, rqh binding check is skipped even if the token has an rqh claim.

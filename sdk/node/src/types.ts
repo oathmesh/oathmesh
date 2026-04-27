@@ -89,6 +89,11 @@ export interface VerifierConfig {
   /** Trusted issuer URLs (explicit allowlist — no wildcards, no auto-discovery). */
   trustedIssuers: string[];
   /**
+   * Maximum allowed clock difference between issuer and receiver in seconds.
+   * Default: 30 seconds.
+   */
+  clockSkewLeeway?: number;
+  /**
    * Enforces that tokens MUST include an rqh claim.
    * When true, tokens without rqh are rejected with error "binding_required".
    * Recommended for all write/mutate endpoints to prevent tampering.

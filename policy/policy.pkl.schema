@@ -1,0 +1,32 @@
+/// OathMesh Policy Schema
+module OathMeshPolicySchema
+
+class Rule {
+  match: Match?
+  allow: Boolean
+  ruleName: String?
+  denyReason: String?
+}
+
+class Match {
+  sub: String?
+  aud: String?
+  act: String?
+  env: String?
+  tenant: String?
+  scope: List<String>?
+  src: SourceMatch?
+}
+
+class SourceMatch {
+  type: String?
+  repo: String?
+  workflow: String?
+}
+
+class Policy {
+  version: Int = 1
+  issuers: List<String>
+  audiences: List<String>
+  rules: List<Rule>
+}
